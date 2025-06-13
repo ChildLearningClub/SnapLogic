@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://cpa4eqnf06f5f"]
+[gd_scene load_steps=12 format=3 uid="uid://cpa4eqnf06f5f"]
 
 [ext_resource type="Script" uid="uid://dmd5ofngimvfo" path="res://addons/scene_snap/scripts/scene_view.gd" id="1_oy5va"]
 [ext_resource type="PackedScene" uid="uid://bqjm71wafal06" path="res://addons/scene_snap/plugin_scenes/sub_viewport_container.tscn" id="2_kewjq"]
@@ -6,12 +6,11 @@
 [ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="3_x26p4"]
 [ext_resource type="Texture2D" uid="uid://bj0cx5mupc8u6" path="res://addons/scene_snap/icons/grey_heart.svg" id="4_7t3r4"]
 [ext_resource type="Texture2D" uid="uid://b2hf3ice6jt2a" path="res://addons/scene_snap/icons/red_dot.svg" id="5_nxtw1"]
-[ext_resource type="Texture2D" uid="uid://cfedutr8ohrtn" path="res://addons/scene_snap/icons/Tags.svg" id="7_128rv"]
+[ext_resource type="Texture2D" uid="uid://dyvik5amxqleb" path="res://addons/scene_snap/icons/TagsNotActive.svg" id="7_128rv"]
 [ext_resource type="Texture2D" uid="uid://drycnhdyb35xt" path="res://addons/scene_snap/icons/MultiConvexPolygonShape3D.svg" id="7_jop6j"]
 [ext_resource type="Texture2D" uid="uid://t3bkxeji2f54" path="res://addons/scene_snap/icons/multi_convex.svg" id="8_boj2p"]
-[ext_resource type="Texture2D" uid="uid://dyvik5amxqleb" path="res://addons/scene_snap/icons/TagsNotActive.svg" id="8_kewjq"]
 
-[sub_resource type="Image" id="Image_kewjq"]
+[sub_resource type="Image" id="Image_128rv"]
 data = {
 "data": PackedByteArray(255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 42, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 92, 92, 0, 255, 92, 92, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 93, 93, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0),
 "format": "RGBA8",
@@ -20,8 +19,8 @@ data = {
 "width": 16
 }
 
-[sub_resource type="ImageTexture" id="ImageTexture_csxsb"]
-image = SubResource("Image_kewjq")
+[sub_resource type="ImageTexture" id="ImageTexture_kewjq"]
+image = SubResource("Image_128rv")
 
 [node name="SceneView" type="Button"]
 self_modulate = Color(1, 1, 1, 0.180392)
@@ -144,7 +143,7 @@ grow_vertical = 0
 theme_override_constants/separation = 15
 alignment = 2
 
-[node name="TagsButtonActive" type="TextureButton" parent="HBoxContainerAdditions"]
+[node name="TagsButton" type="TextureButton" parent="HBoxContainerAdditions"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(10, 0)
@@ -155,17 +154,6 @@ texture_normal = ExtResource("7_128rv")
 ignore_texture_size = true
 stretch_mode = 3
 
-[node name="TagsButtonNotActive" type="TextureButton" parent="HBoxContainerAdditions"]
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(10, 0)
-layout_mode = 2
-mouse_filter = 1
-mouse_default_cursor_shape = 2
-texture_normal = ExtResource("8_kewjq")
-ignore_texture_size = true
-stretch_mode = 3
-
 [node name="AnimationTextureButton" type="TextureButton" parent="HBoxContainerAdditions"]
 unique_name_in_owner = true
 visible = false
@@ -173,7 +161,7 @@ custom_minimum_size = Vector2(10, 0)
 layout_mode = 2
 mouse_filter = 1
 mouse_default_cursor_shape = 2
-texture_normal = SubResource("ImageTexture_csxsb")
+texture_normal = SubResource("ImageTexture_kewjq")
 ignore_texture_size = true
 stretch_mode = 3
 
@@ -184,7 +172,7 @@ custom_minimum_size = Vector2(10, 0)
 layout_mode = 2
 mouse_filter = 1
 mouse_default_cursor_shape = 2
-texture_normal = SubResource("ImageTexture_csxsb")
+texture_normal = SubResource("ImageTexture_kewjq")
 ignore_texture_size = true
 stretch_mode = 3
 
@@ -245,8 +233,8 @@ offset_bottom = 26.0
 mouse_filter = 1
 mouse_default_cursor_shape = 2
 toggle_mode = true
-texture_normal = SubResource("ImageTexture_csxsb")
-texture_pressed = SubResource("ImageTexture_csxsb")
+texture_normal = SubResource("ImageTexture_kewjq")
+texture_pressed = SubResource("ImageTexture_kewjq")
 stretch_mode = 3
 
 [connection signal="focus_entered" from="." to="." method="_on_focus_entered"]
@@ -256,10 +244,11 @@ stretch_mode = 3
 [connection signal="pressed" from="." to="." method="_on_pressed"]
 [connection signal="toggled" from="HBoxContainer/HeartAspectRatioContainer/AspectRatioContainer/CircleTextureButton" to="." method="_on_circle_texture_button_toggled"]
 [connection signal="toggled" from="HBoxContainer/HeartAspectRatioContainer/HeartTextureButton" to="." method="_on_heart_texture_button_toggled"]
-[connection signal="mouse_entered" from="HBoxContainerAdditions/TagsButtonActive" to="." method="_on_tags_button_active_mouse_entered"]
-[connection signal="mouse_exited" from="HBoxContainerAdditions/TagsButtonActive" to="." method="_on_tags_button_active_mouse_exited"]
-[connection signal="pressed" from="HBoxContainerAdditions/TagsButtonActive" to="." method="_on_tags_button_active_pressed"]
-[connection signal="pressed" from="HBoxContainerAdditions/TagsButtonNotActive" to="." method="_on_tags_button_not_active_pressed"]
+[connection signal="button_down" from="HBoxContainerAdditions/TagsButton" to="." method="_on_tags_button_active_button_down"]
+[connection signal="button_up" from="HBoxContainerAdditions/TagsButton" to="." method="_on_tags_button_active_button_up"]
+[connection signal="mouse_entered" from="HBoxContainerAdditions/TagsButton" to="." method="_on_tags_button_active_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainerAdditions/TagsButton" to="." method="_on_tags_button_active_mouse_exited"]
+[connection signal="pressed" from="HBoxContainerAdditions/TagsButton" to="." method="_on_tags_button_active_pressed"]
 [connection signal="mouse_entered" from="HBoxContainerAdditions/AnimationTextureButton" to="." method="_on_animation_texture_button_mouse_entered"]
 [connection signal="mouse_exited" from="HBoxContainerAdditions/AnimationTextureButton" to="." method="_on_animation_texture_button_mouse_exited"]
 [connection signal="pressed" from="HBoxContainerAdditions/AnimationTextureButton" to="." method="_on_animation_texture_button_pressed"]

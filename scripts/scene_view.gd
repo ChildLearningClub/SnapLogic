@@ -22,7 +22,7 @@ signal enable_panel_button_sizing # TODO Signal comes from main_base_tab mouse e
 signal button_selected
 signal remove_open_tag_panel
 signal toggle_tag_panel(scene_view_button_pressed: Button)
-signal clear_all_tags(scene_view_button_pressed: Button)
+signal clear_tags(clear_shared_tags: bool, scene_view_button_pressed: Button)
 signal clear_selected_enabled(state: bool)
 #signal load_scene_instance(scene_full_path: String)
 # NOTE: Changed to instantiating panel in scene_viewer
@@ -54,8 +54,7 @@ signal get_scene_ready_state(collection_name: String, scene_full_path: String) #
 @onready var _3d_label: Label = %"3DLabel"
 @onready var circle_texture_button: TextureButton = %CircleTextureButton
 
-@onready var tags_button_active: TextureButton = %TagsButtonActive
-@onready var tags_button_not_active: TextureButton = %TagsButtonNotActive
+@onready var tags_button: TextureButton = %TagsButton
 
 
 @onready var h_box_container_additions: HBoxContainer = $HBoxContainerAdditions
@@ -78,6 +77,11 @@ signal get_scene_ready_state(collection_name: String, scene_full_path: String) #
 const SUB_VIEWPORT_CONTAINER_SCENE = preload("res://addons/scene_snap/plugin_scenes/sub_viewport_container.tscn")
 const TAG_PANEL_POPUP = preload("res://addons/scene_snap/plugin_scenes/tag_panel_popup.tscn")
 const TAG_PANEL = preload("res://addons/scene_snap/plugin_scenes/tag_panel.tscn")
+
+const TAG = preload("uid://lk0x216oxk4h")
+const TAG_NOT_ACTIVE = preload("uid://brmknafst68gu")
+const TAGS = preload("uid://cfedutr8ohrtn")
+const TAGS_NOT_ACTIVE = preload("uid://dyvik5amxqleb")
 
 
 @onready var shared_collections_path: String = "user://shared_collections/scenes/"
@@ -129,6 +133,7 @@ var shared_tags: Array[String] = []
 var global_tags: Array[String] = []
 
 var initialize_show: bool = true
+var sharing_disabled: bool = false
 
 ## Revisit this mess
 #func get_thumbnail() -> void:
@@ -147,6 +152,7 @@ var initialize_show: bool = true
 
 
 func _ready() -> void:
+	
 	# Hide button until after thumbnail and button sizes set
 	visible = false
 	#call_deferred("get_thumbnail")
@@ -190,6 +196,7 @@ func _ready() -> void:
 	#await ready
 	call_deferred("set_size_flags")
 	call_deferred("get_collection_name")
+
 	#set_size_flags()
 	#set_scene_view_size(thumbnail_size_value)
 	#set_thumbnail_size()
@@ -430,14 +437,14 @@ func set_scene_view_size(size: float) -> void:
 			#texture_rect_collision.show()
 			#label_3dlod.show()
 
-	## Additionals
-	#if size <= min_additions_size:
-		#h_box_container_additions.hide()
-		#if debug: print("FIND REPLACEMENT INDICATOR FOR HIDDEN ADDITIONALS")
-		##circle_texture_button.show()
-	#else:
-		##circle_texture_button.hide()
-		#h_box_container_additions.show()
+	# Additionals
+	if size <= min_additions_size:
+		h_box_container_additions.hide()
+		if debug: print("FIND REPLACEMENT INDICATOR FOR HIDDEN ADDITIONALS")
+		#circle_texture_button.show()
+	else:
+		#circle_texture_button.hide()
+		h_box_container_additions.show()
 
 
 	#if size <= min_bclod_display_size:
@@ -714,7 +721,7 @@ func copy_file(dir: DirAccess, origin_file_path: String, path_to_copy_file: Stri
 #func _on_mouse_entered() -> void:
 	## Show selection button
 	#selected_texture_button.show()
-	#if not tags_button_active.visible:
+	#if not tags_button.visible:
 		#tags_button_not_active.show()
 	#
 	#
@@ -785,7 +792,8 @@ func copy_file(dir: DirAccess, origin_file_path: String, path_to_copy_file: Stri
 # NOTE: Other objects handled in scene_viewer.gd reload_scene_view_button() with loading scene delay from thread
 func _on_mouse_exited() -> void:
 	if not multi_select_box:
-		tags_button_not_active.hide()
+		update_tags_icon()
+		#tags_button_not_active.hide()
 
 
 		if selected_texture_button.button_pressed:
@@ -909,7 +917,55 @@ func _on_mouse_exited() -> void:
 
 var continue_function: bool = false
 
-
+#func _on_mouse_entered() -> void:
+	#if debug: print("scene_full_path: ", scene_full_path)
+	#if debug: print("collection_name: ", collection_name)
+	#if not scene_full_path.is_empty() and not collection_name.is_empty():
+		##if debug: print("get_scene_ready_state")
+		#emit_signal("get_scene_ready_state", collection_name, scene_full_path)
+	## NOTE: check needs to be done here for if collection_lookup[collection_name][scene_full_path] has scene instance
+	#await get_tree().process_frame # allow time to get return scene_ready state of from signal above 
+	##if debug: print("scene_ready: ", scene_ready)
+	#if not multi_select_box and scene_ready:
+		## Show selection button
+		#selected_texture_button.show()
+		#if not tags_button.visible:
+			#tags_button_not_active.show()
+#
+		#emit_signal("clear_selected_enabled", false)
+		#emit_signal("enable_panel_button_sizing")
+#
+		### Only load scene if hovered for more then 1.0 secs
+		##await get_tree().create_timer(1).timeout # Do not open unless hovering for 1.0
+		##if is_hovered(): # After 1.0 check if still hovering
+#
+		## Prep scene structure for loaded scene
+		#if not find_child("SubViewportContainer", false, false):
+			##if debug: print("Creating new SubViewportContainer for button")
+			#sub_viewport_container = SUB_VIEWPORT_CONTAINER_SCENE.instantiate()
+			#add_child(sub_viewport_container) # THE LOADED SCENE
+			## Center loaded scene on button
+			#sub_viewport_container.position = Vector2(0.0, 13.0)
+#
+			## Hide so does not share same space with Sprite2D
+			#sub_viewport_container.hide() 
+#
+			## Move the loaded scene viewport to position 0 to replace thumbnail sprite
+			##move_child(sub_viewport_container, 0)
+			#sub_viewport_container.name = "SubViewportContainer"
+			#sub_viewport_container.owner = self
+#
+		#else:
+			#push_warning("SubViewportContainer exists and was not properly freed during the _process function")
+#
+		#sub_viewport = sub_viewport_container.get_child(0)
+		#sub_viewport.size = Vector2(slider_value, slider_value)
+#
+		## Reload button with scene and 3d camera rotation
+		#emit_signal("reload_scene", self, scene_full_path, sub_viewport)
+#
+			### Set default textures for 360 mesh preview
+		##emit_signal("set_scenes_default_materials", scene_full_path, -1, null)
 
 # FIXME Disable on box selection
 func _on_mouse_entered() -> void:
@@ -924,8 +980,10 @@ func _on_mouse_entered() -> void:
 	if not multi_select_box and scene_ready:
 		# Show selection button
 		selected_texture_button.show()
-		if not tags_button_active.visible:
-			tags_button_not_active.show()
+		# FIXME MERGE BUTTONS
+		update_tags_icon(true)
+		#if not tags_button.visible:
+			#tags_button_not_active.show()
 
 		emit_signal("clear_selected_enabled", false)
 		emit_signal("enable_panel_button_sizing")
@@ -970,7 +1028,7 @@ func _on_mouse_entered() -> void:
 	#if not multi_select_box:
 		## Show selection button
 		#selected_texture_button.show()
-		#if not tags_button_active.visible:
+		#if not tags_button.visible:
 			#tags_button_not_active.show()
 		#
 		#
@@ -1164,6 +1222,7 @@ var rotate_scene: bool = false
 
 
 func _physics_process(delta: float) -> void:
+	#print("shared tags: ", shared_tags)
 	#if debug: print("collection_name: ", collection_name)
 	#if debug: print("thumbnail_size_value: ",thumbnail_size_value)
 	#set_scene_view_size(thumbnail_size_value)
@@ -1393,21 +1452,78 @@ func pass_up_scene_tag_added_or_removed(tagged_scene_full_path: String) -> void:
 
 
 
-#var open: bool = false
+# Clear shared tags 1s timer
+var timer: Timer
+var timer_started: bool = false
 
+### If active tags button is held down for longer then 1 second will also clear Shared Tags
+func _on_tags_button_active_button_down() -> void:
+	if Input.is_key_pressed(KEY_SHIFT):
+		timer_started = true
+		timer = Timer.new()
+		timer.one_shot = true
+		add_child(timer)
+		timer.start(1)
+		print("down")
+
+func _on_tags_button_active_button_up() -> void:
+	if timer_started and timer.time_left == 0.0:
+		emit_signal("clear_tags", true, self)
+		emit_signal("scene_tag_added_or_removed", scene_full_path)
+
+		print("clear shared tags too")
+	# Reset timer_started
+	timer_started = false
+
+# FIXME Tag Panel tags are not refreshed to show tags removed
 # FIXME CHANGE COLOR OF TAGS BUTTON ICON TO BLUE WHEN OPEN?
 func _on_tags_button_active_pressed() -> void:
 	if Input.is_key_pressed(KEY_SHIFT):
-		emit_signal("clear_all_tags", self)
+		emit_signal("clear_tags", false, self)
 		emit_signal("scene_tag_added_or_removed", scene_full_path)
-
-	else:
+		# HACK # To refresh tag panel tags FIXME Only if already open when 
+		# If tag panel open:
+		# FIXME ERRORS WHEN PANEL CLOSE AND CLEARING TAGS?
+		# ERROR: res://addons/scene_snap/scripts/tag_panel.gd:108 - Invalid call. Nonexistent function 'set_text' in base 'Nil'.
 		emit_signal("toggle_tag_panel", self)
+		emit_signal("toggle_tag_panel", self)
+
+	else: # Open the tag panel on button down if KEY_SHIFT not pressed.
+		emit_signal("toggle_tag_panel", self)
+
 
 
 
 func _on_tags_button_not_active_pressed() -> void:
 	emit_signal("toggle_tag_panel", self)
+
+## Update the icon for the tags button based on filled tags and sharing settings
+func update_tags_icon(mouse_entered: bool = false) -> void:
+	# No Tags or shared tags with sharing disabled
+	if global_tags.is_empty() and shared_tags.is_empty() or (global_tags.is_empty() and not shared_tags.is_empty() and sharing_disabled): 
+		if sharing_disabled: # # TODO Add Settings sharing disabled check here
+			tags_button.set_texture_normal(TAG_NOT_ACTIVE)
+		else:
+			tags_button.set_texture_normal(TAGS_NOT_ACTIVE)
+
+		if mouse_entered:
+			tags_button.show()
+		else:
+			tags_button.hide()
+		return
+
+	# Either Global or Shared tags when sharing enabled
+	if (global_tags.is_empty() and not shared_tags.is_empty()) \
+	or (not global_tags.is_empty() and shared_tags.is_empty()): 
+		tags_button.set_texture_normal(TAG)
+
+	# Both Global and Shared tags. Changed based on sharing enabled/diabled
+	else:
+		if sharing_disabled: 
+			tags_button.set_texture_normal(TAG)
+		else:
+			tags_button.set_texture_normal(TAGS)
+	tags_button.show()
 
 
 
@@ -1417,7 +1533,7 @@ var tag_panel_hover_opened: bool = false
 
 #func _on_tags_button_active_mouse_entered() -> void:
 	#await get_tree().create_timer(.15).timeout # Do not open unless hovering for .15
-	#if tags_button_active.is_hovered(): # After .15 check if still hovering
+	#if tags_button.is_hovered(): # After .15 check if still hovering
 		#tag_panel_hover_opened = true
 		#var open: bool = true
 		#open_tag_panel(open)

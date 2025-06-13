@@ -330,6 +330,7 @@ var match_scale: bool = true
 
 var task_id_number: int = 0
 var mutex: Mutex = Mutex.new()
+var sharing_disabled: bool = false
 
 ## Cache the tags and their relationship to snap_flow_manager_graph.connections for quick lookup in the process()
 # FIXME signal to update when connections changed and graphedit is open. 
@@ -386,6 +387,8 @@ func _enter_tree() -> void:
 	#scene_data_cache.scene_favorites.clear()
 	#scene_data_cache.scene_data.clear()
 	#ResourceSaver.save(scene_data_cache)
+
+
 
 
 	#var p: = PrintDebug.new()
@@ -614,7 +617,9 @@ func _enter_tree() -> void:
 	
 	#if debug: print("This should be the very first thing to print")
 	scene_viewer_panel_instance = SCENE_VIEWER.instantiate()
+	#scene_viewer_panel_instance.sharing_disabled = sharing_disabled
 	await wait_ready(scene_viewer_panel_instance, "scene_viewer_panel_instance")
+	#scene_viewer_panel_instance.sharing_disabled = sharing_disabled
 	#if debug: print("scene_viewer_panel_instance: ", scene_viewer_panel_instance)
 	#if debug: print("user_favorites.scene_favorites: ", user_favorites.scene_favorites)
 	# Works but error
@@ -652,7 +657,11 @@ func _enter_tree() -> void:
 
 	settings = EditorInterface.get_editor_settings()
 
-
+	# Restore sharing disabled setting
+	if settings.has_setting("scene_snap_plugin/disable_sharing_functionality_shared_collections_and_shared_tags"):
+		sharing_disabled = settings.get_setting("scene_snap_plugin/disable_sharing_functionality_shared_collections_and_shared_tags")
+	else:
+		settings.set_setting("scene_snap_plugin/disable_sharing_functionality_shared_collections_and_shared_tags", sharing_disabled)
 
 	#var debug_print_setting: String = "scene_snap_plugin/enable_plugin_debug_print_statements"
 	## If the setting does not exist create it and set it to false
@@ -1339,6 +1348,8 @@ func _set_window_layout(configuration): # NOTE This functionality seems slow to 
 		#main_favorite_tab.owner = scene_viewer_panel_instance
 
 	for main_tab_name: String in main_container_tabs_names:
+		if sharing_disabled and main_tab_name == "Shared Collections":
+			continue
 		#if debug: print("MAIN NAME: ", main_tab_name)
 		# HACK
 		#await get_tree().create_timer(1).timeout
@@ -1417,6 +1428,8 @@ func _set_window_layout(configuration): # NOTE This functionality seems slow to 
 	
 	# Restore heart filter state
 	for main_tab_name in heart_filter_state_dict.keys():
+		if sharing_disabled and main_tab_name == "Shared Collections":
+			continue
 		var main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
 		main_collection_tab.heart_texture_button.button_pressed = heart_filter_state_dict[main_tab_name]
 
@@ -3474,7 +3487,7 @@ func set_object_position_and_add_mesh_tris(object: Node3D, scene_name: String) -
 # TEST if meta is retained from preview to now
 	if object.has_meta("extras"):
 		var metadata: Dictionary = object.get_meta("extras")
-		if debug: print("metadata: ", metadata)
+		print("object (scene preview) metadata to be carried to placed object: ", metadata)
 
 	
 	embed_decrypted_global_tags_in_scene(object)
@@ -3552,10 +3565,11 @@ func set_object_position_and_add_mesh_tris(object: Node3D, scene_name: String) -
 			#if not mesh_child.tree_exited.is_connected(remove_global_tris):
 				#mesh_child.tree_exited.connect(remove_global_tris.bind(mesh_child))
 
-
 ## Adds tags to the scene preview for placing and again added to the scene when it is placed in the environment for other objects to be snapped to it.
+# FIXME Does not appear to be decrypting global tags
 func embed_decrypted_global_tags_in_scene(scene: Node3D) -> void:
 	if not selected_scene_view_button:
+		# FIXME Why did I chose this function, it does not appear to update the selected_scene_view_button?
 		get_visible_scene_view_buttons()
 	if current_visible_buttons:
 		# FIXME Will need to be fix if on KEY_Q and right mouse click instance other then first in collection
@@ -3586,6 +3600,7 @@ func embed_decrypted_global_tags_in_scene(scene: Node3D) -> void:
 
 		if first_mesh_node.has_meta("extras"):
 			var metadata: Dictionary = first_mesh_node.get_meta("extras")
+
 			## Combine shared_tags and decrypted global_tags into one Array[String]
 			#var tags: Array[String] = selected_scene_view_button.shared_tags
 			#for tag: String in selected_scene_view_button.global_tags:
@@ -3593,15 +3608,33 @@ func embed_decrypted_global_tags_in_scene(scene: Node3D) -> void:
 					#tags.append(tag)
 
 			# Remove encrypted global_tags and shared_tags since not required
-			metadata.erase("shared_tags")
-			metadata.erase("global_tags")
+			#metadata.erase("shared_tags")
+			#metadata.erase("global_tags")
 			#metadata["tags"] = tags
 			metadata["tags"] = selected_scene_view_button.tags
 
+
 			first_mesh_node.set_meta("extras", metadata)
+			#print("first_mesh_node parent: ", first_mesh_node)
+			#print("first_mesh_node.get_meta('extras'): ", first_mesh_node.get_meta("extras"))
+			#print("this is the complete metadata extras: ", first_mesh_node.get_meta("extras"))
 
-			if debug: print("first_mesh_node.get_meta('extras'): ", first_mesh_node.get_meta("extras"))
+			if metadata.has("tags"):
+				 # If sharing_disabled remove shared tags from tags added to scene_preview and placed scene objects
+				if sharing_disabled and metadata.has("shared_tags"):
+					for tag: String in metadata["tags"]:
+						if metadata["shared_tags"].has(tag):
+							metadata["tags"].erase(tag)
 
+				# Remove Global and Shared Tags leaving only combined tags for scene_preview and placed scenes meta extras
+				if metadata.has("global_tags"):
+					metadata.erase("global_tags")
+				if metadata.has("shared_tags"):
+					metadata.erase("shared_tags")
+
+				print("Tags added to scene_preview and placed scene: ", metadata["tags"])
+
+				#print("this is the complete metadata extras2: ", first_mesh_node.get_meta("extras"))
 
 
 
@@ -5476,6 +5509,8 @@ func create_scene_preview():
 
 		scene_name = scene_viewer_panel_instance.get_scene_name(scene_viewer_panel_instance.current_scene_path, true)
 
+
+		if debug: print("scene_preview: ", scene_preview)
 		embed_decrypted_global_tags_in_scene(scene_preview)
 
 		EditorInterface.get_edited_scene_root().add_child(scene_preview)
@@ -6733,7 +6768,7 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 	# Add gates to reduce process in most restrictive possible order first
 	if selected_scene_view_button and selected_scene_view_button.tags != []:# and closest_object:
 		var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
-		#if debug: print("snap_flow_manager_graph.get_connection_list(): ", snap_flow_manager_graph.get_connection_list())
+		#print("snap_flow_manager_graph.get_connection_list(): ", snap_flow_manager_graph.get_connection_list())
 		
 		var reverse_connection_lookup: Dictionary[String, String] = {} # Get the root connection from the final transform modifier given the middle Snap-To-Object
 		for connection: Dictionary in connections:
@@ -6763,7 +6798,7 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 					#if scene_preview:
 					if scene_preview:# and evaluate_user_code(code_edit_node.text, scene_preview, vector_normal) != null:
 						evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
-						pass
+						#pass
 						#if debug: print(evaluate_user_code(code_edit_node.text, scene_preview))
 				#Invalid access to property or key 'Mesh2' on a base object of type 'Dictionary[String, Array]'. When instance and then snapping to that
 				# FIXME closest_object.name gets RENAMED WITH APPENDING NUMBER WHEN DUPLICATE THEN IT CAN'T FIND IT BY NAME IN THE DICTIONARY
@@ -6788,11 +6823,14 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 						##await get_tree().process_frame
 						##scene_preview.name = "ScenePreview"
 				
-					# TODO Check if breaks with "extras" but no "tags"
+					# TODO Check if breaks with "extras" but no "tags" or remove extras from .glb mesh node if both Global and Shared Tags empty
 					if closest_object and closest_object.has_meta("extras"):
 						var metadata: Dictionary = closest_object.get_meta("extras")
 
-						if debug: print("closest_object tags: ", metadata["tags"])
+						# FIXME prints closest_object metadata: { "global_tags": {  }, "shared_tags": ["endsnap"] }
+						# So global_tags and shared_tags not being combined into tags Could do a if global_tags has or shared_tags has?
+						print("closest_object metadata: ", metadata)
+						print("closest_object tags: ", metadata["tags"])
 
 						if metadata["tags"].has(node_indices[connection.to_node][connection.to_port]):
 							var enter_string: String = connection.to_node + str(connection.to_port)
@@ -6815,14 +6853,16 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 			if closest_object and closest_object.has_meta("extras"):
 				var metadata: Dictionary = closest_object.get_meta("extras")
 
-
-				if connection.from_node == "SnapToObject" and  metadata["tags"].has(node_indices[connection.from_node][connection.from_port]):
+				# FIXME Objects being placed either do not have tags or global tags are not decrypted?
+				# FIXME Placed objects only need tags (decrypted global and shared tags) combined. but this is not happening
+				print("node_indices: ", node_indices)
+				if connection.from_node == "SnapToObject" and metadata["tags"].has(node_indices[connection.from_node][connection.from_port]):
 					#if debug: print("the socond connection out starts here from: ", connection.from_node)
 					var lookup_string: String = connection.from_node + str(connection.from_port)
 					#if debug: print("lookup_string EXPECT SnapToObject0: ", lookup_string)
 					if debug: print("reverse_connection_lookup: ", reverse_connection_lookup)
 					if reverse_connection_lookup:
-						if debug: print("reverse_connection_lookup[lookup_string] EXPECT IndividualTags0: ", reverse_connection_lookup[lookup_string])
+						print("reverse_connection_lookup[lookup_string] EXPECT IndividualTags0: ", reverse_connection_lookup[lookup_string])
 						#reverse_connection_lookup[lookup_string]
 
 						# TEST Get reverse lookup test START FROM END WORK WAY BACK
@@ -9735,7 +9775,8 @@ func _process(delta):
 
 			if min_t < FLOAT64_MAX:
 				closest_object = instance_from_id(closest_object_id)
-				if debug: print("Snapping to object: ", closest_object)
+				#print("object name: ", closest_object.name)
+				#print("Snapping to object: ", closest_object.get_parent().name)
 				closest_object_scale = closest_object.get_scale()
 					
 				#if debug: print("closest_object scale: ", closest_object.get_scale())
@@ -9743,7 +9784,8 @@ func _process(delta):
 				if closest_object.has_meta("extras"):
 					var metadata: Dictionary = closest_object.get_meta("extras")
 
-					#if debug: print("closest_object tags: ", metadata["tags"])
+					#if metadata.has("tags"):
+						#print("closest_object tags: ", metadata["tags"])
 
 				#scene_preview_snap_to_normal(min_p, min_n)
 

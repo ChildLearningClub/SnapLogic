@@ -1,9 +1,50 @@
-[gd_resource type="Resource" script_class="SceneDataCache" load_steps=2 format=3 uid="uid://dyeliqlx6mjnx"]
+[gd_resource type="Resource" script_class="SceneDataCache" load_steps=2 format=3 uid="uid://bc0wxuex47l41"]
 
 [ext_resource type="Script" uid="uid://brpm11rpgw7q1" path="res://addons/scene_snap/resources/scene_data_cache.gd" id="1_a5nb6"]
 
 [resource]
 script = ExtResource("1_a5nb6")
 scene_favorites = Array[String]([])
-scene_data = Dictionary[String, Dictionary]({})
+scene_data = Dictionary[String, Dictionary]({
+"res://imports/Candle_1.gltf": Dictionary[String, Array]({
+"g": Array[String](["candle"]),
+"s": Array[String](["zsc", "czx"]),
+"t": Array[String](["zsc", "czx", "candle"])
+}),
+"res://imports/Candle_2.gltf": Dictionary[String, Array]({
+"g": Array[String](["candle"]),
+"s": Array[String](["zsc", "czx"]),
+"t": Array[String](["zsc", "czx", "candle"])
+}),
+"res://imports/Carrot.gltf": Dictionary[String, Array]({
+"g": Array[String](["carrot"]),
+"s": Array[String](["zsc", "czx"]),
+"t": Array[String](["zsc", "czx", "carrot"])
+}),
+"res://imports/Crate_Wooden.gltf": Dictionary[String, Array]({
+"g": Array[String](["carrot", "candle"]),
+"s": Array[String]([]),
+"t": Array[String](["carrot", "candle"])
+}),
+"res://imports/Lantern_Wall.gltf": Dictionary[String, Array]({
+"g": Array[String](["carrot"]),
+"s": Array[String]([]),
+"t": Array[String](["carrot"])
+}),
+"user://global_collections/scenes/Global Collections/trick or treat/BookGroup_Medium_12.glb": Dictionary[String, Array]({
+"g": Array[String](["canireadthis"]),
+"s": Array[String](["books"]),
+"t": Array[String](["canireadthis", "books"])
+}),
+"user://global_collections/scenes/Global Collections/trick or treat/BookGroup_Medium_22.glb": Dictionary[String, Array]({
+"g": Array[String](["canireadthis"]),
+"s": Array[String](["books"]),
+"t": Array[String](["canireadthis", "books"])
+}),
+"user://global_collections/scenes/Global Collections/trick or treat/Bookcase_22.glb": Dictionary[String, Array]({
+"g": Array[String](["alsoreadthis"]),
+"s": Array[String](["shelf"]),
+"t": Array[String](["alsoreadthis", "shelf"])
+})
+})
 metadata/_custom_type_script = "uid://brpm11rpgw7q1"
