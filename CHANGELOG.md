@@ -1,6 +1,6 @@
 # SnapLogic CHANGELOG
 
-V0.8.2-alpha - 2025-06-13
+V0.8.2-alpha main-branch - 2025-06-13
 - Fixed search filtering not working on initial start before changing tabs
 - Re-worked materials buttons and functionality
 - Remember material favorites between sessions
