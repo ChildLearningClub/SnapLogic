@@ -87,3 +87,5 @@ CURRENTLY A LOT:
 TROUBLESHOOTING:
 Sometimes the editor will freeze while textures are being written to the filesystem, just give it a bit of time and if still frozen restart the editor.
 if you close the editor and some but not all the textures are copied to the filesystem, you will need to remove the respective collection folder name under collections folder for the import process to be triggered again after editor restart.
+
+For current changes see the [Changelog](./CHANGELOG.md) for details.
