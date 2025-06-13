@@ -1,0 +1,37 @@
+[gd_scene load_steps=4 format=3 uid="uid://dbba2wscanxap"]
+
+[ext_resource type="Script" uid="uid://bff5ktsnjfeou" path="res://addons/scene_snap/scripts/snap_menu_panel.gd" id="1_rdqmu"]
+[ext_resource type="Texture2D" uid="uid://dhl5i018o8ek5" path="res://addons/scene_snap/icons/grey_dot.svg" id="2_hyi74"]
+[ext_resource type="Script" uid="uid://dt7deomtytti8" path="res://addons/scene_snap/scripts/snap_menu_panel_button.gd" id="2_rdqmu"]
+
+[node name="SnapMenuPanel" type="HBoxContainer"]
+offset_right = 80.0
+offset_bottom = 30.0
+theme_override_constants/separation = 4
+script = ExtResource("1_rdqmu")
+
+[node name="GrapEditButton" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+icon = ExtResource("2_hyi74")
+flat = true
+icon_alignment = 1
+script = ExtResource("2_rdqmu")
+
+[node name="Button2" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+icon = ExtResource("2_hyi74")
+flat = true
+icon_alignment = 1
+script = ExtResource("2_rdqmu")
+
+[node name="Button3" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+icon = ExtResource("2_hyi74")
+flat = true
+icon_alignment = 1
+script = ExtResource("2_rdqmu")
+
+[connection signal="toggled" from="GrapEditButton" to="." method="_on_grap_edit_button_toggled"]

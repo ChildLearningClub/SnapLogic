@@ -1,0 +1,127 @@
+[gd_scene format=3 uid="uid://b6cael7r56bg6"]
+
+[node name="GraphEdit" type="GraphEdit"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+right_disconnects = true
+connections = Array[Dictionary]([{
+"from_node": &"ObjectToSnap",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"SnapToObject",
+"to_port": 0
+}, {
+"from_node": &"SnapToObject",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"OutputSnap",
+"to_port": 0
+}, {
+"from_node": &"ObjectToSnap",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"OutputSnap",
+"to_port": 0
+}])
+zoom = 0.634711
+
+[node name="GraphFrame" type="GraphFrame" parent="."]
+layout_mode = 0
+offset_right = 491.999
+offset_bottom = 557.001
+scale = Vector2(0.634711, 0.634711)
+mouse_filter = 1
+title = "Input Filters"
+
+[node name="ObjectToSnap" type="GraphNode" parent="."]
+layout_mode = 0
+offset_left = 177.719
+offset_top = 114.248
+offset_right = 473.719
+offset_bottom = 302.247
+scale = Vector2(0.634711, 0.634711)
+mouse_filter = 1
+position_offset = Vector2(280, 180)
+title = "Object To Snap"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(0.733511, 0, 0.308387, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="LineEdit" type="LineEdit" parent="ObjectToSnap"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+placeholder_text = "Comma Separated Text Filters"
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="SnapToObject" type="GraphNode" parent="."]
+layout_mode = 0
+offset_left = 622.017
+offset_top = 165.025
+offset_right = 871.016
+offset_bottom = 327.024
+scale = Vector2(0.634711, 0.634711)
+mouse_filter = 1
+position_offset = Vector2(980, 260)
+title = "Snap To Object"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(0.588235, 0, 0.247059, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(0.47451, 0, 0.2, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="LineEdit" type="LineEdit" parent="SnapToObject"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+placeholder_text = "Add Text Filter"
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="OutputSnap" type="GraphNode" parent="."]
+layout_mode = 0
+offset_left = 596.628
+offset_top = 63.4711
+offset_right = 844.633
+offset_bottom = 225.475
+scale = Vector2(0.634711, 0.634711)
+mouse_filter = 1
+position_offset = Vector2(940, 100)
+selected = true
+title = "Output Snap"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(0.588235, 0, 0.247059, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="OutputSnap"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Snap Down"
+
+[connection signal="connection_request" from="." to="." method="_on_connection_request"]
+[connection signal="disconnection_request" from="." to="." method="_on_disconnection_request"]
+[connection signal="position_offset_changed" from="ObjectToSnap" to="." method="_on_object_to_snap_position_offset_changed"]
+[connection signal="position_offset_changed" from="SnapToObject" to="." method="_on_snap_to_object_position_offset_changed"]
+[connection signal="position_offset_changed" from="OutputSnap" to="." method="_on_output_snap_position_offset_changed"]

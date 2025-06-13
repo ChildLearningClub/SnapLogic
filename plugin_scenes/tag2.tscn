@@ -1,0 +1,73 @@
+[gd_scene load_steps=4 format=3 uid="uid://cikptqsgjf2i8"]
+
+[ext_resource type="Script" uid="uid://c3o6pvxlmggt1" path="res://addons/scene_snap/scripts/tag2.gd" id="1_84cdy"]
+[ext_resource type="Texture2D" uid="uid://b4hlpfn0nyskn" path="res://addons/scene_snap/icons/Tag.svg" id="2_84cdy"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_affyr"]
+
+[node name="Tag" type="Control"]
+custom_minimum_size = Vector2(95, 31)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 108.0
+offset_bottom = 31.0
+script = ExtResource("1_84cdy")
+
+[node name="TagLineEdit" type="LineEdit" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -38.0
+offset_top = -15.5
+offset_right = 38.0
+offset_bottom = 15.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_constants/minimum_character_width = 0
+theme_override_font_sizes/font_size = 14
+theme_override_styles/focus = SubResource("StyleBoxEmpty_affyr")
+placeholder_text = " Add Tag"
+expand_to_text_length = true
+flat = true
+caret_blink = true
+
+[node name="Tags" type="NinePatchRect" parent="."]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 40.0
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("2_84cdy")
+region_rect = Rect2(0, 58.4995, 160.492, 42.5121)
+patch_margin_left = 24
+patch_margin_top = 4
+patch_margin_right = 5
+patch_margin_bottom = 4
+
+[node name="Button" type="Button" parent="Tags"]
+visible = false
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -31.0
+offset_top = -16.0
+offset_right = -6.0
+offset_bottom = 15.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 1
+text = "x"
+
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="text_changed" from="TagLineEdit" to="." method="_on_tag_line_edit_text_changed"]
+[connection signal="mouse_entered" from="Tags" to="." method="_on_tags_mouse_entered"]
+[connection signal="mouse_exited" from="Tags" to="." method="_on_tags_mouse_exited"]
+[connection signal="pressed" from="Tags/Button" to="." method="_on_button_pressed"]

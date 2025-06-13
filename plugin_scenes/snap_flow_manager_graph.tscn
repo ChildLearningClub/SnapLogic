@@ -1,0 +1,608 @@
+[gd_scene load_steps=11 format=3 uid="uid://fkq4y06rutkk"]
+
+[ext_resource type="Script" uid="uid://b8bqc4lipr0n8" path="res://addons/scene_snap/scripts/snap_flow_manager_graph.gd" id="1_ayjo4"]
+[ext_resource type="Script" uid="uid://bc0nlpsb4hwfv" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/object_to_snap.gd" id="2_n7jn7"]
+[ext_resource type="PackedScene" uid="uid://j5p4gfvmil3h" path="res://addons/scene_snap/plugin_scenes/tag.tscn" id="3_i3hge"]
+[ext_resource type="Script" uid="uid://cbtfypov00xkc" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/snap_to_object.gd" id="4_n7jn7"]
+[ext_resource type="Script" uid="uid://dqnbmdi80yaru" path="res://addons/scene_snap/scripts/tag.gd" id="4_ocqev"]
+[ext_resource type="Texture2D" uid="uid://bcie12awbsjl2" path="res://addons/scene_snap/icons/filter_3d.svg" id="5_i3hge"]
+[ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="6_jlomf"]
+[ext_resource type="PackedScene" uid="uid://ddihubesyoh55" path="res://addons/scene_snap/plugin_scenes/graph_node_code_tab.tscn" id="6_wd2wf"]
+[ext_resource type="Script" uid="uid://fsks6f4wmist" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/graph_node_code_tab.gd" id="7_ao78n"]
+
+[sub_resource type="GDScriptSyntaxHighlighter" id="GDScriptSyntaxHighlighter_wd2wf"]
+
+[node name="GraphEdit" type="GraphEdit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+scroll_offset = Vector2(-118.281, 27.6184)
+snapping_enabled = false
+right_disconnects = true
+connections = Array[Dictionary]([{
+"from_node": &"IndividualTags",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"SnapToObject",
+"to_port": 0
+}, {
+"from_node": &"IndividualTags",
+"from_port": 1,
+"keep_alive": false,
+"to_node": &"SnapToObject",
+"to_port": 0
+}, {
+"from_node": &"SnapToObject",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"OutputSnap",
+"to_port": 3
+}])
+zoom = 0.663544
+script = ExtResource("1_ayjo4")
+
+[node name="Modifiers" type="GraphFrame" parent="."]
+layout_mode = 1
+offset_left = 1042.37
+offset_top = 16.3442
+offset_right = 1457.38
+offset_bottom = 524.343
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(1392.66, 66.2542)
+title = "Modifiers"
+
+[node name="Button" type="Button" parent="Modifiers"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+text = "+"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Modifiers"]
+layout_mode = 2
+
+[node name="GraphNode" type="GraphNode" parent="Modifiers/VBoxContainer"]
+layout_mode = 2
+offset_right = 411.0
+offset_bottom = 70.0
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode"]
+layout_mode = 2
+
+[node name="GraphNode2" type="GraphNode" parent="Modifiers/VBoxContainer"]
+layout_mode = 2
+offset_top = 74.0
+offset_right = 411.0
+offset_bottom = 144.0
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode2"]
+layout_mode = 2
+
+[node name="GraphNode3" type="GraphNode" parent="Modifiers/VBoxContainer"]
+layout_mode = 2
+offset_top = 148.0
+offset_right = 411.0
+offset_bottom = 218.0
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode3"]
+layout_mode = 2
+
+[node name="GraphNode4" type="GraphNode" parent="Modifiers/VBoxContainer"]
+layout_mode = 2
+offset_top = 222.0
+offset_right = 411.0
+offset_bottom = 292.0
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode4"]
+layout_mode = 2
+
+[node name="GraphNode5" type="GraphNode" parent="Modifiers/VBoxContainer"]
+layout_mode = 2
+offset_top = 296.0
+offset_right = 411.0
+offset_bottom = 366.0
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode5"]
+layout_mode = 2
+
+[node name="InputFilters" type="GraphFrame" parent="."]
+layout_mode = 1
+offset_left = -1.15652
+offset_top = -28.282
+offset_right = 313.843
+offset_bottom = 500.706
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(-180, -1)
+title = "Tags of the Objects to Place"
+
+[node name="SnapToObjectsFrame" type="GraphFrame" parent="."]
+layout_mode = 1
+offset_left = 359.811
+offset_top = -11.9982
+offset_right = 636.811
+offset_bottom = 196.003
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(364, 23.5406)
+title = "Tags of Objects to Snap to"
+
+[node name="ObjectToSnap" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 25.3852
+offset_top = -1.07665
+offset_right = 260.385
+offset_bottom = 141.933
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(-140, 40)
+resizable = true
+title = "ObjectToSnap"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(0.733511, 0, 0.308387, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="InputLineEdit" type="LineEdit" parent="ObjectToSnap"]
+clip_contents = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "floor, tile, ground, house"
+placeholder_text = "Comma Separated Text Filters"
+expand_to_text_length = true
+emoji_menu_enabled = false
+caret_blink = true
+caret_blink_interval = 0.5
+caret_column = 26
+
+[node name="AddNewInputTagsBox" type="Button" parent="."]
+layout_mode = 1
+offset_right = 24.0
+offset_bottom = 31.0
+text = "+"
+
+[node name="IndividualTags" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 25.3852
+offset_top = 105.09
+offset_right = 260.385
+offset_bottom = 393.078
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(-140, 200)
+title = "Individual Tag Connections"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = false
+slot/0/left_type = 1
+slot/0/left_color = Color(0.846, 0.399, 0, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 1
+slot/0/right_color = Color(0.846, 0.399, 0, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 1
+slot/1/left_color = Color(0.846, 0.399, 0, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = true
+slot/1/right_type = 1
+slot/1/right_color = Color(0.846, 0.399, 0, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+script = ExtResource("2_n7jn7")
+
+[node name="Tag" type="Control" parent="IndividualTags" instance=ExtResource("3_i3hge")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_ocqev")
+metadata/tag_text = "zout"
+
+[node name="Tag2" type="Control" parent="IndividualTags" instance=ExtResource("3_i3hge")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_ocqev")
+metadata/tag_text = "paper"
+
+[node name="Body3DModifier" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 704.336
+offset_top = -71.4263
+offset_right = 876.346
+offset_bottom = 109.573
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(883.219, -66.0211)
+title = "Modifier Body 3D"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = true
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = true
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = false
+slot/3/left_type = 0
+slot/3/left_color = Color(1, 1, 1, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = false
+slot/3/right_type = 0
+slot/3/right_color = Color(1, 1, 1, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "StaticBody3D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label2" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "RigidBody3D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label3" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "CharacterBody3D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label4" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ObjectModifier" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 918.694
+offset_top = 48.6241
+offset_right = 1047.69
+offset_bottom = 383.635
+scale = Vector2(0.663544, 0.663544)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 1
+position_offset = Vector2(1206.27, 114.902)
+title = "Object Modifier"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(0.47451, 0, 0.2, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = true
+slot/1/left_type = 0
+slot/1/left_color = Color(0.47451, 0, 0.2, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = true
+slot/2/left_type = 0
+slot/2/left_color = Color(0.47451, 0, 0.2, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = true
+slot/3/left_type = 0
+slot/3/left_color = Color(0.47451, 0, 0.2, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = false
+slot/3/right_type = 0
+slot/3/right_color = Color(1, 1, 1, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+slot/4/left_enabled = true
+slot/4/left_type = 0
+slot/4/left_color = Color(0.47451, 0, 0.2, 1)
+slot/4/left_icon = null
+slot/4/right_enabled = false
+slot/4/right_type = 0
+slot/4/right_color = Color(1, 1, 1, 1)
+slot/4/right_icon = null
+slot/4/draw_stylebox = true
+
+[node name="Label" type="Label" parent="ObjectModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Rotation"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label2" type="Label" parent="ObjectModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Scale"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label3" type="Label" parent="ObjectModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Collision"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Body" type="Label" parent="ObjectModifier"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Body"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label5" type="Label" parent="ObjectModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Animation"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OutputSnap" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 664.507
+offset_top = -81.9464
+offset_right = 1641.5
+offset_bottom = 2251.06
+scale = Vector2(0.663544, 0.663544)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+position_offset = Vector2(823.195, -81.8755)
+resizable = true
+title = "Output Snap"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(0.588235, 0, 0.247059, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(0.588235, 0, 0.247059, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = true
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = ExtResource("5_i3hge")
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = true
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = true
+slot/3/left_type = 0
+slot/3/left_color = Color(1, 1, 1, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = false
+slot/3/right_type = 0
+slot/3/right_color = Color(1, 1, 1, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+slot/4/left_enabled = false
+slot/4/left_type = 0
+slot/4/left_color = Color(1, 1, 1, 1)
+slot/4/left_icon = null
+slot/4/right_enabled = false
+slot/4/right_type = 0
+slot/4/right_color = Color(1, 1, 1, 1)
+slot/4/right_icon = null
+slot/4/draw_stylebox = true
+
+[node name="Label" type="Label" parent="OutputSnap"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Snap Down"
+
+[node name="GraphNodeCodeTab" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
+custom_minimum_size = Vector2(848, 739)
+layout_mode = 2
+text = "      Offset Snap"
+script = ExtResource("7_ao78n")
+
+[node name="GraphNodeCodeTab2" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
+custom_minimum_size = Vector2(848, 739)
+layout_mode = 2
+text = "      Surface Normal Z Forward"
+script = ExtResource("7_ao78n")
+
+[node name="GraphNodeCodeTab3" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
+custom_minimum_size = Vector2(848, 739)
+layout_mode = 2
+text = "       Z Align Normal"
+script = ExtResource("7_ao78n")
+
+[node name="Label3" type="Label" parent="OutputSnap"]
+layout_mode = 2
+text = "      Surface Normal Z Forward"
+
+[node name="Button" type="Button" parent="OutputSnap/Label3"]
+layout_mode = 0
+offset_right = 24.0
+offset_bottom = 24.0
+toggle_mode = true
+icon = ExtResource("6_jlomf")
+flat = true
+
+[node name="CodeEdit" type="CodeEdit" parent="OutputSnap/Label3"]
+clip_contents = false
+layout_mode = 2
+offset_top = 25.0
+offset_right = 476.0
+offset_bottom = 325.0
+text = "extends Node3D
+
+func transform(object_to_snap: Node3D, vector_normal: Vector3, run_continuus: bool = true) -> bool:
+	var vector_normal_normalized = vector_normal.normalized()
+	if vector_normal_normalized.y == 1 or vector_normal_normalized.y == -1:
+		print(\"on top\")
+	else:
+		# Extract the original global transform (position, rotation, scale)
+		var original_global_transform: Transform3D = object_to_snap.global_transform
+
+		# Create the new rotation using looking_at
+		var new_basis: Basis = Basis().looking_at(vector_normal, Vector3.UP, true)
+
+	#	var original_origin: Vector3 = original_global_transform.origin as Vector3
+		# Apply the new basis (rotation)
+		var new_transform: Transform3D = Transform3D(new_basis, original_global_transform.origin)
+
+	#	var original_basis: Basis = original_global_transform.basis as Basis
+		# Preserve the original scale by multiplying the new basis with the scale
+		new_transform.basis = new_transform.basis.scaled(original_global_transform.basis.get_scale())
+
+		# Set the global transform to the new transform (with the new rotation and preserved scale)
+		object_to_snap.global_transform = new_transform
+	return run_continuus"
+placeholder_text = "Your Code here"
+scroll_fit_content_height = true
+scroll_fit_content_width = true
+caret_blink = true
+syntax_highlighter = SubResource("GDScriptSyntaxHighlighter_wd2wf")
+highlight_all_occurrences = true
+draw_tabs = true
+gutters_draw_executing_lines = true
+gutters_draw_line_numbers = true
+code_completion_enabled = true
+indent_automatic = true
+
+[node name="SnapToObject" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 386.353
+offset_top = 15.2071
+offset_right = 538.353
+offset_bottom = 142.208
+scale = Vector2(0.663544, 0.663544)
+mouse_filter = 1
+position_offset = Vector2(404, 64.5406)
+title = "Snap To Object"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 1
+slot/0/left_color = Color(0.846, 0.399, 0, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 1
+slot/0/right_color = Color(0.846, 0.399, 0, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("4_n7jn7")
+
+[node name="Tag" type="Control" parent="SnapToObject" instance=ExtResource("3_i3hge")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_ocqev")
+metadata/tag_text = "wall"
+
+[connection signal="connection_request" from="." to="." method="_on_connection_request"]
+[connection signal="disconnection_request" from="." to="." method="_on_disconnection_request"]
+[connection signal="position_offset_changed" from="ObjectToSnap" to="." method="_on_object_to_snap_position_offset_changed"]
+[connection signal="pressed" from="AddNewInputTagsBox" to="." method="_on_add_new_input_tags_box_pressed"]
+[connection signal="position_offset_changed" from="IndividualTags" to="." method="_on_object_to_snap_position_offset_changed"]
+[connection signal="update_tag_cache" from="IndividualTags" to="." method="_on_individual_tags_update_tag_cache"]
+[connection signal="position_offset_changed" from="OutputSnap" to="." method="_on_output_snap_position_offset_changed"]
+[connection signal="toggled" from="OutputSnap/Label3/Button" to="." method="_on_button_toggled"]
+[connection signal="position_offset_changed" from="SnapToObject" to="." method="_on_snap_to_object_position_offset_changed"]

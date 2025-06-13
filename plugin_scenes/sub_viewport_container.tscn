@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://bqjm71wafal06"]
+
+[node name="SubViewportContainer" type="SubViewportContainer"]
+offset_right = 256.0
+offset_bottom = 256.0
+mouse_filter = 2
+
+[node name="SubViewport" type="SubViewport" parent="."]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+fsr_sharpness = 2.0
+size = Vector2i(256, 256)
+render_target_update_mode = 4

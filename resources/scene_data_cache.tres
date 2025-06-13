@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SceneDataCache" load_steps=2 format=3 uid="uid://dyeliqlx6mjnx"]
+
+[ext_resource type="Script" uid="uid://brpm11rpgw7q1" path="res://addons/scene_snap/resources/scene_data_cache.gd" id="1_a5nb6"]
+
+[resource]
+script = ExtResource("1_a5nb6")
+scene_favorites = Array[String]([])
+scene_data = Dictionary[String, Dictionary]({})
+metadata/_custom_type_script = "uid://brpm11rpgw7q1"

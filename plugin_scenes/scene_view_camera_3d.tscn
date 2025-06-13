@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://baygco423oeol"]
+
+[node name="CameraGimbal" type="Node3D" groups=["camera_gimbal"]]
+transform = Transform3D(-0.819152, 0, -0.573576, 0, 1, 0, 0.573576, 0, -0.819152, 0, 0, 0)
+
+[node name="InnerGimbal" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 0, 0)
+
+[node name="SceneViewCamera3D" type="Camera3D" parent="InnerGimbal"]
+process_mode = 4
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.045)
+near = 0.001
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="InnerGimbal/SceneViewCamera3D"]
+light_energy = 1.5
+shadow_bias = 10.0
+
+[node name="SpotLight3D" type="SpotLight3D" parent="InnerGimbal/SceneViewCamera3D"]
+visible = false
+light_energy = 1.5
+spot_range = 4096.0

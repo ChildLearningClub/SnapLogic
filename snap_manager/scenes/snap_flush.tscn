@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://ducaggmtjj07h"]
+
+[ext_resource type="Script" uid="uid://dd0trrhvf057t" path="res://addons/scene_snap/snap_manager/scripts/snap_flush.gd" id="1_ox4oh"]
+
+[node name="SnapFlush" type="Node3D"]
+rotation_edit_mode = 1
+visible = false
+script = ExtResource("1_ox4oh")
+
+[node name="RayOrigin1M" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 0, 0)
+visible = false
+exclude_parent = false
+target_position = Vector3(0, 0, -0.1)

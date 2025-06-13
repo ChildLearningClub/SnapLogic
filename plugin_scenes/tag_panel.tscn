@@ -1,0 +1,109 @@
+[gd_scene load_steps=5 format=3 uid="uid://3gin4qw0po3b"]
+
+[ext_resource type="Script" uid="uid://csfpet3u6rdqr" path="res://addons/scene_snap/scripts/tag_panel.gd" id="1_22ymw"]
+[ext_resource type="Script" uid="uid://nkw18fqub5nb" path="res://addons/scene_snap/scripts/tag_drop_script.gd" id="2_akgux"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7qw0p"]
+bg_color = Color(0.145098, 0.168627, 0.203922, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qc1vj"]
+bg_color = Color(0.145098, 0.168627, 0.203922, 1)
+
+[node name="Tags" type="Control"]
+custom_minimum_size = Vector2(244, 0)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_22ymw")
+
+[node name="CloseTagPanelButton" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -49.0
+offset_top = 3.0
+offset_right = -4.0
+offset_bottom = 34.0
+grow_horizontal = 0
+text = "X"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="FlowSceneViews" type="FlowContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="SceneInfoLabel" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="LabelSharedTags" type="RichTextLabel" parent="ScrollContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_7qw0p")
+bbcode_enabled = true
+text = "[img]res://addons/scene_snap/icons/SharedIcon.svg[/img] [b] Shared Tags [/b]"
+fit_content = true
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="FlowSharedTags" type="FlowContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+script = ExtResource("2_akgux")
+
+[node name="ButtonSharedTags" type="Button" parent="ScrollContainer/VBoxContainer/FlowSharedTags"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+text = "+"
+
+[node name="HSeparator2" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 15)
+layout_mode = 2
+
+[node name="LabelGlobalTags" type="RichTextLabel" parent="ScrollContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_qc1vj")
+bbcode_enabled = true
+text = "[img]res://addons/scene_snap/icons/GlobalIcon.svg[/img] [b] Global Tags [/b]"
+fit_content = true
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator3" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="FlowGlobalTags" type="FlowContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+script = ExtResource("2_akgux")
+
+[node name="ButtonGlobalTags" type="Button" parent="ScrollContainer/VBoxContainer/FlowGlobalTags"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+text = "+"
+
+[connection signal="item_rect_changed" from="." to="." method="_on_item_rect_changed"]
+[connection signal="pressed" from="CloseTagPanelButton" to="." method="_on_close_tag_panel_button_pressed"]
+[connection signal="rebuild_tags" from="ScrollContainer/VBoxContainer/FlowSharedTags" to="." method="_on_flow_shared_tags_rebuild_tags"]
+[connection signal="pressed" from="ScrollContainer/VBoxContainer/FlowSharedTags/ButtonSharedTags" to="." method="_on_button_shared_tags_pressed"]
+[connection signal="rebuild_tags" from="ScrollContainer/VBoxContainer/FlowGlobalTags" to="." method="_on_flow_global_tags_rebuild_tags"]
+[connection signal="pressed" from="ScrollContainer/VBoxContainer/FlowGlobalTags/ButtonGlobalTags" to="." method="_on_button_global_tags_pressed"]

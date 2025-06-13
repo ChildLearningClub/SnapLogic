@@ -1,0 +1,62 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3m505kh70rnv"]
+
+[ext_resource type="PackedScene" uid="uid://cikptqsgjf2i8" path="res://addons/scene_snap/plugin_scenes/tag2.tscn" id="1_yxibi"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="PopupPanel" type="PopupPanel" parent="."]
+initial_position = 2
+size = Vector2i(305, 542)
+visible = true
+transient_to_focused = true
+unresizable = false
+borderless = false
+always_on_top = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PopupPanel"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 301.0
+offset_bottom = 538.0
+
+[node name="Label" type="Label" parent="PopupPanel/VBoxContainer"]
+layout_mode = 2
+text = "Shared Tags:"
+
+[node name="FlowContainer" type="FlowContainer" parent="PopupPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Tag" parent="PopupPanel/VBoxContainer/FlowContainer" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="Tag2" parent="PopupPanel/VBoxContainer/FlowContainer" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="Tag3" parent="PopupPanel/VBoxContainer/FlowContainer" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="Tag4" parent="PopupPanel/VBoxContainer/FlowContainer" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="GlobalTagsLabel" type="Label" parent="PopupPanel/VBoxContainer"]
+layout_mode = 2
+text = "Shared Tags:"
+
+[node name="FlowContainer2" type="FlowContainer" parent="PopupPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Tag" parent="PopupPanel/VBoxContainer/FlowContainer2" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="Tag2" parent="PopupPanel/VBoxContainer/FlowContainer2" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="Tag3" parent="PopupPanel/VBoxContainer/FlowContainer2" instance=ExtResource("1_yxibi")]
+layout_mode = 2
+
+[node name="Tag4" parent="PopupPanel/VBoxContainer/FlowContainer2" instance=ExtResource("1_yxibi")]
+layout_mode = 2

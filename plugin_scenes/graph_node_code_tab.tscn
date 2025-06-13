@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3 uid="uid://ddihubesyoh55"]
+
+[ext_resource type="Script" uid="uid://fsks6f4wmist" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/graph_node_code_tab.gd" id="1_hpq2w"]
+[ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="2_lggiq"]
+
+[sub_resource type="GDScriptSyntaxHighlighter" id="GDScriptSyntaxHighlighter_oo5i3"]
+
+[node name="GraphNodeCodeTab" type="Label"]
+custom_minimum_size = Vector2(844, 737)
+text = "      Surface Normal Z Forward"
+script = ExtResource("1_hpq2w")
+
+[node name="CodeTabCollapseButton" type="Button" parent="."]
+layout_mode = 0
+offset_right = 24.0
+offset_bottom = 24.0
+toggle_mode = true
+icon = ExtResource("2_lggiq")
+flat = true
+
+[node name="CodeEdit" type="CodeEdit" parent="."]
+clip_contents = false
+layout_mode = 2
+offset_top = 25.0
+offset_right = 476.0
+offset_bottom = 325.0
+scroll_fit_content_height = true
+scroll_fit_content_width = true
+caret_blink = true
+syntax_highlighter = SubResource("GDScriptSyntaxHighlighter_oo5i3")
+highlight_all_occurrences = true
+draw_tabs = true
+gutters_draw_executing_lines = true
+gutters_draw_line_numbers = true
+code_completion_enabled = true
+indent_automatic = true
+
+[connection signal="toggled" from="CodeTabCollapseButton" to="." method="_on_code_tab_collapse_button_toggled"]
+[connection signal="code_completion_requested" from="CodeEdit" to="." method="_on_code_edit_code_completion_requested"]
+[connection signal="item_rect_changed" from="CodeEdit" to="." method="_on_code_edit_item_rect_changed"]

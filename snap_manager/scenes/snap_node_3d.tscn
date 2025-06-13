@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://dke08poidxj0h"]
+
+[ext_resource type="Script" uid="uid://bm14k2uun6m4p" path="res://addons/scene_snap/snap_manager/scripts/snap_node_3d.gd" id="1_laq32"]
+
+[node name="SnapNode3D" type="Node3D"]
+process_mode = 3
+script = ExtResource("1_laq32")

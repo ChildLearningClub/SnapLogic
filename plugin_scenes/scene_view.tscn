@@ -1,0 +1,269 @@
+[gd_scene load_steps=13 format=3 uid="uid://cpa4eqnf06f5f"]
+
+[ext_resource type="Script" uid="uid://dmd5ofngimvfo" path="res://addons/scene_snap/scripts/scene_view.gd" id="1_oy5va"]
+[ext_resource type="PackedScene" uid="uid://bqjm71wafal06" path="res://addons/scene_snap/plugin_scenes/sub_viewport_container.tscn" id="2_kewjq"]
+[ext_resource type="Texture2D" uid="uid://dhl5i018o8ek5" path="res://addons/scene_snap/icons/grey_dot.svg" id="2_mc4u5"]
+[ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="3_x26p4"]
+[ext_resource type="Texture2D" uid="uid://bj0cx5mupc8u6" path="res://addons/scene_snap/icons/grey_heart.svg" id="4_7t3r4"]
+[ext_resource type="Texture2D" uid="uid://b2hf3ice6jt2a" path="res://addons/scene_snap/icons/red_dot.svg" id="5_nxtw1"]
+[ext_resource type="Texture2D" uid="uid://cfedutr8ohrtn" path="res://addons/scene_snap/icons/Tags.svg" id="7_128rv"]
+[ext_resource type="Texture2D" uid="uid://drycnhdyb35xt" path="res://addons/scene_snap/icons/MultiConvexPolygonShape3D.svg" id="7_jop6j"]
+[ext_resource type="Texture2D" uid="uid://t3bkxeji2f54" path="res://addons/scene_snap/icons/multi_convex.svg" id="8_boj2p"]
+[ext_resource type="Texture2D" uid="uid://dyvik5amxqleb" path="res://addons/scene_snap/icons/TagsNotActive.svg" id="8_kewjq"]
+
+[sub_resource type="Image" id="Image_kewjq"]
+data = {
+"data": PackedByteArray(255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 42, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 92, 92, 0, 255, 92, 92, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 93, 93, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0),
+"format": "RGBA8",
+"height": 16,
+"mipmaps": false,
+"width": 16
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_csxsb"]
+image = SubResource("Image_kewjq")
+
+[node name="SceneView" type="Button"]
+self_modulate = Color(1, 1, 1, 0.180392)
+offset_right = 256.0
+offset_bottom = 350.0
+script = ExtResource("1_oy5va")
+
+[node name="SubViewportContainer" parent="." instance=ExtResource("2_kewjq")]
+visible = false
+layout_mode = 2
+offset_top = 13.0
+offset_bottom = 269.0
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -128.0
+offset_top = -105.0
+offset_right = 128.0
+grow_horizontal = 2
+grow_vertical = 0
+size_flags_vertical = 10
+theme_override_constants/margin_bottom = 20
+
+[node name="FileLabel" type="Label" parent="MarginContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+size_flags_vertical = 1
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_right = -2.0
+offset_bottom = 23.0
+grow_horizontal = 0
+theme_override_constants/separation = -1
+alignment = 1
+
+[node name="HeartAspectRatioContainer" type="AspectRatioContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+ratio = 0.8
+alignment_horizontal = 2
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="HBoxContainer/HeartAspectRatioContainer"]
+layout_mode = 2
+ratio = 0.3
+
+[node name="CircleTextureButton" type="TextureButton" parent="HBoxContainer/HeartAspectRatioContainer/AspectRatioContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+toggle_mode = true
+texture_normal = ExtResource("2_mc4u5")
+texture_pressed = ExtResource("5_nxtw1")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="HeartTextureButton" type="TextureButton" parent="HBoxContainer/HeartAspectRatioContainer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(17, 25)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+toggle_mode = true
+texture_normal = ExtResource("4_7t3r4")
+texture_pressed = ExtResource("3_x26p4")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="LabelAspectRatioContainer" type="AspectRatioContainer" parent="HBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 4
+ratio = 0.5
+stretch_mode = 3
+
+[node name="3DLabel" type="Label" parent="HBoxContainer/LabelAspectRatioContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "3D"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="HBoxContainerAdditions" type="HBoxContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -69.0
+offset_top = -30.0
+offset_right = 6.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 15
+alignment = 2
+
+[node name="TagsButtonActive" type="TextureButton" parent="HBoxContainerAdditions"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("7_128rv")
+ignore_texture_size = true
+stretch_mode = 3
+
+[node name="TagsButtonNotActive" type="TextureButton" parent="HBoxContainerAdditions"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("8_kewjq")
+ignore_texture_size = true
+stretch_mode = 3
+
+[node name="AnimationTextureButton" type="TextureButton" parent="HBoxContainerAdditions"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+texture_normal = SubResource("ImageTexture_csxsb")
+ignore_texture_size = true
+stretch_mode = 3
+
+[node name="MultipleMeshGLB" type="TextureButton" parent="HBoxContainerAdditions"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+texture_normal = SubResource("ImageTexture_csxsb")
+ignore_texture_size = true
+stretch_mode = 3
+
+[node name="Control" type="Control" parent="HBoxContainerAdditions"]
+layout_mode = 2
+
+[node name="HBoxContainerBCLOD" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = -26.0
+offset_right = 82.0
+offset_bottom = -1.0
+grow_vertical = 0
+
+[node name="TextureRectBody" type="TextureRect" parent="HBoxContainerBCLOD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+texture = ExtResource("7_jop6j")
+expand_mode = 1
+stretch_mode = 3
+
+[node name="TextureRectCollision" type="TextureRect" parent="HBoxContainerBCLOD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+texture = ExtResource("8_boj2p")
+expand_mode = 1
+stretch_mode = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainerBCLOD"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = -5
+
+[node name="Label3DLOD" type="Label" parent="HBoxContainerBCLOD/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "LOD"
+vertical_alignment = 1
+
+[node name="SelectedTextureButton" type="TextureButton" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+offset_right = 25.0
+offset_bottom = 26.0
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+toggle_mode = true
+texture_normal = SubResource("ImageTexture_csxsb")
+texture_pressed = SubResource("ImageTexture_csxsb")
+stretch_mode = 3
+
+[connection signal="focus_entered" from="." to="." method="_on_focus_entered"]
+[connection signal="focus_exited" from="." to="." method="_on_focus_exited"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="pressed" from="." to="." method="_on_pressed"]
+[connection signal="toggled" from="HBoxContainer/HeartAspectRatioContainer/AspectRatioContainer/CircleTextureButton" to="." method="_on_circle_texture_button_toggled"]
+[connection signal="toggled" from="HBoxContainer/HeartAspectRatioContainer/HeartTextureButton" to="." method="_on_heart_texture_button_toggled"]
+[connection signal="mouse_entered" from="HBoxContainerAdditions/TagsButtonActive" to="." method="_on_tags_button_active_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainerAdditions/TagsButtonActive" to="." method="_on_tags_button_active_mouse_exited"]
+[connection signal="pressed" from="HBoxContainerAdditions/TagsButtonActive" to="." method="_on_tags_button_active_pressed"]
+[connection signal="pressed" from="HBoxContainerAdditions/TagsButtonNotActive" to="." method="_on_tags_button_not_active_pressed"]
+[connection signal="mouse_entered" from="HBoxContainerAdditions/AnimationTextureButton" to="." method="_on_animation_texture_button_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainerAdditions/AnimationTextureButton" to="." method="_on_animation_texture_button_mouse_exited"]
+[connection signal="pressed" from="HBoxContainerAdditions/AnimationTextureButton" to="." method="_on_animation_texture_button_pressed"]
+[connection signal="mouse_entered" from="HBoxContainerAdditions/MultipleMeshGLB" to="." method="_on_multiple_mesh_glb_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainerAdditions/MultipleMeshGLB" to="." method="_on_multiple_mesh_glb_mouse_exited"]
+[connection signal="pressed" from="HBoxContainerAdditions/MultipleMeshGLB" to="." method="_on_multiple_mesh_glb_pressed"]
+[connection signal="toggled" from="SelectedTextureButton" to="." method="_on_selected_texture_button_toggled"]
