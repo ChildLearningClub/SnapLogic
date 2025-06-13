@@ -1,6 +1,7 @@
 # SnapLogic
 
 ## Important please stucture the plugin files as shown below. Renaming SnapLogic-main to scene_snap my be required.
+```
 res://
 └── addons
     └── scene_snap
@@ -8,7 +9,7 @@ res://
         └── icons
         └── plugin_scenes
         └── etc.....
-
+```
 
 SnapLogic User Manual V0.8.2-alpha (Until have proper docs page) 
 
