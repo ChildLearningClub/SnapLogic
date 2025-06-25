@@ -302,7 +302,12 @@ func get_rename_or_remove_collection_folder_names_in_filesystem(current_collecti
 		#if debug: print("folder_paths: ", folder_paths)
 		#settings.erase("scene_snap_plugin/collections:_warning!_cannot_undo_removed_collections/global_collections")
 		#settings.erase("scene_snap_plugin/panel_size")
-	
+
+	if rename_collection:
+		update_scene_data_cache_paths(current_collection_name, remove_collection_name, true)
+	elif remove_collection_name != "":
+		update_scene_data_cache_paths(current_collection_name, remove_collection_name, false)
+
 	if rename_collection or remove_collection_name != "":
 		rename_or_remove_collection_filesystem_folders(current_collection_name.to_snake_case(), new_collection_name.to_snake_case(), scenes_paths[2], rename_collection, remove_collection_name.to_snake_case())
 		rename_or_remove_collection_filesystem_folders(current_collection_name, new_collection_name, folder_paths["collections_folder_path"], rename_collection, remove_collection_name)
@@ -312,8 +317,6 @@ func get_rename_or_remove_collection_folder_names_in_filesystem(current_collecti
 	else:
 		return folder_path_directories
 
-
-# TODO Update settings list more often
 func rename_or_remove_collection_filesystem_folders(current_collection_name: String, new_collection_name: String, collection_or_thumb_path: String, rename_collection: bool, remove_collection_name: String) -> void:
 	if DirAccess.dir_exists_absolute(collection_or_thumb_path.path_join(current_collection_name)):
 		if rename_collection:
@@ -322,8 +325,9 @@ func rename_or_remove_collection_filesystem_folders(current_collection_name: Str
 			var rename_collection_folder = DirAccess.rename_absolute(collection_or_thumb_path.path_join(current_collection_name), collection_or_thumb_path.path_join(new_collection_name))
 			if rename_collection_folder != OK:
 				printerr("Could not rename collection folder from ", current_collection_name, " to ", new_collection_name)
-			#if collection_or_thumb_path == scenes_paths[2]: # Scan to update folder name in filesystem
-				#EditorInterface.get_resource_filesystem().scan()
+
+			#update_scene_data_cache_paths(current_collection_name, remove_collection_name, true)
+
 		else:# NOTE IF REMOVE_ABSOLUTE MUST FIRST REMOVE ALL FILES IN FOLDER
 			# FIXME PUT LOCK ON DELETING "NEW COLLECTION" EITHER DON'T LIST OR RECREATE OR JUST PASS HERE, BUT LEAVES ITEMS IN NEW COLLECTION TAB
 			await remove_files_in_folder_recursive(collection_or_thumb_path.path_join(remove_collection_name))
@@ -339,11 +343,75 @@ func rename_or_remove_collection_filesystem_folders(current_collection_name: Str
 					var tab_index = sub_tab_container.get_tab_idx_from_control(tab)
 					on_tab_close_pressed(tab_index)
 
-# FIXME DID NOT SEEM TO UPDATE FILESYSTEM COLLECTION WHEN IT WAS REMOVED STILL SHOWING BUT CAN NOT OPEN AND GET ERROR
+			#update_scene_data_cache_paths(current_collection_name, remove_collection_name, false)
+
 		# Scan to update folder name in filesystem
 		if debug: print("scanning filesystem to update removed collection folder: ", remove_collection_name)
 		EditorInterface.get_resource_filesystem().scan()
 		update_item_list_collections()
+
+
+
+# NOTE Renaming works perfect FIXME Removing broken
+func update_scene_data_cache_paths(current_collection_name: String, remove_collection_name: String,  rename_collection: bool, scene_file_path: String = "") -> void:
+	var scene_data_cache: SceneDataCache = ResourceLoader.load("res://addons/scene_snap/resources/scene_data_cache.tres")
+	var new_scene_data: Dictionary = {}
+
+	# Removes single entry from a collection NOTE: Run from scene_viewer.gd import_mesh_tags() during import, to cleanup empty entries.
+	if scene_file_path: # scene_full_path chenged to not conflict
+		for scene_full_path in scene_data_cache.scene_data.keys():
+			if scene_full_path == scene_file_path:
+				scene_data_cache.scene_data.erase(scene_full_path)
+			else: # Copy over items from collections not removed
+				new_scene_data[scene_full_path] = scene_data_cache.scene_data[scene_full_path]
+
+	else:
+		# Removes all entries from a specific collection
+		if not rename_collection:
+			for scene_full_path in scene_data_cache.scene_data.keys():
+				var collection_name = scene_full_path.get_base_dir().get_file()
+				if collection_name == remove_collection_name:
+					scene_data_cache.scene_data.erase(scene_full_path)
+				else: # Copy over items from collections not removed
+					new_scene_data[scene_full_path] = scene_data_cache.scene_data[scene_full_path]
+
+		# Renames all entries from a specific collection
+		if rename_collection:
+			for scene_full_path in scene_data_cache.scene_data.keys():
+				var collection_name = scene_full_path.get_base_dir().get_file()
+				if collection_name == current_collection_name:
+					var dir = scene_full_path.get_base_dir().get_base_dir()
+					var file = scene_full_path.get_file()
+					var new_scene_path = dir.path_join(new_collection_name).path_join(file)
+					new_scene_data[new_scene_path] = scene_data_cache.scene_data[scene_full_path]
+				else: # Copy over items from collections not renamed
+					new_scene_data[scene_full_path] = scene_data_cache.scene_data[scene_full_path]
+
+	# Update the cache in-place
+	scene_data_cache.scene_data.clear()
+	for key in new_scene_data:
+		scene_data_cache.scene_data[key] = new_scene_data[key]
+
+	# Save the updated resource
+	if ResourceSaver.save(scene_data_cache, "res://addons/scene_snap/resources/scene_data_cache.tres") != OK:
+		push_error("Failed to save scene_data_cache.tres")
+	#else:
+		#if rename_collection:
+			#print("Scene paths updated from ", current_collection_name + " to ",  new_collection_name)
+		#else:
+			#print("Collection ", current_collection_name + " removed from cache and saved successfully!")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

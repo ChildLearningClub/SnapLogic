@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://cikptqsgjf2i8"]
 
 [ext_resource type="Script" uid="uid://c3o6pvxlmggt1" path="res://addons/scene_snap/scripts/tag2.gd" id="1_84cdy"]
-[ext_resource type="Texture2D" uid="uid://b4hlpfn0nyskn" path="res://addons/scene_snap/icons/Tag.svg" id="2_84cdy"]
+[ext_resource type="Texture2D" uid="uid://b4hlpfn0nyskn" path="res://addons/scene_snap/icons/CustomTag.svg" id="2_84cdy"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_affyr"]
 

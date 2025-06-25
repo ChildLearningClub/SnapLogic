@@ -1,9 +1,45 @@
-[gd_resource type="Resource" script_class="SceneDataCache" load_steps=2 format=3 uid="uid://dyeliqlx6mjnx"]
+[gd_resource type="Resource" script_class="SceneDataCache" load_steps=2 format=3 uid="uid://bc0wxuex47l41"]
 
 [ext_resource type="Script" uid="uid://brpm11rpgw7q1" path="res://addons/scene_snap/resources/scene_data_cache.gd" id="1_a5nb6"]
 
 [resource]
 script = ExtResource("1_a5nb6")
 scene_favorites = Array[String]([])
-scene_data = Dictionary[String, Dictionary]({})
+scene_data = Dictionary[String, Dictionary]({
+"user://global_collections/scenes/Global Collections/collection/wall-door-wide.glb": Dictionary[String, Array]({
+"g": Array[String](["wall"]),
+"s": Array[String]([]),
+"t": Array[String](["wall"])
+}),
+"user://shared_collections/scenes/Shared Collections/Kenny Space Station Kit/wall-banner.glb": Dictionary[String, Array]({
+"g": Array[String](["wall"]),
+"s": Array[String]([]),
+"t": Array[String](["wall"])
+}),
+"user://shared_collections/scenes/Shared Collections/Kenny Space Station Kit/wall-corner-banner.glb": Dictionary[String, Array]({
+"g": Array[String](["wall"]),
+"s": Array[String]([]),
+"t": Array[String](["wall"])
+}),
+"user://shared_collections/scenes/Shared Collections/Kenny Space Station Kit/wall-window-banner.glb": Dictionary[String, Array]({
+"g": Array[String](["window"]),
+"s": Array[String]([]),
+"t": Array[String](["window"])
+}),
+"user://shared_collections/scenes/Shared Collections/Kenny Space Station Kit/wall-window-frame.glb": Dictionary[String, Array]({
+"g": Array[String](["window"]),
+"s": Array[String]([]),
+"t": Array[String](["window"])
+}),
+"user://shared_collections/scenes/Shared Collections/Kenny Space Station Kit/wall-window-shutters.glb": Dictionary[String, Array]({
+"g": Array[String](["window"]),
+"s": Array[String]([]),
+"t": Array[String](["window"])
+}),
+"user://shared_collections/scenes/Shared Collections/Kenny Space Station Kit/wall-window.glb": Dictionary[String, Array]({
+"g": Array[String](["window"]),
+"s": Array[String]([]),
+"t": Array[String](["window"])
+})
+})
 metadata/_custom_type_script = "uid://brpm11rpgw7q1"

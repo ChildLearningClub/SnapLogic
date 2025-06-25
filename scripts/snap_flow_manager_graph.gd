@@ -3,11 +3,13 @@
 #class_name CustomGraphEdit extends GraphEdit
 extends GraphEdit
 
-var debug = preload("uid://dfb5uhllrlnbf").new().run()
+var debug = preload("res://addons/scene_snap/scripts/print_debug.gd").new().run()
 
 #signal graph_updated
 signal scene_path_original
-signal update_tag_cache  ## A new tag was added so update Dictionary tag cache in scene_snap_plugin.gd.
+#signal update_tag_cache(tag_text: String, tag_index: int, store_tag: bool) ## A new tag was added so update Dictionary tag cache in scene_snap_plugin.gd.
+signal update_tag_cache(tag: Control, store_tag: bool) ## A new tag was added so update Dictionary tag cache in scene_snap_plugin.gd.
+signal save_manager_state ## Save the current state of graph when save_manager_state emitted
 #signal save_snap_manager(graph_scene_path: String)
 #signal save_snap_manager
 # Reference: https://gdscript.com/solutions/godot-graphnode-and-graphedit-tutorial/
@@ -145,7 +147,8 @@ var scene_name: String = ""
 
 
 #func _physics_process(delta: float) -> void:
-	#if debug: print("tags: ", selected_scene_view_button.tags)
+	#if debug: print("connections: ", get_connection_list())
+	##if debug: print("tags: ", selected_scene_view_button.tags)
 
 
 
@@ -178,50 +181,13 @@ func _on_connection_request(from_node: StringName, from_port: int, to_node: Stri
 		#if connection.to_node == to_node and connection.to_port == to_port:
 			#return
 	connect_node(from_node, from_port, to_node, to_port)
-	#emit_signal("update_tag_cache")
-	
+	emit_signal("save_manager_state")
 
-	#var from_node_inst = find_child(from_node) as CustomGraphNode
-	#var to_node_inst = find_child(to_node) as CustomGraphNode
-#
-	#from_node_inst.on_connect("output", from_port, to_node_inst, to_port)
-	#to_node_inst.on_connect("input", to_port, from_node_inst, from_port)
-	#save_connections(data_path)
-	#emit_signal("save_snap_manager")
-	#plugin_ref.save_snap_manager_data(graph_scene_path)
-	
-	#save_scene_and_data(scene_path, data_path)
-	
-	#for child: Control in get_children():
-		#if child is CustomGraphNode:
-			#if debug: print("child data test: ", child.graph_node_data["title"])
-			#if debug: print("child name: ", child.name)
-			#if debug: print("ports_connected: ", child.ports_connected)
-	
 
 func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
-	if debug: print("from_node: ", from_node)
-	if debug: print("from_port: ", from_port)
-	if debug: print("to_node: ", to_node)
-	if debug: print("to_port: ", to_port)
-	#if debug: print("get_connection_list(): ", get_connection_list())
 	disconnect_node(from_node, from_port, to_node, to_port)
-	#emit_signal("update_tag_cache")
-	
-	
-	#var from_node_inst = find_child(from_node) as CustomGraphNode
-	#var to_node_inst = find_child(to_node) as CustomGraphNode
-#
-	#from_node_inst.on_disconnect("output", from_port, to_node_inst, to_port)
-	#to_node_inst.on_disconnect("input", to_port, from_node_inst, from_port)
-	#save_connections(data_path)
-	#emit_signal("save_snap_manager")
-	#plugin_ref.save_snap_manager_data(graph_scene_path)
-	#save_scene_and_data(scene_path, data_path)
+	emit_signal("save_manager_state")
 
-
-#func _physics_process(delta: float) -> void:
-	#if debug: print("get_connection_list(): ", get_connection_list())
 
 
 func pass_scene_name(scene_name: String) -> void:
@@ -478,9 +444,17 @@ func _on_add_new_input_tags_box_pressed() -> void:
 	pass # Replace with function body.
 
 # FIXME Will need to fix to connect to this signal as user creates new graphnodes in snap flow manager.
-func _on_individual_tags_update_tag_cache() -> void:
-	emit_signal("update_tag_cache")
-	pass # Replace with function body.
+# NOTE: The "update_tag_cache" signal originates from base_tag_graph_node.gd when tags added or removed 
+# and gets passed up to this script which then emits signal of same name "update_tag_cache" up to scene_snap_plugin.gd
+#func _on_individual_tags_update_tag_cache(tag_text: String, tag_index: int, store_tag: bool) -> void:
+	#emit_signal("update_tag_cache", tag_text, tag_index, store_tag)
+## Pass up signal for tags added or removed from "Individual Tag Connections"
+func _on_individual_tags_update_tag_cache(tag: Control, store_tag: bool) -> void:
+	emit_signal("update_tag_cache", tag, store_tag)
+
+## Pass up signal for tags added or removed from "Snap To Object"
+func _on_snap_to_object_update_tag_cache(tag: Control, store_tag: bool) -> void:
+	emit_signal("update_tag_cache", tag, store_tag)
 
 
 #func _on_individual_tags_new_tag_added() -> void:
@@ -495,3 +469,12 @@ func _on_individual_tags_update_tag_cache() -> void:
 		#code_edit.hide()
 	#else:
 		#code_edit.show()
+
+## Save state after moving a node in the graph
+func _on_end_node_move() -> void:
+	emit_signal("save_manager_state")
+
+
+## Save state after resizing a frame
+func _on_frame_rect_changed(frame: GraphFrame, new_rect: Rect2) -> void:
+	emit_signal("save_manager_state")

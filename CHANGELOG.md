@@ -1,6 +1,6 @@
 # SnapLogic CHANGELOG
 
-V0.8.2-alpha - 2025-06-13
+V0.8.2-alpha main-branch - 2025-06-13
 - Fixed search filtering not working on initial start before changing tabs
 - Re-worked materials buttons and functionality
 - Remember material favorites between sessions
@@ -22,7 +22,7 @@ V0.8.2-alpha - 2025-06-13
 - Fixed broken cycling of scenes when filters applied in non popup window mode.
 
 
-V0.8.3-alpha dev-branch - Active
+V0.8.3-dev dev-branch - Active
 - Scene data cache properly cleaned up at start and collection removal
 - Scene data cache updated when collection renamed
 - KEY_SHIFT and mouse button click on tags updated from removing all tags to only removing global tags

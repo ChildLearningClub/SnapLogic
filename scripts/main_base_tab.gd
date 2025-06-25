@@ -5,7 +5,8 @@ extends Control
 # CAUTION SEE LINE 122 LOOKING AT LATER I SEE THAT scroll_container.find_children("*", "Control", true, false) WILL ONLY RETURN THE HFLOWCONTAINER CHECK LATER WHY DID THIS? OR MAYBE MISTAKE AND REASON DOES NOT WORK WELL?
 
 
-var debug = preload("uid://dfb5uhllrlnbf").new().run()
+var debug = preload("res://addons/scene_snap/scripts/print_debug.gd").new().run()
+
 #var print_enabled: bool = false
 
 #signal update_on_screen_buttons
