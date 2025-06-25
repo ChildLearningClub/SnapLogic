@@ -85,6 +85,12 @@ CURRENTLY A LOT:
 - EXPECT ERRORS AND MAYBE CRASHES!
 
 
+
+
+https://github.com/user-attachments/assets/83d59cc3-6e99-445b-99a4-bd2ff98258e2
+
+
+
 NOTE: Logic Snapping v0.8.3-alpha Highly experimental... if you couldn't already tell ;). Issues you can expect:
 - ERROR: The target vector can't be zero.
 - Tags not always being placed with mesh.
