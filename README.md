@@ -84,6 +84,14 @@ CURRENTLY A LOT:
 - A LOT THINGS ARE STILL BROKEN
 - EXPECT ERRORS AND MAYBE CRASHES!
 
+
+NOTE: Logic Snapping v0.8.3-alpha Highly experimental... if you couldn't already tell ;). Issues you can expect:
+- ERROR: The target vector can't be zero.
+- Tags not always being placed with mesh.
+- reloading project for tags to be connected to mesh.
+- reconnecting already connected lines in graph edit for them to function.
+
+
 TROUBLESHOOTING:
 Sometimes the editor will freeze while textures are being written to the filesystem, just give it a bit of time and if still frozen restart the editor.
 if you close the editor and some but not all the textures are copied to the filesystem, you will need to remove the respective collection folder name under collections folder for the import process to be triggered again after editor restart.
