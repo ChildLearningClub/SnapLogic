@@ -5,7 +5,7 @@ extends Control
 # TODO Lose tag imput text focus when mouse leaves area issue when back in 3dviewport and Q typed to start scene_preview getting entered in tag text input box
 
 
-var debug = preload("uid://dfb5uhllrlnbf").new().run()
+var debug = preload("res://addons/scene_snap/scripts/print_debug.gd").new().run()
 #var scene_data_cache: SceneDataCache = SceneDataCache.new()
 
 signal tag_added_or_removed(scene_view: Button) ## Signal when tag added or removed to scene_view.gd

@@ -2,7 +2,7 @@
 #extends TextureButton
 extends Button
 
-var debug = preload("uid://dfb5uhllrlnbf").new().run()
+var debug = preload("res://addons/scene_snap/scripts/print_debug.gd").new().run()
 
 signal add_favorite
 signal remove_favorite(scene_full_path: String, scene_view_button: Button) ## Send signal to main_base_tab.gd to re-filter visible buttons
@@ -168,18 +168,22 @@ func _ready() -> void:
 
 	
 	
-	# NOTE await is used to give time for button name to be updated from scene_viewer.gd to filename 
+	# NOTE await is used to give time for button name to be updated from scene_viewer.gd to filename
+	# FIXME filenames with no "-" or "_" are not being displayed
 	await get_tree().create_timer(0.001).timeout
 	# Split file name at "_" and "-" to display
 	var scene_name_split: PackedStringArray
+	
 	if self.name.contains("_"):
 		scene_name_split = self.name.split("_", false, 0)
 	elif self.name.contains("-"):
 		scene_name_split = self.name.split("-", false, 0)
-	
-	
-	for index: int in scene_name_split.size():
-		file_name += scene_name_split[index] + " "
+
+	if not scene_name_split: # If single word filenames
+		file_name = self.name
+	else:
+		for index: int in scene_name_split.size():
+			file_name += scene_name_split[index] + " "
 		
 	file_name.strip_edges()
 	
@@ -491,11 +495,11 @@ func set_scene_view_size(size: float) -> void:
 
 # FIXME Needs cleanup and consolidation
 # NOTE: I don't know what I was doing here? 
+# NOTE: This should update the scene preview to the button pressed
 func _on_pressed() -> void:
 	#EditorInterface.open_scene_from_path(scene_full_path, false)
-	if scene_full_path:# and thumbnail_cache_path:
+	if allow_press and scene_full_path:# and thumbnail_cache_path:
 		emit_signal("update_selected_scene_view_button", self)
-		if debug: print("button pressed")
 		emit_signal("scene_snap_mode", scene_full_path)
 		# HACK FIXME
 		emit_signal("pass_up_scene_number", scene_number)
@@ -1222,7 +1226,7 @@ var rotate_scene: bool = false
 
 
 func _physics_process(delta: float) -> void:
-	#print("shared tags: ", shared_tags)
+	#if debug: print("shared tags: ", shared_tags)
 	#if debug: print("collection_name: ", collection_name)
 	#if debug: print("thumbnail_size_value: ",thumbnail_size_value)
 	#set_scene_view_size(thumbnail_size_value)
@@ -1455,25 +1459,34 @@ func pass_up_scene_tag_added_or_removed(tagged_scene_full_path: String) -> void:
 # Clear shared tags 1s timer
 var timer: Timer
 var timer_started: bool = false
+var allow_press: bool = true
 
 ### If active tags button is held down for longer then 1 second will also clear Shared Tags
 func _on_tags_button_active_button_down() -> void:
+	allow_press = false # Ignore so mouse that is passed up to button does not trigger scene_preview
 	if Input.is_key_pressed(KEY_SHIFT):
 		timer_started = true
 		timer = Timer.new()
 		timer.one_shot = true
 		add_child(timer)
 		timer.start(1)
-		print("down")
+		if debug: print("down")
+
+
 
 func _on_tags_button_active_button_up() -> void:
 	if timer_started and timer.time_left == 0.0:
 		emit_signal("clear_tags", true, self)
 		emit_signal("scene_tag_added_or_removed", scene_full_path)
 
-		print("clear shared tags too")
+		if debug: print("clear shared tags too")
 	# Reset timer_started
 	timer_started = false
+	# Re-enable scene_preview after delay
+	await get_tree().create_timer(0.1).timeout 
+	allow_press = true
+
+
 
 # FIXME Tag Panel tags are not refreshed to show tags removed
 # FIXME CHANGE COLOR OF TAGS BUTTON ICON TO BLUE WHEN OPEN?

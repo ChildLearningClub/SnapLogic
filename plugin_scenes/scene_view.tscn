@@ -26,6 +26,7 @@ image = SubResource("Image_128rv")
 self_modulate = Color(1, 1, 1, 0.180392)
 offset_right = 256.0
 offset_bottom = 350.0
+tooltip_text = "SceneView"
 script = ExtResource("1_oy5va")
 
 [node name="SubViewportContainer" parent="." instance=ExtResource("2_kewjq")]
@@ -56,6 +57,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(10, 0)
 layout_mode = 2
 size_flags_vertical = 1
+text = "SceneView"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
