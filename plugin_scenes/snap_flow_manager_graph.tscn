@@ -1,14 +1,13 @@
-[gd_scene load_steps=11 format=3 uid="uid://fkq4y06rutkk"]
+[gd_scene load_steps=10 format=3 uid="uid://fkq4y06rutkk"]
 
 [ext_resource type="Script" uid="uid://b8bqc4lipr0n8" path="res://addons/scene_snap/scripts/snap_flow_manager_graph.gd" id="1_ayjo4"]
 [ext_resource type="Script" uid="uid://bc0nlpsb4hwfv" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/object_to_snap.gd" id="2_n7jn7"]
-[ext_resource type="PackedScene" uid="uid://j5p4gfvmil3h" path="res://addons/scene_snap/plugin_scenes/tag.tscn" id="3_i3hge"]
+[ext_resource type="PackedScene" uid="uid://j5p4gfvmil3h" path="res://addons/scene_snap/plugin_scenes/tag.tscn" id="3_ocqev"]
+[ext_resource type="Script" uid="uid://dqnbmdi80yaru" path="res://addons/scene_snap/scripts/tag.gd" id="4_03ico"]
 [ext_resource type="Script" uid="uid://cbtfypov00xkc" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/snap_to_object.gd" id="4_n7jn7"]
-[ext_resource type="Script" uid="uid://dqnbmdi80yaru" path="res://addons/scene_snap/scripts/tag.gd" id="4_ocqev"]
-[ext_resource type="Texture2D" uid="uid://bcie12awbsjl2" path="res://addons/scene_snap/icons/filter_3d.svg" id="5_i3hge"]
 [ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="6_jlomf"]
 [ext_resource type="PackedScene" uid="uid://ddihubesyoh55" path="res://addons/scene_snap/plugin_scenes/graph_node_code_tab.tscn" id="6_wd2wf"]
-[ext_resource type="Script" uid="uid://fsks6f4wmist" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/graph_node_code_tab.gd" id="7_ao78n"]
+[ext_resource type="Script" uid="uid://fsks6f4wmist" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/graph_node_code_tab.gd" id="7_ocqev"]
 
 [sub_resource type="GDScriptSyntaxHighlighter" id="GDScriptSyntaxHighlighter_wd2wf"]
 
@@ -16,18 +15,11 @@
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-scroll_offset = Vector2(-118.281, 27.6184)
 snapping_enabled = false
 right_disconnects = true
 connections = Array[Dictionary]([{
 "from_node": &"IndividualTags",
 "from_port": 0,
-"keep_alive": false,
-"to_node": &"SnapToObject",
-"to_port": 0
-}, {
-"from_node": &"IndividualTags",
-"from_port": 1,
 "keep_alive": false,
 "to_node": &"SnapToObject",
 "to_port": 0
@@ -38,18 +30,19 @@ connections = Array[Dictionary]([{
 "to_node": &"OutputSnap",
 "to_port": 3
 }])
-zoom = 0.663544
+zoom = 0.412008
 script = ExtResource("1_ayjo4")
 
 [node name="Modifiers" type="GraphFrame" parent="."]
+visible = false
 layout_mode = 1
-offset_left = 1042.37
-offset_top = 16.3442
-offset_right = 1457.38
-offset_bottom = 524.343
-scale = Vector2(0.663544, 0.663544)
+offset_left = 549.345
+offset_top = 236.753
+offset_right = 964.328
+offset_bottom = 744.783
+scale = Vector2(0.412008, 0.412008)
 mouse_filter = 1
-position_offset = Vector2(1392.66, 66.2542)
+position_offset = Vector2(240.826, 451.228)
 title = "Modifiers"
 
 [node name="Button" type="Button" parent="Modifiers"]
@@ -63,8 +56,8 @@ layout_mode = 2
 
 [node name="GraphNode" type="GraphNode" parent="Modifiers/VBoxContainer"]
 layout_mode = 2
-offset_right = 411.0
-offset_bottom = 70.0
+offset_right = 378.0
+offset_bottom = 78.0
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 0
@@ -81,9 +74,9 @@ layout_mode = 2
 
 [node name="GraphNode2" type="GraphNode" parent="Modifiers/VBoxContainer"]
 layout_mode = 2
-offset_top = 74.0
-offset_right = 411.0
-offset_bottom = 144.0
+offset_top = 82.0
+offset_right = 378.0
+offset_bottom = 160.0
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 0
@@ -100,9 +93,9 @@ layout_mode = 2
 
 [node name="GraphNode3" type="GraphNode" parent="Modifiers/VBoxContainer"]
 layout_mode = 2
-offset_top = 148.0
-offset_right = 411.0
-offset_bottom = 218.0
+offset_top = 164.0
+offset_right = 378.0
+offset_bottom = 242.0
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 0
@@ -119,9 +112,9 @@ layout_mode = 2
 
 [node name="GraphNode4" type="GraphNode" parent="Modifiers/VBoxContainer"]
 layout_mode = 2
-offset_top = 222.0
-offset_right = 411.0
-offset_bottom = 292.0
+offset_top = 246.0
+offset_right = 378.0
+offset_bottom = 324.0
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 0
@@ -138,9 +131,9 @@ layout_mode = 2
 
 [node name="GraphNode5" type="GraphNode" parent="Modifiers/VBoxContainer"]
 layout_mode = 2
-offset_top = 296.0
-offset_right = 411.0
-offset_bottom = 366.0
+offset_top = 328.0
+offset_right = 378.0
+offset_bottom = 406.0
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 0
@@ -157,35 +150,36 @@ layout_mode = 2
 
 [node name="InputFilters" type="GraphFrame" parent="."]
 layout_mode = 1
-offset_left = -1.15652
-offset_top = -28.282
-offset_right = 313.843
-offset_bottom = 500.706
-scale = Vector2(0.663544, 0.663544)
+offset_left = 251.411
+offset_top = 35.9194
+offset_right = 569.409
+offset_bottom = 404.894
+scale = Vector2(0.412008, 0.412008)
 mouse_filter = 1
-position_offset = Vector2(-180, -1)
+position_offset = Vector2(-482.299, -36.2234)
 title = "Tags of the Objects to Place"
 
 [node name="SnapToObjectsFrame" type="GraphFrame" parent="."]
 layout_mode = 1
-offset_left = 359.811
-offset_top = -11.9982
-offset_right = 636.811
-offset_bottom = 196.003
-scale = Vector2(0.663544, 0.663544)
+offset_left = 418.275
+offset_top = 36.6045
+offset_right = 695.275
+offset_bottom = 244.604
+scale = Vector2(0.412008, 0.412008)
 mouse_filter = 1
-position_offset = Vector2(364, 23.5406)
+position_offset = Vector2(-77.2971, -34.5607)
 title = "Tags of Objects to Snap to"
 
 [node name="ObjectToSnap" type="GraphNode" parent="."]
+visible = false
 layout_mode = 1
-offset_left = 25.3852
-offset_top = -1.07665
-offset_right = 260.385
-offset_bottom = 141.933
-scale = Vector2(0.663544, 0.663544)
+offset_left = 267.892
+offset_top = 60.9502
+offset_right = 502.892
+offset_bottom = 257.366
+scale = Vector2(0.412008, 0.412008)
 mouse_filter = 1
-position_offset = Vector2(-140, 40)
+position_offset = Vector2(-442.299, 24.5297)
 resizable = true
 title = "ObjectToSnap"
 ignore_invalid_connection_type = true
@@ -217,18 +211,18 @@ offset_right = 24.0
 offset_bottom = 31.0
 text = "+"
 
-[node name="IndividualTags" type="GraphNode" parent="."]
+[node name="SnapToObject" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 25.3852
-offset_top = 105.09
-offset_right = 260.385
-offset_bottom = 393.078
-scale = Vector2(0.663544, 0.663544)
+offset_left = 434.756
+offset_top = 53.4968
+offset_right = 586.756
+offset_bottom = 180.498
+scale = Vector2(0.412008, 0.412008)
 mouse_filter = 1
-position_offset = Vector2(-140, 200)
-title = "Individual Tag Connections"
+position_offset = Vector2(-37.2971, 6.43927)
+title = "Snap To Object"
 ignore_invalid_connection_type = true
-slot/0/left_enabled = false
+slot/0/left_enabled = true
 slot/0/left_type = 1
 slot/0/left_color = Color(0.846, 0.399, 0, 1)
 slot/0/left_icon = null
@@ -237,117 +231,27 @@ slot/0/right_type = 1
 slot/0/right_color = Color(0.846, 0.399, 0, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
-slot/1/left_enabled = false
-slot/1/left_type = 1
-slot/1/left_color = Color(0.846, 0.399, 0, 1)
-slot/1/left_icon = null
-slot/1/right_enabled = true
-slot/1/right_type = 1
-slot/1/right_color = Color(0.846, 0.399, 0, 1)
-slot/1/right_icon = null
-slot/1/draw_stylebox = true
-script = ExtResource("2_n7jn7")
+script = ExtResource("4_n7jn7")
 
-[node name="Tag" type="Control" parent="IndividualTags" instance=ExtResource("3_i3hge")]
+[node name="Tag" type="Control" parent="SnapToObject" instance=ExtResource("3_ocqev")]
 custom_minimum_size = Vector2(116, 35)
 layout_mode = 2
 mouse_default_cursor_shape = 6
-script = ExtResource("4_ocqev")
-metadata/tag_text = "zout"
-
-[node name="Tag2" type="Control" parent="IndividualTags" instance=ExtResource("3_i3hge")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_ocqev")
-metadata/tag_text = "paper"
-
-[node name="Body3DModifier" type="GraphNode" parent="."]
-layout_mode = 1
-offset_left = 704.336
-offset_top = -71.4263
-offset_right = 876.346
-offset_bottom = 109.573
-scale = Vector2(0.663544, 0.663544)
-mouse_filter = 1
-position_offset = Vector2(883.219, -66.0211)
-title = "Modifier Body 3D"
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-slot/1/left_enabled = true
-slot/1/left_type = 0
-slot/1/left_color = Color(1, 1, 1, 1)
-slot/1/left_icon = null
-slot/1/right_enabled = false
-slot/1/right_type = 0
-slot/1/right_color = Color(1, 1, 1, 1)
-slot/1/right_icon = null
-slot/1/draw_stylebox = true
-slot/2/left_enabled = true
-slot/2/left_type = 0
-slot/2/left_color = Color(1, 1, 1, 1)
-slot/2/left_icon = null
-slot/2/right_enabled = false
-slot/2/right_type = 0
-slot/2/right_color = Color(1, 1, 1, 1)
-slot/2/right_icon = null
-slot/2/draw_stylebox = true
-slot/3/left_enabled = false
-slot/3/left_type = 0
-slot/3/left_color = Color(1, 1, 1, 1)
-slot/3/left_icon = null
-slot/3/right_enabled = false
-slot/3/right_type = 0
-slot/3/right_color = Color(1, 1, 1, 1)
-slot/3/right_icon = null
-slot/3/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "StaticBody3D"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label2" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "RigidBody3D"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label3" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "CharacterBody3D"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label4" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-horizontal_alignment = 1
-vertical_alignment = 1
+script = ExtResource("4_03ico")
+metadata/tag_text = "wall"
 
 [node name="ObjectModifier" type="GraphNode" parent="."]
+visible = false
 layout_mode = 1
-offset_left = 918.694
-offset_top = 48.6241
-offset_right = 1047.69
-offset_bottom = 383.635
-scale = Vector2(0.663544, 0.663544)
+offset_left = 483.153
+offset_top = 323.804
+offset_right = 612.164
+offset_bottom = 658.794
+scale = Vector2(0.412008, 0.412008)
 size_flags_horizontal = 4
 size_flags_vertical = 4
 mouse_filter = 1
-position_offset = Vector2(1206.27, 114.902)
+position_offset = Vector2(80.169, 662.512)
 title = "Object Modifier"
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
@@ -431,17 +335,122 @@ text = "Animation"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Body3DModifier" type="GraphNode" parent="."]
+visible = false
+layout_mode = 1
+offset_left = 400.328
+offset_top = 327.065
+offset_right = 572.349
+offset_bottom = 508.075
+scale = Vector2(0.412008, 0.412008)
+mouse_filter = 1
+position_offset = Vector2(-120.858, 670.427)
+title = "Modifier Body 3D"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = true
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(1, 1, 1, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = true
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = false
+slot/3/left_type = 0
+slot/3/left_color = Color(1, 1, 1, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = false
+slot/3/right_type = 0
+slot/3/right_color = Color(1, 1, 1, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+
+[node name="Label" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "StaticBody3D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label2" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "RigidBody3D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label3" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "CharacterBody3D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label4" type="Label" parent="Body3DModifier"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IndividualTags" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 269.127
+offset_top = 52.8118
+offset_right = 504.127
+offset_bottom = 340.786
+scale = Vector2(0.412008, 0.412008)
+mouse_filter = 1
+position_offset = Vector2(-439.301, 4.77663)
+title = "Individual Tag Connections"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = false
+slot/0/left_type = 1
+slot/0/left_color = Color(0.846, 0.399, 0, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 1
+slot/0/right_color = Color(0.846, 0.399, 0, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("2_n7jn7")
+
+[node name="Tag" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_03ico")
+metadata/tag_text = "window"
+
 [node name="OutputSnap" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 664.507
-offset_top = -81.9464
-offset_right = 1641.5
-offset_bottom = 2251.06
-scale = Vector2(0.663544, 0.663544)
+offset_left = 599.288
+offset_top = -198.813
+offset_right = 1551.87
+offset_bottom = 2109.19
+scale = Vector2(0.412008, 0.412008)
 size_flags_horizontal = 3
 size_flags_vertical = 3
 mouse_filter = 1
-position_offset = Vector2(823.195, -81.8755)
+position_offset = Vector2(362.046, -605.95)
 resizable = true
 title = "Output Snap"
 ignore_invalid_connection_type = true
@@ -457,7 +466,7 @@ slot/0/draw_stylebox = true
 slot/1/left_enabled = true
 slot/1/left_type = 0
 slot/1/left_color = Color(1, 1, 1, 1)
-slot/1/left_icon = ExtResource("5_i3hge")
+slot/1/left_icon = null
 slot/1/right_enabled = false
 slot/1/right_type = 0
 slot/1/right_color = Color(1, 1, 1, 1)
@@ -500,21 +509,22 @@ text = "Snap Down"
 custom_minimum_size = Vector2(848, 739)
 layout_mode = 2
 text = "      Offset Snap"
-script = ExtResource("7_ao78n")
+script = ExtResource("7_ocqev")
 
 [node name="GraphNodeCodeTab2" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
 custom_minimum_size = Vector2(848, 739)
 layout_mode = 2
 text = "      Surface Normal Z Forward"
-script = ExtResource("7_ao78n")
+script = ExtResource("7_ocqev")
 
 [node name="GraphNodeCodeTab3" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
 custom_minimum_size = Vector2(848, 739)
 layout_mode = 2
 text = "       Z Align Normal"
-script = ExtResource("7_ao78n")
+script = ExtResource("7_ocqev")
 
 [node name="Label3" type="Label" parent="OutputSnap"]
+visible = false
 layout_mode = 2
 text = "      Surface Normal Z Forward"
 
@@ -568,41 +578,11 @@ gutters_draw_line_numbers = true
 code_completion_enabled = true
 indent_automatic = true
 
-[node name="SnapToObject" type="GraphNode" parent="."]
-layout_mode = 1
-offset_left = 386.353
-offset_top = 15.2071
-offset_right = 538.353
-offset_bottom = 142.208
-scale = Vector2(0.663544, 0.663544)
-mouse_filter = 1
-position_offset = Vector2(404, 64.5406)
-title = "Snap To Object"
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 1
-slot/0/left_color = Color(0.846, 0.399, 0, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 1
-slot/0/right_color = Color(0.846, 0.399, 0, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-script = ExtResource("4_n7jn7")
-
-[node name="Tag" type="Control" parent="SnapToObject" instance=ExtResource("3_i3hge")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_ocqev")
-metadata/tag_text = "wall"
-
 [connection signal="connection_request" from="." to="." method="_on_connection_request"]
 [connection signal="disconnection_request" from="." to="." method="_on_disconnection_request"]
-[connection signal="position_offset_changed" from="ObjectToSnap" to="." method="_on_object_to_snap_position_offset_changed"]
+[connection signal="end_node_move" from="." to="." method="_on_end_node_move"]
+[connection signal="frame_rect_changed" from="." to="." method="_on_frame_rect_changed"]
 [connection signal="pressed" from="AddNewInputTagsBox" to="." method="_on_add_new_input_tags_box_pressed"]
-[connection signal="position_offset_changed" from="IndividualTags" to="." method="_on_object_to_snap_position_offset_changed"]
+[connection signal="update_tag_cache" from="SnapToObject" to="." method="_on_snap_to_object_update_tag_cache"]
 [connection signal="update_tag_cache" from="IndividualTags" to="." method="_on_individual_tags_update_tag_cache"]
-[connection signal="position_offset_changed" from="OutputSnap" to="." method="_on_output_snap_position_offset_changed"]
 [connection signal="toggled" from="OutputSnap/Label3/Button" to="." method="_on_button_toggled"]
-[connection signal="position_offset_changed" from="SnapToObject" to="." method="_on_snap_to_object_position_offset_changed"]

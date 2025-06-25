@@ -2,27 +2,26 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://lk0x216oxk4h"
-path.s3tc="res://.godot/imported/Tag.svg-9c908d9322b205c7165c42ed54aa0393.s3tc.ctex"
+uid="uid://b4hlpfn0nyskn"
+path="res://.godot/imported/CustomTag.svg-9afa721b7cd52bdc57133a9f320c2b6d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/scene_snap/icons/Tag.svg"
-dest_files=["res://.godot/imported/Tag.svg-9c908d9322b205c7165c42ed54aa0393.s3tc.ctex"]
+source_file="res://addons/scene_snap/icons/CustomTag.svg"
+dest_files=["res://.godot/imported/CustomTag.svg-9afa721b7cd52bdc57133a9f320c2b6d.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -33,6 +32,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
+svg/scale=10.0
 editor/scale_with_editor_scale=false
 editor/convert_colors_with_editor_theme=false

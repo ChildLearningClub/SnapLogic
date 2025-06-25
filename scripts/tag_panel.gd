@@ -1,7 +1,11 @@
 @tool
 extends Control
 
-var debug = preload("uid://dfb5uhllrlnbf").new().run()
+
+# TODO Lose tag imput text focus when mouse leaves area issue when back in 3dviewport and Q typed to start scene_preview getting entered in tag text input box
+
+
+var debug = preload("res://addons/scene_snap/scripts/print_debug.gd").new().run()
 #var scene_data_cache: SceneDataCache = SceneDataCache.new()
 
 signal tag_added_or_removed(scene_view: Button) ## Signal when tag added or removed to scene_view.gd
@@ -45,12 +49,18 @@ const TAG_PANEL_TEXTURE_BUTTON = preload("res://addons/scene_snap/plugin_scenes/
 @onready var button_shared_tags: Button = $ScrollContainer/VBoxContainer/FlowSharedTags/ButtonSharedTags
 @onready var button_global_tags: Button = $ScrollContainer/VBoxContainer/FlowGlobalTags/ButtonGlobalTags
 
+@onready var label_shared_tags: RichTextLabel = $ScrollContainer/VBoxContainer/LabelSharedTags
+@onready var h_separator: HSeparator = $ScrollContainer/VBoxContainer/HSeparator
+@onready var h_separator_2: HSeparator = $ScrollContainer/VBoxContainer/HSeparator2
+
+
 
 
 # Passed in from scene_viewer.gd toggle_current_main_tab_tag_panel()
 var scene_view: Button = null 
 #var selected_buttons: Array[Button] = []
 var selected_buttons: Array[Node] = []
+var sharing_disabled: bool = false
 
 var settings = EditorInterface.get_editor_settings()
 
@@ -64,10 +74,25 @@ func _ready() -> void:
 
 	find_matching_tags_and_selected_count()
 
+	if sharing_disabled:
+		label_shared_tags.hide()
+		h_separator.hide()
+		flow_shared_tags.hide()
+		button_shared_tags.hide()
+		h_separator_2.hide()
+
+	else:
+		label_shared_tags.show()
+		h_separator.show()
+		flow_shared_tags.show()
+		button_shared_tags.show()
+		h_separator_2.show()
+
+
 
 func _input(event: InputEvent) -> void:
 	if Input.is_key_pressed(KEY_ENTER):
-		if debug: print("enter key pressed")
+		print("enter key pressed")
 
 
 ## Add a new tag to the Tag Panel under Shared Tags
@@ -378,9 +403,10 @@ func remove_tag_text_from_array_extended(tag: Control, scene_view: Button) -> vo
 	if scene_view.tags.has(tag_text):
 		scene_view.tags.erase(tag_text)
 
-	if scene_view.shared_tags.is_empty() and scene_view.global_tags.is_empty(): 
-		scene_view.tags_button_active.hide()
-		scene_view.tags_button_not_active.hide()
+	scene_view.update_tags_icon()
+	#if scene_view.shared_tags.is_empty() and scene_view.global_tags.is_empty(): 
+		#scene_view.tags_button_active.hide()
+		#scene_view.tags_button_not_active.hide()
 
 	#update_scene_data_tags_cache(scene_view.scene_full_path, scene_view.tags, scene_view.shared_tags, scene_view.global_tags)
 
@@ -393,6 +419,7 @@ func remove_tag_text_from_array_extended(tag: Control, scene_view: Button) -> vo
 
 
 func on_enter_add_and_switch_to_new_tag(new_text: String, tag: Control) -> void:
+	print("enter signal received")
 	#if not await check_for_duplicate_tags(tag): # If no duplicate found add new tag. (unless adding new tag to shared that already exists in global)
 		#var tag_text: String = ""
 #
@@ -598,16 +625,18 @@ func store_tags_in_button_array_extended(scene_view: Button, flow_container: Flo
 					scene_view.shared_tags.append(tag.tag_line_edit.get_text())
 					scene_view.tags.append(tag.tag_line_edit.get_text())
 					# Display active tags button
-					scene_view.tags_button_active.show()
-					scene_view.tags_button_not_active.hide()
+					scene_view.update_tags_icon()
+					#scene_view.tags_button_active.show()
+					#scene_view.tags_button_not_active.hide()
 
 			else:
 				if tag is not Button and not scene_view.global_tags.has(tag.tag_line_edit.get_text()):
 					scene_view.global_tags.append(tag.tag_line_edit.get_text())
 					scene_view.tags.append(tag.tag_line_edit.get_text())
 					# Display active tags button
-					scene_view.tags_button_active.show()
-					scene_view.tags_button_not_active.hide()
+					scene_view.update_tags_icon()
+					#scene_view.tags_button_active.show()
+					#scene_view.tags_button_not_active.hide()
 
 
 		#update_scene_data_tags_cache(scene_view.scene_full_path, scene_view.tags, scene_view.shared_tags, scene_view.global_tags)
@@ -631,43 +660,46 @@ func create_tags(scene_view: Button) -> void:
 func prep_scene_view_button(scene_view: Button, view_count: int) -> void:
 	# Position of sprite is moved when mouse enters button so need to find rather then direct path
 	#if debug: print("NewSprite: ", scene_view.get_child(0).get_child(0))
+	if debug: print("scene_view children: ", scene_view.get_children())
 	if scene_view:
-		var sprite: Sprite2D
-		if scene_view.get_child(0).get_child(0) is Sprite2D:
-			if debug: print("found sprite")
-			sprite = scene_view.get_child(0).get_child(0)
-		else:
-			sprite = scene_view.get_child(0).get_child(1)
+		#var sprite: Sprite2D
+		var sprite: Sprite2D = scene_view.find_child('*Sprite2D*', true, false)
+		#if scene_view.get_child(0).get_child(0) is Sprite2D:
+			#if debug: print("found sprite")
+			#sprite = scene_view.get_child(0).get_child(0)
+		#else:
+			#sprite = scene_view.get_child(0).get_child(1)
 		if debug: print("sprite: ", sprite)
 		
 
 		var new_texture_buttun: TextureButton = TAG_PANEL_TEXTURE_BUTTON.instantiate()
 		#var new_texture_buttun: TextureButton = TextureButton.new()
-		var sprite_duplicate: Sprite2D = sprite.duplicate()
-		#sprite_duplicate.scale = Vector2(0.1, 0.1)
-		#sprite_duplicate.set_scale(Vector2(0.1, 0.1))
-		new_texture_buttun.set_texture_normal(sprite_duplicate.get_texture())
-		#new_texture_buttun.set_scale(Vector2(0.1, 0.1))
-		# Scale factor based on panel size and count
-		#var view_count: int = flow_scene_views.get_child_count()
-		## FIXME TWEAK MORE
-		#if debug: print("view_count: ", view_count)
-		#var factor: int = view_count / 2
-		#var scale_factor_x: float = size.x/factor
-		#var scale_factor_y: float = size.y/factor
-		#if view_count == 1:
-			#new_texture_buttun.custom_minimum_size = Vector2(200, 250)
-		#
-		#else: # Factor of size
-			#new_texture_buttun.custom_minimum_size = Vector2(scale_factor_x, scale_factor_y)
-		#if debug: print("size: ", size)
-		flow_scene_views.add_child(new_texture_buttun)
-	#var sprite: Sprite2D = scene_view.get_child(0).find_child("NewSprite", true, true)
-	#var sprite_duplicate: Sprite2D = sprite.duplicate()
-	#scene_views_grid_container.add_child(sprite_duplicate)
+		if sprite:
+			var sprite_duplicate: Sprite2D = sprite.duplicate()
+			#sprite_duplicate.scale = Vector2(0.1, 0.1)
+			#sprite_duplicate.set_scale(Vector2(0.1, 0.1))
+			new_texture_buttun.set_texture_normal(sprite_duplicate.get_texture())
+			#new_texture_buttun.set_scale(Vector2(0.1, 0.1))
+			# Scale factor based on panel size and count
+			#var view_count: int = flow_scene_views.get_child_count()
+			## FIXME TWEAK MORE
+			#if debug: print("view_count: ", view_count)
+			#var factor: int = view_count / 2
+			#var scale_factor_x: float = size.x/factor
+			#var scale_factor_y: float = size.y/factor
+			#if view_count == 1:
+				#new_texture_buttun.custom_minimum_size = Vector2(200, 250)
+			#
+			#else: # Factor of size
+				#new_texture_buttun.custom_minimum_size = Vector2(scale_factor_x, scale_factor_y)
+			#if debug: print("size: ", size)
+			flow_scene_views.add_child(new_texture_buttun)
+		#var sprite: Sprite2D = scene_view.get_child(0).find_child("NewSprite", true, true)
+		#var sprite_duplicate: Sprite2D = sprite.duplicate()
+		#scene_views_grid_container.add_child(sprite_duplicate)
 
 
-		
+
 
 var encryption_key_setting: String = "scene_snap_plugin/global_tags_key:_warning!_removing_or_changing_key_will_make_your_global_tags_unaccessible/encryption_key"
 

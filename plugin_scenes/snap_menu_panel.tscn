@@ -19,6 +19,7 @@ icon_alignment = 1
 script = ExtResource("2_rdqmu")
 
 [node name="Button2" type="Button" parent="."]
+visible = false
 layout_mode = 2
 toggle_mode = true
 icon = ExtResource("2_hyi74")
@@ -27,6 +28,7 @@ icon_alignment = 1
 script = ExtResource("2_rdqmu")
 
 [node name="Button3" type="Button" parent="."]
+visible = false
 layout_mode = 2
 toggle_mode = true
 icon = ExtResource("2_hyi74")

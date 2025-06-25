@@ -4,11 +4,5 @@
 
 [resource]
 script = ExtResource("1_6jw4h")
-connections = [{
-"from_node": &"SnapToObject",
-"from_port": 0,
-"keep_alive": false,
-"to_node": &"OutputSnap",
-"to_port": 0
-}]
+connections = []
 nodes = []
