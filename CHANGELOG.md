@@ -22,10 +22,32 @@ V0.8.2-alpha main-branch - 2025-06-13
 - Fixed broken cycling of scenes when filters applied in non popup window mode.
 
 
-V0.8.3-dev dev-branch - Active
+CHANGELOG: V0.8.3-alpha
 - Scene data cache properly cleaned up at start and collection removal
 - Scene data cache updated when collection renamed
 - KEY_SHIFT and mouse button click on tags updated from removing all tags to only removing global tags
 - Removing all tags updated to long pressing active tags for 1 sec or more
-- Enable/Disable shared collections shared tags and refactored updating of tag icon
-- Creation of scene_view buttons moved to after scene_data_cache filled to current tags
+- Enable/Disable shared collections shared tags and refactored updating of tag icon. Disable shared collections this is now the default.
+- Creation of scene_view buttons has been moved to after scene_data_cache is filled with the current tags
+- Selecting scene_view_button updates scene_preview
+- When tags are removed in snap manager, connections are now removed with them
+- Clicking scene button now instances scene in 3D viewport
+- Refactored thumbnail camera view for multiple mesh scenes
+- Added ESCAPE Key to exit scene_preview mode
+- Added functionality to match scale and rotation of previous object. This is now the default.
+- Fixed initial load ERROR Unrecognized UID: "uid://dfb5uhllrlnbf" for debug script by switching to full path (Thanks dnbroo | Discord)
+- Enabled tags in this version.
+
+
+CHANGELOG: V0.8.4-dev dev-branch - Active
+- **Fix:** On initial creation of collections scene_view buttons now always created even if thumbnails already exist.
+- **Fix:** "tags" are now referenced from cache, making them available immediately, rather then "tags" stored in the button or directly from the scene's metadata.
+- **Fix:** "tags" now properly being saved to packed .tscn project scenes. - Moved embed_shared_and_decrypted_global_tags_in_scene() before save_and_instantiate_scene().
+- **Fix:** Unwanted rotation and scaling issues when placing scene fixed by locking the scene preview. REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+- **Fix:** Newly added tags no longer overwrite existing tags in Snap Flow Manager.
+- **Fix:** "remove_tag" signal properly connected for tags added to Snap Flow Manager after session start.
+- **FIX:** Connections added to existing connections in Snap Flow Manager now actually get added to the connection.
+- **FIX:** Removed Icon from ChangeMaterialButton in scene_viewer.tscn to stop "ERROR: Path to node is invalid: Subviewport" on plugin activation.
+- **FIX:** Set scale snapping to value of 0.001 to avoid engine node warning of non-uniform scaling.
+- **REFACTORED:** create_scene_preview function to reuse scene_preview. Benefits: less code redundancy, easier maintenance, and less bugs.
+- **FIX:** Folder filter running constantly through physics_process when enabled.

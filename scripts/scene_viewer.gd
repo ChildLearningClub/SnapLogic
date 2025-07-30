@@ -33,7 +33,7 @@ signal load_complete
 signal make_floating_panel
 signal do_file_copy
 signal change_physics_body_type_2d
-signal change_physics_body_type_3d
+signal change_physics_body_type_3d(current_type_3d: String)
 signal change_hold_state_3d
 signal change_collision_shape_3d
 signal gen_lods
@@ -172,7 +172,13 @@ const SceneSnapPlugin = preload("res://addons/scene_snap/scene_snap_plugin.gd")
 @onready var change_collision_shape_3d_button: Button = %ChangeCollisionShape3DButton
 
 
-@onready var material_button_mesh_instance_3d: MeshInstance3D = %MaterialButtonMeshInstance3D
+#@onready var material_button_mesh_instance_3d: MeshInstance3D = %MaterialButtonMeshInstance3D
+@onready var material_button_mesh_instance_3d: MeshInstance3D = $HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport/MaterialButtonMeshInstance3D
+
+
+
+
+
 @onready var material_button_surface_selection: Button = $HBoxContainer/VBoxContainer/ChangeMaterialButton/MaterialButtonSurfaceSelection
 @onready var favorite_material_button: TextureButton = %FavoriteMaterialButton
 @onready var enable_favorites_cycle_button: TextureButton = $HBoxContainer/VBoxContainer/ChangeMaterialButton/EnableFavoritesCycleButton
@@ -259,7 +265,7 @@ var project_textures_full_path: String = ""
 var saved_data_restored: bool = false
 
 var one_time_scan: bool = true
-var current_selected_directory: String = ""
+#var current_selected_directory: String = ""
 
 var last_sub_collection_tab: Control
 var initialize_last_sub_collection_tab: bool = true
@@ -309,6 +315,13 @@ var scene_data_cache: SceneDataCache = SceneDataCache.new()
 var current_scene_preview: Node = null
 var mesh_tag_import: bool = true
 var sharing_disabled: bool = false
+
+var last_selected_directory: String = ""
+var file_added_or_removed: bool = false
+
+var tasks_total: int = 0
+var tasks_completed: int = 0
+#var after_intial_pass: bool = false
 
 #endregion
 
@@ -459,8 +472,11 @@ var main_collection_tab_script
 func test() -> void:
 	if debug: print("the filesystem has changed")
 
+
+
 #var extension: TextureParsePrePass
 func _ready() -> void:
+	
 
 	# Restore sharing disabled setting
 	if settings.has_setting("scene_snap_plugin/disable_sharing_functionality_shared_collections_and_shared_tags"):
@@ -602,6 +618,19 @@ func _ready() -> void:
 
 	# Get all files and subdirectories starting from res://
 	collect_files_and_dirs("res://", true)
+	#if debug: print("all_project_files: ", all_project_files)
+	#if debug: print("scene_data_cache.scene_data before: ", scene_data_cache.scene_data)
+	
+	# Cleanup cache for user:// dir scenes and scenes that no longer exist within the project.
+	for scene_full_path: String in scene_data_cache.scene_data.keys():
+		# Clear cache of all scene files outside the project. 
+		# NOTE: Is refilled by import_mesh_tags() and update_scene_data_tags_cache().
+		if not scene_full_path.begins_with("res://"):
+			scene_data_cache.scene_data.erase(scene_full_path)
+		# Clear cache of all scene files that no longer exist within the project.
+		if not all_project_files.has(scene_full_path):
+			scene_data_cache.scene_data.erase(scene_full_path)
+	#if debug: print("scene_data_cache.scene_data after: ", scene_data_cache.scene_data)
 	get_used_collection_scenes()
 	#create_project_scene_buttons()
 
@@ -685,7 +714,8 @@ func _ready() -> void:
 	
 	
 	# Connect to editor filesystem changed signal to update scene view buttons within Project Scenes
-	EditorInterface.get_resource_filesystem().filesystem_changed.connect(file_added_or_removed)
+	#EditorInterface.get_resource_filesystem().filesystem_changed.connect(file_added_or_removed)
+	EditorInterface.get_resource_filesystem().filesystem_changed.connect(func() -> void: file_added_or_removed = true)
 	
 	#EditorInterface.get_file_system_dock().file_removed.connect(file_removed)
 	
@@ -706,12 +736,14 @@ func _ready() -> void:
 
 	#enable_pinning_toggle_button.set_button_icon(get_theme_icon("PinPressed", "EditorIcons"))
 	# Initialize buttons TODO adjust default var values to match desired default ui
+
 	_on_scene_creation_toggle_button_pressed()
 	_on_change_body_type_3d_button_pressed()
 	_on_change_collision_shape_3d_button_pressed()
 	_on_enable_pinning_toggle_button_toggled(true)
 	_on_unique_sub_resources_toggle_button_toggled(false)
 	_on_hold_state_3d_button_pressed()
+
 	#_on_default_material_button_toggled(false)
 	#enable_pinning_toggle_button.set_texture_normal(get_theme_icon("PinPressed", "EditorIcons"))
 	unique_sub_resources_toggle_button.set_texture_normal(get_theme_icon("Duplicate", "EditorIcons"))
@@ -809,10 +841,10 @@ func _ready() -> void:
 
 
 
-# TODO Check if can be improved but working. will update even when not on tab and may do additional scans at startup
-# FIXME removing rather then queue freeing them all and only removing the scene that was deleted
-func file_added_or_removed() -> void:
-	pass
+## TODO Check if can be improved but working. will update even when not on tab and may do additional scans at startup
+## FIXME removing rather then queue freeing them all and only removing the scene that was deleted
+#func file_added_or_removed() -> void:
+	#pass
 	#if new_main_project_scenes_tab.filter_by_file_system_folder:
 		#refresh_project_scenes(EditorInterface.get_current_directory())
 	#else:
@@ -1078,7 +1110,7 @@ var folder_filtered_scene_buttons: Array[Node] = []
 
 
 func _physics_process(delta: float) -> void:
-
+	#pass
 	#await get_tree().create_timer(5).timeout
 	#if new_main_project_scenes_tab and new_main_project_scenes_tab.filters.has("folder"):
 		#refresh_project_scenes(EditorInterface.get_current_directory())
@@ -1120,10 +1152,16 @@ func _physics_process(delta: float) -> void:
 	#if debug: print("new_main_project_scenes_tab: ", new_main_project_scenes_tab)
 	#if debug: print("new_main_project_scenes_tab.filters.has folder: ", new_main_project_scenes_tab.filters.has("folder"))
 	## NOTE: Need to delay on start with multi-threading enabled 
+	# FIXME Maybe don't need file_added_or_removed if don't add to begine with do check for filter when adding button
 	if new_main_project_scenes_tab and new_main_project_scenes_tab.filters.has("folder"):
-		new_main_project_scenes_tab.get_scene_buttons()
+		var current_selected_directory: String = EditorInterface.get_current_directory()
+		if last_selected_directory != current_selected_directory or file_added_or_removed:
+			new_main_project_scenes_tab.get_scene_buttons()
+			file_added_or_removed = false
+			last_selected_directory = current_selected_directory
+			
 		#refresh_project_scenes(EditorInterface.get_current_directory())
-
+	#print(EditorInterface.get_current_directory())
 
 
 #get_tree().current_scene.scene_file_path
@@ -2300,6 +2338,13 @@ func get_collection_path(scene_full_path: String, get_collection_base_path: bool
 
 var create_scene_buttons_state: bool = true
 # FIXME OPENNING COLLECTION TAB DOES NOT ALWAYS TRIGGER COLLECTION IMPORT OF .GLB FILES TO BUFFER
+# FIXME Sometimes thumbnails are not generated properly
+# FIXME Consider switching to a more stable single threaded intial import with multithreaded imports after? 
+# Would solve several issues: 
+# 1. more stable 
+# 2. less thumbnail generation issue
+# 3. may be able to keep textures with generated_scene
+# Main drawback is that can be very slow for intial import of scenes 
 #region refactored section
 # FIXME ?? Pass in scene_full_paths array to only process new added scenes rather then DirAccess.get_files_at(scenes_dir_path)??
 func add_scenes_to_collections(collection_name: String, sub_folders_path: String, new_sub_collection_tab: Control, collection_file_names: Array[String]) -> void:
@@ -2321,7 +2366,7 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 		#return
 
 	processing_collection = true
-	if debug: print("Starting import process for1: ", collection_name)
+	if debug: print("Starting import process for: ", collection_name)
 
 	var scenes_dir_path: String = sub_folders_path.path_join(collection_name)
 
@@ -2347,13 +2392,14 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 	#var collection_file_names: PackedStringArray = DirAccess.get_files_at(scenes_dir_path)
 	if debug: print("collection_file_names: ", collection_file_names)
 	if debug: print("collection_file_names.size(): ", collection_file_names.size(), " for collection: ", collection_name)
-	if collection_file_names.size() > 0:
+	if debug: print("collection_queue.size(): ", collection_queue.size())
+	if collection_file_names.size() > 0 and collection_name != "":
 		cleanup_task_id1 = true
 		var imported_textures_path: String
 		#var imported_materials_path: String
 
 	################ SPLICED IN
-		if debug: print("Starting image hashing and multi-threaded import stack for collection: ", collection_name)
+		#print("Starting image hashing and multi-threaded import stack for collection: ", collection_name)
 		mutex.lock()
 		collection_hased_images.clear()
 		collection_images.clear()
@@ -2385,6 +2431,7 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 		var thumbnail_count: int = 0
 		# FIXME TODO Hide buttons until all textures loaded
 		for file_name: String in collection_file_names:
+			if debug: print("file_name: ", file_name)
 			if file_name.get_extension() == "glb" or file_name.get_extension() == "gltf": # or file_name.get_extension() == "obj":
 				var scene_full_path: String = scenes_dir_path.path_join(file_name)
 				thumbnail_cache_path = get_thumbnail_cache_path(scene_full_path)
@@ -2426,7 +2473,8 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 
 		var initial_import: bool = false
 		# TODO Add execption for .obj scene files if .obj return false
-		if run_gltf_image_hash_check(collection_textures_paths[collection_name]): # NOTE: If no textures (.png files) exist in the project collections then it's a new collection 
+		if run_gltf_image_hash_check(collection_textures_paths[collection_name]): # NOTE: If no textures (.png files) exist in the project collections then it's a new collection
+			#print("No .png image textures were found within the collections/", collection_name, "/textures directory. Importing files now.")
 			initial_import = true
 
 	# FIXME Several check s need to happen here need to check against cached collection size for when new items added to collection
@@ -2442,7 +2490,39 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 	# Run only when new items added and if possible only for new items not for scenes already in the collection that have been processed?
 
 		if initial_import or collection_file_names.size() != thumbnail_count: # FIXME Update for linking and updating based on DirectoryWatcher results
-			create_scene_buttons_state = false # Set flag to not create_scene_buttons as second time father down the stack
+####### SINGLE THREAD MODIFIED REMOVED
+			create_scene_buttons_state = false # Set flag to not create_scene_buttons as second time farther down the stack
+####### SINGLE THREAD MODIFIED REMOVED
+
+
+
+######### SINGLE THREAD MODIFIED ADDED
+			### Single threaded import skipping all multi-threaded importing below
+			##create_scene_buttons_state = true
+			#for scene_full_path: String in collection_scene_full_paths_array:
+				#load_gltf_scene_instance(scene_full_path, imported_textures_path, true)
+######## SINGLE THREAD MODIFIED ADDED
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####### SINGLE THREAD MODIFIED REMOVED
+
 
 
 ## TEST FALLBACK SINGLE THREADEDA ALL IMPORT
@@ -2479,6 +2559,7 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 			multi_threaded_chunk_process(imported_textures_path, collection_name, initial_import, new_sub_collection_tab, new_scene_view)
 			if debug: print("waiting for finished_collection_chunks signal")
 			await finished_collection_chunks
+			if debug: print("finished waiting finished_collection_chunks")
 			
 
 
@@ -2663,6 +2744,8 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 
 
 
+####### SINGLE THREAD MODIFIED REMOVED
+
 
 
 		mutex.lock()
@@ -2671,6 +2754,7 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 
 
 		if create_scene_buttons_state and collection_scene_full_paths_array:
+			print("creating buttons now")
 			for scene_full_path: String in collection_scene_full_paths_array:
 				create_scene_buttons(scene_full_path, new_sub_collection_tab, new_scene_view, false)
 		#if post_create_buttons_array:
@@ -2686,6 +2770,8 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 		if debug: print("FINISHED PROCESSING: ", collection_name.to_snake_case())
 		processed_collections.append(collection_name.to_snake_case())
 
+	
+
 	if collection_queue.size() > 0:
 		if debug: print("Finished processing project scenes, emitting signal to start processing collections.")
 		emit_signal("process_next_collection")
@@ -2694,7 +2780,10 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 	# Reset flag when finished to allow next collection to be processed
 	processing_collection = false
 	# After all collections have been loaded then check filesystem for .tres material files
+	#print("collection_queue.size(): ", collection_queue.size())
 	if collection_queue.size() == 0:
+		# FIXME Needs to still run even when no collections open in Global or Shared tabs
+		if debug: print("collection_queue.size() == 0 collect_standard_material_3d")
 		collect_standard_material_3d("res://")
 		# initialize filtering if collections open
 		#new_main_project_scenes_tab.get_scene_buttons()
@@ -2725,11 +2814,18 @@ func multi_threaded_chunk_process(imported_textures_path: String, collection_nam
 		chunk_size = OS.get_processor_count()
 
 	if debug: print("collection_scene_full_paths_array size START: ", collection_scene_full_paths_array.size())
+	
+
+	#after_intial_pass = false
+
 	for i in range(0, collection_scene_full_paths_array.size(), chunk_size):
 		
 		if debug: print("i: ", i)
 		var chunk: Array[String] = collection_scene_full_paths_array.slice(i, i + chunk_size)
 		#if debug: print("chunk size: ", chunk.size())
+		#print("chunk.size(): ", chunk.size())
+		tasks_total = chunk.size()
+		tasks_completed = 0
 
 		#mutex.lock()
 		#var chunk_lookup: Dictionary[String, Node] = {}
@@ -2745,8 +2841,20 @@ func multi_threaded_chunk_process(imported_textures_path: String, collection_nam
 		#task_id1 = WorkerThreadPool.add_group_task(multi_threaded_load_gltf_scene_instances.bind(imported_textures_path, collection_name, chunk_lookup, chunk, initial_import), chunk.size())
 		#await finished_processing_collection
 		#task_id2 = WorkerThreadPool.add_group_task(multi_threaded_gltf_image_hashing, chunk.size())
+		#if after_intial_pass:
+			#await finished_image_hashing
 		task_id2 = WorkerThreadPool.add_group_task(multi_threaded_gltf_image_hashing.bind(chunk, imported_textures_path), chunk.size())
+		#print("Waiting for finished_image_hashing signal...")
+		#after_intial_pass = true
+		#while tasks_completed != tasks_total - 1:
+			#await get_tree().process_frame
+		#print("chunk finished")
 		await finished_image_hashing
+		#print("Received finished_image_hashing signal!")
+		#await finished_image_hashing
+		#await wait_ready(tasks_completed == chunk.size())
+		#if tasks_completed != chunk.size():
+			
 		if not WorkerThreadPool.is_group_task_completed(task_id2):
 			WorkerThreadPool.wait_for_group_task_completion(task_id2)
 		#await get_tree().process_frame
@@ -2770,21 +2878,29 @@ func multi_threaded_chunk_process(imported_textures_path: String, collection_nam
 			## NOTE: ENABLE FOR FINAL PROCESS STEP
 			var thumbnail_cache_path: String = get_thumbnail_cache_path(scene_full_path)
 			mutex.lock()
-			if not user_dir.file_exists(thumbnail_cache_path):
-				if scene_lookup.keys().has(scene_full_path) and is_instance_valid(scene_lookup[scene_full_path]):
-					# NOTE: THIS IS BLOCKING SCENE .IMPORT LATER IN THE PROCESS WHY? HOW TO FIX?
-					create_scene_buttons(scene_full_path, new_sub_collection_tab, new_scene_view, false)
-					
-				else:
-					push_warning("the scene path: ", scene_full_path, "could not be found within the scene lookup table. The thumbnail may not have been generated.")
-			# Clear generated nodes from last chunk from memory
+			if scene_lookup.keys().has(scene_full_path) and is_instance_valid(scene_lookup[scene_full_path]) and scene_lookup[scene_full_path] is Node:
+				#if not user_dir.file_exists(thumbnail_cache_path):
+					##if scene_lookup.keys().has(scene_full_path) and is_instance_valid(scene_lookup[scene_full_path]):
+						## NOTE: THIS IS BLOCKING SCENE .IMPORT LATER IN THE PROCESS WHY? HOW TO FIX?
+						#print("creating buttons")
+						#create_scene_buttons(scene_full_path, new_sub_collection_tab, new_scene_view, false)
+						#
+					##else:
+						##push_warning("the scene path: ", scene_full_path, "could not be found within the scene lookup table. The thumbnail may not have been generated.")
+				## Clear generated nodes from last chunk from memory
+#
+				#else:
+				create_scene_buttons(scene_full_path, new_sub_collection_tab, new_scene_view, false)
 
-			if scene_lookup.keys().has(scene_full_path) and scene_lookup[scene_full_path] is Node:
+				#if scene_lookup.keys().has(scene_full_path) and scene_lookup[scene_full_path] is Node:
 				scene_lookup[scene_full_path].queue_free()
+			else:
+				push_warning("the scene path: ", scene_full_path, "could not be found within the scene lookup table. The thumbnail may not have been generated.")
 
 			mutex.unlock()
 			#await get_tree().process_frame
-		
+		#call_deferred("deferred_emit_signal")
+		#emit_signal("finished_image_hashing")
 			
 			
 
@@ -2848,6 +2964,7 @@ func multi_threaded_chunk_process(imported_textures_path: String, collection_nam
 	if debug: print("collection_scene_full_paths_array.size(): ", collection_scene_full_paths_array.size())
 	if processed_scene_count == collection_scene_full_paths_array.size():
 		#scene_lookup.clear()
+		if debug: print("emitting finished_collection_chunks signal")
 		emit_signal("finished_collection_chunks")
 
 
@@ -2941,6 +3058,8 @@ func multi_threaded_chunk_process(imported_textures_path: String, collection_nam
 ## Find the minimum number of scenes that need to be imported to get all the textures and materials from the collection.
 func multi_threaded_gltf_image_hashing(index: int, chunk: Array[String], imported_textures_path: String) -> void:
 	var scene_full_path: String = chunk[index]
+	
+	
 	var scene_file = FileAccess.open(scene_full_path, FileAccess.READ)
 	if scene_file == null:
 		push_error("Could not open file: " + scene_full_path)
@@ -2953,20 +3072,40 @@ func multi_threaded_gltf_image_hashing(index: int, chunk: Array[String], importe
 		var gltf_state := GLTFState.new()
 		# NOTE: When HANDLE_BINARY_EMBED_AS_BASISU causes issue with thumbnail genration? Why?
 		#gltf_state.set_handle_binary_image(GLTFState.HANDLE_BINARY_EMBED_AS_BASISU)
-		gltf_state.set_handle_binary_image(GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED)
 
+		gltf_state.set_handle_binary_image(GLTFState.HANDLE_BINARY_EMBED_AS_UNCOMPRESSED)
+		#gltf_state.set_handle_binary_image(GLTFState.HANDLE_BINARY_DISCARD_TEXTURES)
+		
+
+		#for image in gltf_state.images:
+			#print("image: ", image)
+			#if image.file_path != "":
+				#print("Referenced texture: ", image.file_path)
+		#print("chunk1")
+		#gltf.append_from_file(scene_full_path, gltf_state, 8, imported_textures_path)
+		#print("chunk2")
+
+		#print("Processing file:", scene_full_path)
+		#var err = gltf.append_from_file(scene_full_path, gltf_state, 8, imported_textures_path)
+		#print("append_from_file returned:", err, " for ", scene_full_path)
+
+		#if gltf.append_from_file(scene_full_path, gltf_state, 8, imported_textures_path) == OK:
 		if gltf.append_from_buffer(file_bytes, "", gltf_state, 8) == OK:
 
 			mutex.lock()
+			#print("chunk3")
+			#var generated_scene: Node = gltf.generate_scene(gltf_state)
+			#scene_lookup[scene_full_path] = generated_scene
 			scene_lookup[scene_full_path] = gltf.generate_scene(gltf_state)
+			#print("chunk4")
 			#collection_lookup[collection_name.to_snake_case()] = scene_lookup
 			mutex.unlock()
-
-		else:
-			if debug: print("append_from_buffer not OK")
+		
+		#else:
+			#if debug: print("append_from_buffer not OK")
 
 		## NOTE: This will get the first but multi threading will process and end with the last and import that one? maybe reason dest_md5 different
-#
+	#
 		# FIXME ALSO NEED UNQUE MATERIAL SCENES PROCESSED
 		var json_data = gltf_state.get_json()
 		#if debug: print("json_data: ", json_data)
@@ -2977,6 +3116,7 @@ func multi_threaded_gltf_image_hashing(index: int, chunk: Array[String], importe
 					#if debug: print("image_entry[name]: ", image_entry["name"])
 					mutex.lock()
 					var image_name: String = image_entry["name"]
+					#print("image_name: ", image_name)
 					#if image_name.is_empty():
 						#if debug: print("the image has no name")
 					
@@ -2992,7 +3132,7 @@ func multi_threaded_gltf_image_hashing(index: int, chunk: Array[String], importe
 					mutex.unlock()
 					#if debug: print("the image has no name")
 
-# FIXME Materials not being properly generated with appropriate textures?
+	# FIXME Materials not being properly generated with appropriate textures?
 		if json_data.has("materials"):
 			#if debug: print("json_data[images]: ", json_data["images"])
 			for material_entry: Dictionary in json_data["materials"]:
@@ -3014,23 +3154,37 @@ func multi_threaded_gltf_image_hashing(index: int, chunk: Array[String], importe
 					if not process_single_threaded_list.has(scene_full_path):
 						process_single_threaded_list.append(scene_full_path)
 					mutex.unlock()
-	
+
 		mutex.lock()
 		mesh_tag_import = false # Set flag to not import mesh tags again in multi_threaded_load_gltf_scene_instances()
 		call_thread_safe("import_mesh_tags", gltf_state, scene_full_path)
 		#import_mesh_tags(gltf_state, scene_full_path)
 		mutex.unlock()
 
+	#mutex.lock()
+	##if not scene_lookup.keys().has(scene_full_path):
+		##scene_lookup[scene_full_path] = Node.new()
+	#print("checking index: ", index)
+	#print("chunk.size(): ", chunk.size() - 1)
+	#if index == chunk.size() - 1:
+		#
+		#call_deferred("deferred_emit_signal")
+	#mutex.unlock()
+
+
 	mutex.lock()
-	#if not scene_lookup.keys().has(scene_full_path):
-		#scene_lookup[scene_full_path] = Node.new()
-	if index == chunk.size() - 1:
-		call_deferred("deferred_emit_signal")
+	tasks_completed += 1
+	#print("tasks_completed: ", tasks_completed)
+	#print("tasks_total: ", tasks_total)
+	var is_done = tasks_completed == tasks_total
 	mutex.unlock()
-
-
+#
+	if is_done:
+		#print("chunk finished here")
+		call_deferred("deferred_emit_signal")
+#
 func deferred_emit_signal() -> void:
-	if debug: print("Finished processing collection")
+	if debug: print("Finished processing collection, emitting signal")
 	emit_signal("finished_image_hashing")
 
 
@@ -3161,34 +3315,93 @@ func load_gltf_scene_instance(scene_full_path: String, imported_textures_path: S
 		if scene_file:
 			var file_bytes: PackedByteArray = scene_file.get_buffer(scene_file.get_length())
 			scene_file.close()
-
+			if debug: print("imported_textures_path: ", imported_textures_path)
 			gltf.append_from_buffer(file_bytes, imported_textures_path, gltf_state, 8)
 
+		#gltf.append_from_file(scene_full_path, gltf_state, 8, imported_textures_path)
 
+
+	######## SINGLE THREAD MODIFIED ADDED
+			#mutex.lock()
+			#scene_lookup[scene_full_path] = gltf.generate_scene(gltf_state)
+			#mutex.unlock()
+	######## SINGLE THREAD MODIFIED ADDED
+
+
+
+		###### SINGLE THREAD MODIFIED REMOVED
 			## NOTE: HACK Need to generate_scene to push editor to import the textures to the filesystem. Seems to work better then manually through gdscript
 			gltf_scene = gltf.generate_scene(gltf_state)
 			#EditorInterface.get_resource_filesystem().scan()
 			#await get_tree().create_timer(1).timeout
-
-			if free_scene:
-				gltf_scene.queue_free()
+		###### SINGLE THREAD MODIFIED REMOVED
 
 
+			# FIXME Does not always apply texture found in project collections path to material?
 			## TODO Create material save path lookup tied to scene_full_path
 			## NOTE: This will not get all scenes.
 			#for material in gltf_state.materials:
-			for material in gltf_state.get_materials():
-				if material is Material:
+
+			#extract_texture_file_names(gltf_state)
+		#
+			#print("gltf_state.images: ", gltf_state.get_textures())
+
+			if is_instance_valid(gltf_state) and gltf_state.materials != null:
+				for material in gltf_state.materials:
+					if material is Material:
+						if debug: print("material.resource_name: ", material.resource_name)
+						#if debug: print("material property list: ", material.get_property_list())
+
+
+						#var texture_properties = {}
+		#
+						#for prop in material.get_property_list():
+							#if prop.has("class_name") and prop["class_name"] == "Texture2D":
+								#var name = prop["name"]
+								#var texture = material.get(name)
+								#texture_properties[name] = texture
+		#
+						## Print the results
+						#for name in texture_properties:
+							#print(name, ": ", texture_properties[name])
+
+
+
+
+
+						#print("material: ", material.resource_name)
+						#for prop in material.get_property_list():
+							#if prop.has("class_name") and prop["class_name"] == "Texture2D":
+								#var name = prop["name"]
+								#var texture = material.get(name)
+								#print(name, ": ", texture)
+
+
+
+
+
+			#for material in gltf_state.get_materials():
+				#if material is Material:
 					#if debug: print("Found material:", material)
-					# Save it if needed
-					var save_path = imported_textures_path + "/" + material.resource_name + ".tres"
-					ResourceSaver.save(material, save_path)
+						# Save it if needed
+						var save_path = imported_textures_path + "/" + material.resource_name + ".tres"
+						ResourceSaver.save(material, save_path)
 
 
 
+				#for surface_index: int in mesh_node.mesh.get_surface_count():
+					#if material_lookup.has(scene_full_path):
+						#var materials: Array = material_lookup[scene_full_path]
+						##if debug: print("materials: ", materials)
+						#if surface_index >= 0 and surface_index < materials.size():
 
 
-			#gltf_scene.queue_free()
+	#if free_scene:
+		#gltf_scene.queue_free()
+
+
+
+		#gltf_scene.queue_free()
 	return gltf_scene
 
 
@@ -3204,7 +3417,12 @@ func load_gltf_scene_instance(scene_full_path: String, imported_textures_path: S
 					#material_lookup[scene_full_path].append(loaded_material)
 
 
-
+func extract_texture_file_names(gltf_state: GLTFState):
+	for i in range(gltf_state.images.size()):
+		var image := gltf_state.images[i]
+		if image != null:
+			# This is typically the file name or relative path from the FBX/GLTF
+			print("Image ", i, " - file: ", image.file_path)
 
 
 
@@ -3270,26 +3488,38 @@ func multi_threaded_load_gltf_scene_instances(index: int, imported_textures_path
 		#mutex.lock()
 		var gltf: GLTFDocument = GLTFDocument.new()
 		var gltf_state: GLTFState = GLTFState.new()
-		# Required because with large collections with unnamed textures godot's built in append_from_buffer function will attempt to re copy to filesystem
+		# NOTE: Required because with large collections with unnamed textures godot's built in append_from_buffer function will attempt to re copy to filesystem
+		# FIXME Find way around discarding textures, re-mapping textures to their meshes not easy.
 		gltf_state.set_handle_binary_image(GLTFState.HANDLE_BINARY_DISCARD_TEXTURES)
-		#gltf_state.set_handle_binary_image(GLTFState.HANDLE_BINARY_EMBED_AS_BASISU)
+
 
 		if gltf.append_from_buffer(file_bytes, imported_textures_path, gltf_state, 8) != OK:
 			push_error("Failed to load GLTF: %s" % scene_full_path)
 			#mutex.unlock()
 			return
 
+
+
+
+
 		mutex.lock()
 		if is_instance_valid(gltf_state) and gltf_state.materials != null:
 			for material in gltf_state.materials:
 				if material is Material:
 					var save_path = imported_textures_path + "/" + material.resource_name + ".tres"
-					var loaded_material = load(save_path)
-					if loaded_material is BaseMaterial3D:
-						if not material_lookup.has(scene_full_path):
-							material_lookup[scene_full_path] = []
-						if not material_lookup[scene_full_path].has(loaded_material):
-							material_lookup[scene_full_path].append(loaded_material)
+
+					if res_dir.file_exists(save_path):
+						var loaded_material = load(save_path)
+						if loaded_material and loaded_material is BaseMaterial3D:
+							if not material_lookup.has(scene_full_path):
+								material_lookup[scene_full_path] = []
+							if not material_lookup[scene_full_path].has(loaded_material):
+								material_lookup[scene_full_path].append(loaded_material)
+						else:
+							push_error("The material could not be loaded.")
+					else:
+						push_error("The material was not found.")
+
 
 		scene_lookup[scene_full_path] = gltf.generate_scene(gltf_state)
 
@@ -10656,7 +10886,8 @@ var processed_button: Button = null
 
 # REFACTORED FIXME sub_viewport_container is being removed for buttons with active tags
 func reload_scene_view_button(button: Button, scene_full_path: String, sub_viewport: SubViewport) -> void:
-	scene_instance = await load_scene_instance(scene_full_path) # May need to call to have current_scene_path updated?
+	scene_instance = load_scene_instance(scene_full_path) # May need to call to have current_scene_path updated?
+	#scene_instance = load_scene_instance(scene_full_path) # May need to call to have current_scene_path updated?
 	if scene_instance and is_instance_valid(scene_instance):
 		set_surface_materials(scene_instance, scene_full_path, true)
 		get_camera_aabb_view(button, scene_instance, scene_full_path, sub_viewport)
@@ -10877,12 +11108,15 @@ func set_surface_materials(scene_instance: Node, scene_full_path: String, set_de
 
 	# Initially set the material to default material if one has not been selected
 	if current_material_index == -1:
+		if debug: print("current index == -1, getting default material")
 		current_material_index = materials_3d_array.find(get_default_material())
 
 	# Update the material buttons number and visible texture to match the current one and check if favorite
 	material_3d_number.set_text(str(current_material_index))
-	var selected_material: Resource = materials_3d_array[current_material_index]
-	material_button_mesh_instance_3d.set_surface_override_material(0, selected_material)
+	var selected_material: BaseMaterial3D = get_current_material()
+
+	if selected_material:
+		material_button_mesh_instance_3d.set_surface_override_material(0, selected_material)
 	do_material_favorite_check()
 
 
@@ -10938,7 +11172,7 @@ func set_surface_materials(scene_instance: Node, scene_full_path: String, set_de
 					else:
 						push_warning("A material was not found for one of the surfaces of the scene located at: ", scene_full_path)
 
-			if not set_default_material and current_selected_surface_index != -1:
+			if not set_default_material and current_selected_surface_index != -1 and selected_material:
 				mesh_node.set_surface_override_material(current_selected_surface_index, selected_material)
 
 
@@ -11160,6 +11394,7 @@ func update_current_scene_path(scene_full_path: String, scene: Button) -> void:
 		mutex.lock()
 		if debug: print("material_lookup[scene_full_path]: ", material_lookup[scene_full_path])
 		if material_lookup[scene_full_path].size() > 1:
+			pass
 			
 			material_button_surface_selection.disabled = false
 		else:
@@ -11582,7 +11817,7 @@ func create_scene_buttons(scene_full_path: String, new_sub_collection_tab: Contr
 		#scene_full_path = collection_scene_full_paths_array[index]
 	#var collection_name: String = new_sub_collection_tab.name
 	#if debug: print("new_sub_collection_tab name: ", new_sub_collection_tab.name)
-	if debug: print("scene_full_path: ", scene_full_path)
+	#print("scene_full_path: ", scene_full_path)
 
 	# Exclude scenes that will be removed on next startup from being creating buttons for them
 	if unused_collection_scenes_path.has(scene_full_path):
@@ -11614,17 +11849,28 @@ func create_scene_buttons(scene_full_path: String, new_sub_collection_tab: Contr
 		# NOTE: If thumbnails have been created
 		# FIXME NOT SURE IF SOMETHING BROKEN HERE BUT SEEMS LIKE SOME THAT HAVE THUMBNAILS ARE SLIPPING THROUGH AND CALLING get_camera_aabb_view()
 		if user_dir.file_exists(thumbnail_cache_path) and pass_cache == false: # Allow for pass_cache to recreate scene for 3d and animation playing
-			if debug: print("Thumbnail cache found skipping creating new thumbnails")
+			#print("Thumbnail cache found skipping creating new thumbnails")
+
+			# NOTE: Skip adding new_scene_view button if "folder" filter enabled and not within collections dir.
+			# or favorite filter enabled because new file can not automatically be a favorite
+			# or if text filter exludes it.
+			var allow: bool = true
+			if scene_full_path.begins_with("res://collections"):
+				#print("skip me")
+				allow = false
+#dfv
 
 			#if debug: print("THUMBNAIL CACHE PATH: ", thumbnail_cache_path)
 			#var new_scene_view: Button = instance_scene_view(new_sub_collection_tab, scene_full_path, scene_name_split)
 			if new_scene_view == null:
-				if debug: print("creating new scene")
+				#print("creating new scene")
 				#new_scene_view = instance_scene_view(new_sub_collection_tab, scene_full_path, false, thumbnail_cache_path)
 				new_scene_view = instance_scene_view(new_sub_collection_tab, scene_full_path, false)
 				
-			else:
-				if debug: print("not creating new scene")
+			#else:
+			elif allow:
+				allow = true # Reset flag
+				#print("not creating new scene")
 				new_scene_view.visible = true
 				new_scene_view.disabled = false
 
@@ -11815,7 +12061,6 @@ func create_scene_buttons(scene_full_path: String, new_sub_collection_tab: Contr
 #
 				#scene_full_path = save_path
 				#new_mesh_instance_3d.queue_free()
-
 
 
 
@@ -12668,7 +12913,7 @@ func get_camera_aabb_view2(scene_view_button: Button, scene: Node, scene_full_pa
 	if debug: print("scene_full_path: ", scene_full_path)
 
 	if scene == null:
-		scene = await load_scene_instance(scene_full_path)
+		scene = load_scene_instance(scene_full_path)
 
 	if scene:
 
@@ -12774,7 +13019,8 @@ func get_camera_aabb_view(scene_view_button: Button, scene: Node, scene_full_pat
 	if debug: print("scene_full_path: ", scene_full_path)
 
 	if scene == null:
-		scene = await load_scene_instance(scene_full_path)
+		scene = load_scene_instance(scene_full_path)
+		#scene = load_scene_instance(scene_full_path)
 
 	if scene:
 
@@ -12889,6 +13135,11 @@ func get_distance_to_fit_aabb(aabb: AABB, camera: Camera3D, padding: float = 1.5
 # TODO cleanup empty scene_data_cache entries
 # FIXME Not sure where to do this, but if Global and Shared tags empty then remove "extras" and re export .glb to overwrite original
 # NOTE this has to happen before create_scene_buttons to fill scene_data_cache
+# NOTE: Tag route:
+# 1. Imported from .glb and added to cache here. import_mesh_tags().
+# 2. Taken from cache and added to scene_view_buttons in create_scene_buttons().
+# 3. 
+## Get the global and shared tags from the .glb file and store them within a cache
 func import_mesh_tags(gltf_state: GLTFState, scene_full_path: String) -> void:
 	var tags: Array[String]
 	var shared_tags: Array[String]
@@ -12948,114 +13199,114 @@ func removed_unused_meta_extras(scene_full_path: String) -> void:
 	export_gltf(scene_instance, scene_full_path)
 
 
-# FIXME CONSIDER STORING IN LARGER DICTIONARY WHEN UNPACKED FOR TAG MATCHING OR AUTOCOMPLETE OF SAME TAG
-# AS YOU TYPE SIMILIR TAGS BEGIN TO SHOW AND CAN BE DRAGGED IN? OR SELECTED?
-# FIXME TAGS FOR OTHER ASSET TYPES?? ## Stored meta in editor settings json file scene mesh id: tags? 
-# Grab all tags and store them in array within each of the scene_view buttons for quick access
-# This is run on session start when first creating the buttons 
-func import_mesh_tags2(scene_instance: Node, new_scene_view: Button) -> void:
-	scenes_with_multiple_meshes.clear()
-	#scenes_with_mesh_tag_data.clear()
-
-##FIXME RUN .find_children("*", "MeshInstance3D" EVERY TIME OR CREATE DICTIONARY FOR EACH OBJECT TO MAKE INITIAL IMPORT A BIT FASTER?
-## RATHER THEN RUNNING .find_children("*", "MeshInstance3D" TWICE?
-
-	# Reference: https://forum.godotengine.org/t/getting-all-meshinstance3ds-from-scene/44127 (mrcdk)
-	var mesh_node_instances: Array[Node] = scene_instance.find_children("*", "MeshInstance3D", true, false)
-
-	if mesh_node_instances.size() > 1:
-		new_scene_view.multiple_mesh_glb.show()
-		# Store for lookup for button popup
-		scenes_with_multiple_meshes[scene_instance.name] = mesh_node_instances
-
-		# Create new .glb scene file for each??? and then run through create_scene_buttons?
-		# Or create similar logic to create_scene_buttons specific to this use case?
-
-
-
-	for mesh_node: MeshInstance3D in mesh_node_instances:
-		# Create new .glb files for each of the child MeshInstance3D
-
-		if mesh_node.has_meta("extras"):
-			# Combined Global and Shared tags NOTE: NOT USED YET
-			var tags: Dictionary[String, Array] = {}
-			var metadata: Dictionary = mesh_node.get_meta("extras")
-			
-			# Shared tags
-			if metadata.has("shared_tags") and metadata["shared_tags"] != []:
-				#new_scene_view.tags_button_active.show()
-
-				for tag: String in metadata["shared_tags"]:
-					if debug: print("new_scene_view: ", new_scene_view)
-					new_scene_view.shared_tags.append(tag)
-					# Group into one array for single array parsing in scene_snap_plugin.gd process_snap_flow_manager_connections()
-					new_scene_view.tags.append(tag)
-
-			# Global tags
-			if metadata.has("global_tags") and metadata["global_tags"] != {}:
-				if metadata["global_tags"].keys().has(get_key(false)):# and metadata["global_tags"][get_key(false)] != []:
-					#new_scene_view.tags_button_active.show()
-					# Within the global tags dictionary find keys that match the reference key get_key(false)
-					if metadata["global_tags"].keys().has(get_key(false)):
-						
-						var reference_key: String = get_key(false)
-						var string_array: String = str(metadata["global_tags"][get_key(false)])
-						if debug: print("string_array: ", string_array)
-						var encrypted_data: PackedByteArray = string_to_packed_byte_array(string_array)
-						#var encrypted_data: PackedByteArray = string_array.to_utf8_buffer()
-						# Ensure the data is padded to a multiple of 16 bytes
-						#encrypted_data = pad_to_16(encrypted_data)
-						if debug: print("encrypted_data: ", encrypted_data)
-						
-						if debug: print("decrypted_data: ", global_tags_aes_decryption(encrypted_data))
-						var decrypted_data_array: PackedStringArray = global_tags_aes_decryption(encrypted_data)
-						
-						# NOTE: Converts PackedStringArray into Array[String]
-						# Reference: https://www.reddit.com/r/godot/comments/189a8qg/how_to_transform_packedstringarray_to_arraystring/ (aezart)
-						var decrypted_global_tags_array: Array[String] = []
-						decrypted_global_tags_array.assign(decrypted_data_array)
-
-						## NOTE doesn't work because this is just a temp instance
-						## When placing in scene set then?
-						## Initialize plain text metadata array for decrypted_global_tags
-						#metadata["decrypted_global_tags"] = decrypted_global_tags_array
-						## Take decrypted tags from decrypted_global_tags_array and store them back into decrypted_global_tags as plain text
-						## for this session only NOTE: We will remove the plain text version when saving to disk.
-						##mesh_node.metadata.set_meta("decrypted_global_tags", decrypted_global_tags_array)
-						##mesh_node.set_meta(metadata["decrypted_global_tags"], decrypted_global_tags_array)
-						##await get_tree().process_frame
-						#mesh_node.set_meta("extras", metadata)
-						## To verify, retrieve the data:
-						#var retrieved_metadata = mesh_node.get_meta("extras")
-						#if debug: print("retrieved_metadata: ", retrieved_metadata)  # Should print the dictionary with your array
-
-						
-						for tag: String in decrypted_global_tags_array:
-							new_scene_view.global_tags.append(tag)
-							# Group into one array for single array parsing in scene_snap_plugin.gd process_snap_flow_manager_connections()
-							new_scene_view.tags.append(tag)
-
-
-
-
-
-
-			if debug: print("mesh_node.name: ", mesh_node.name)
-			#scene_tags[mesh_node.name] = new_scene_view.tags
-			# Track the mesh_node by adding data to it and getting back later
-			#mesh_node.set_meta("session_tags", new_scene_view.tags)
-			#scene_tags[mesh_node.get_instance_id()] = new_scene_view.tags
-			#if debug: print("scene_tags: ", scene_tags)
-
-			#if debug: print("get_scene_name(scene_view_button.scene_full_path): ", get_scene_name(scene_view_button.scene_full_path))
-			#scene_tags[get_scene_name(scene_view_button.scene_full_path)] = scene_view_button.tags
-
-			load_tags_to_tag_button_tool_tip(new_scene_view)
-
-	if debug: print("new_scene_view.tags: ", new_scene_view.tags)
-
-	# Load imported scene tags data into scene_data_cache 
-	update_scene_data_tags_cache(new_scene_view.scene_full_path, new_scene_view.tags, new_scene_view.shared_tags, new_scene_view.global_tags)
+## FIXME CONSIDER STORING IN LARGER DICTIONARY WHEN UNPACKED FOR TAG MATCHING OR AUTOCOMPLETE OF SAME TAG
+## AS YOU TYPE SIMILIR TAGS BEGIN TO SHOW AND CAN BE DRAGGED IN? OR SELECTED?
+## FIXME TAGS FOR OTHER ASSET TYPES?? ## Stored meta in editor settings json file scene mesh id: tags? 
+## Grab all tags and store them in array within each of the scene_view buttons for quick access
+## This is run on session start when first creating the buttons 
+#func import_mesh_tags2(scene_instance: Node, new_scene_view: Button) -> void:
+	#scenes_with_multiple_meshes.clear()
+	##scenes_with_mesh_tag_data.clear()
+#
+###FIXME RUN .find_children("*", "MeshInstance3D" EVERY TIME OR CREATE DICTIONARY FOR EACH OBJECT TO MAKE INITIAL IMPORT A BIT FASTER?
+### RATHER THEN RUNNING .find_children("*", "MeshInstance3D" TWICE?
+#
+	## Reference: https://forum.godotengine.org/t/getting-all-meshinstance3ds-from-scene/44127 (mrcdk)
+	#var mesh_node_instances: Array[Node] = scene_instance.find_children("*", "MeshInstance3D", true, false)
+#
+	#if mesh_node_instances.size() > 1:
+		#new_scene_view.multiple_mesh_glb.show()
+		## Store for lookup for button popup
+		#scenes_with_multiple_meshes[scene_instance.name] = mesh_node_instances
+#
+		## Create new .glb scene file for each??? and then run through create_scene_buttons?
+		## Or create similar logic to create_scene_buttons specific to this use case?
+#
+#
+#
+	#for mesh_node: MeshInstance3D in mesh_node_instances:
+		## Create new .glb files for each of the child MeshInstance3D
+#
+		#if mesh_node.has_meta("extras"):
+			## Combined Global and Shared tags NOTE: NOT USED YET
+			#var tags: Dictionary[String, Array] = {}
+			#var metadata: Dictionary = mesh_node.get_meta("extras")
+			#
+			## Shared tags
+			#if metadata.has("shared_tags") and metadata["shared_tags"] != []:
+				##new_scene_view.tags_button_active.show()
+#
+				#for tag: String in metadata["shared_tags"]:
+					#if debug: print("new_scene_view: ", new_scene_view)
+					#new_scene_view.shared_tags.append(tag)
+					## Group into one array for single array parsing in scene_snap_plugin.gd process_snap_flow_manager_connections()
+					#new_scene_view.tags.append(tag)
+#
+			## Global tags
+			#if metadata.has("global_tags") and metadata["global_tags"] != {}:
+				#if metadata["global_tags"].keys().has(get_key(false)):# and metadata["global_tags"][get_key(false)] != []:
+					##new_scene_view.tags_button_active.show()
+					## Within the global tags dictionary find keys that match the reference key get_key(false)
+					#if metadata["global_tags"].keys().has(get_key(false)):
+						#
+						#var reference_key: String = get_key(false)
+						#var string_array: String = str(metadata["global_tags"][get_key(false)])
+						#if debug: print("string_array: ", string_array)
+						#var encrypted_data: PackedByteArray = string_to_packed_byte_array(string_array)
+						##var encrypted_data: PackedByteArray = string_array.to_utf8_buffer()
+						## Ensure the data is padded to a multiple of 16 bytes
+						##encrypted_data = pad_to_16(encrypted_data)
+						#if debug: print("encrypted_data: ", encrypted_data)
+						#
+						#if debug: print("decrypted_data: ", global_tags_aes_decryption(encrypted_data))
+						#var decrypted_data_array: PackedStringArray = global_tags_aes_decryption(encrypted_data)
+						#
+						## NOTE: Converts PackedStringArray into Array[String]
+						## Reference: https://www.reddit.com/r/godot/comments/189a8qg/how_to_transform_packedstringarray_to_arraystring/ (aezart)
+						#var decrypted_global_tags_array: Array[String] = []
+						#decrypted_global_tags_array.assign(decrypted_data_array)
+#
+						### NOTE doesn't work because this is just a temp instance
+						### When placing in scene set then?
+						### Initialize plain text metadata array for decrypted_global_tags
+						##metadata["decrypted_global_tags"] = decrypted_global_tags_array
+						### Take decrypted tags from decrypted_global_tags_array and store them back into decrypted_global_tags as plain text
+						### for this session only NOTE: We will remove the plain text version when saving to disk.
+						###mesh_node.metadata.set_meta("decrypted_global_tags", decrypted_global_tags_array)
+						###mesh_node.set_meta(metadata["decrypted_global_tags"], decrypted_global_tags_array)
+						###await get_tree().process_frame
+						##mesh_node.set_meta("extras", metadata)
+						### To verify, retrieve the data:
+						##var retrieved_metadata = mesh_node.get_meta("extras")
+						##if debug: print("retrieved_metadata: ", retrieved_metadata)  # Should print the dictionary with your array
+#
+						#
+						#for tag: String in decrypted_global_tags_array:
+							#new_scene_view.global_tags.append(tag)
+							## Group into one array for single array parsing in scene_snap_plugin.gd process_snap_flow_manager_connections()
+							#new_scene_view.tags.append(tag)
+#
+#
+#
+#
+#
+#
+			#if debug: print("mesh_node.name: ", mesh_node.name)
+			##scene_tags[mesh_node.name] = new_scene_view.tags
+			## Track the mesh_node by adding data to it and getting back later
+			##mesh_node.set_meta("session_tags", new_scene_view.tags)
+			##scene_tags[mesh_node.get_instance_id()] = new_scene_view.tags
+			##if debug: print("scene_tags: ", scene_tags)
+#
+			##if debug: print("get_scene_name(scene_view_button.scene_full_path): ", get_scene_name(scene_view_button.scene_full_path))
+			##scene_tags[get_scene_name(scene_view_button.scene_full_path)] = scene_view_button.tags
+#
+			#load_tags_to_tag_button_tool_tip(new_scene_view)
+#
+	#if debug: print("new_scene_view.tags: ", new_scene_view.tags)
+#
+	## Load imported scene tags data into scene_data_cache 
+	#update_scene_data_tags_cache(new_scene_view.scene_full_path, new_scene_view.tags, new_scene_view.shared_tags, new_scene_view.global_tags)
 
 
 
@@ -13315,6 +13566,11 @@ func append_buttons_with_edited_tags(scene_view: Button) -> void:
 	#if debug: print("tag_count: ", tag_count)
 	#current_session_scene_tag_count[scene_full_path] = tag_count
 	#if debug: print("scene_view_button_tag_count: ", current_session_scene_tag_count)
+
+	# Save tags to cache so that they are quickly avialable for use.
+	update_scene_data_tags_cache(scene_view.scene_full_path, scene_view.tags, scene_view.shared_tags, scene_view.global_tags)
+
+	# Create array to loop through later and save tags to scene and scene to disk.
 	if not scene_view_buttons_with_tags_added_or_removed.has(scene_view):
 		scene_view_buttons_with_tags_added_or_removed.append(scene_view)
 	if debug: print("scene_view_buttons_with_tags_added_or_removed: ", scene_view_buttons_with_tags_added_or_removed)
@@ -13378,7 +13634,8 @@ func store_tags_in_scene_mesh() -> void:
 		#var collection_name: String  = scene_view.scene_full_path.split("/")[-2].to_snake_case()
 		mutex.lock()
 		#var scene_instance: Node = scene_lookup[scene_view.scene_full_path]
-		var scene_instance: Node = await load_scene_instance(scene_view.scene_full_path)
+		var scene_instance: Node = load_scene_instance(scene_view.scene_full_path)
+		#var scene_instance: Node = load_scene_instance(scene_view.scene_full_path)
 		if debug: print("tag scene_instance, ", scene_instance)
 		#var scene_instance: Node = collection_lookup[collection_name][scene_view.scene_full_path].duplicate()
 		mutex.unlock()
@@ -14049,7 +14306,8 @@ var load_count: int = 0
 func load_scene_instance(scene_full_path: String) -> Node:
 	#if scene_full_path:
 		#current_scene_path = scene_full_path
-	if scene_full_path.begins_with("res://") and accepted_file_ext.has(scene_full_path.get_extension()): # Load from project filesystem
+	if scene_full_path.begins_with("res://") and res_dir.file_exists(scene_full_path) and accepted_file_ext.has(scene_full_path.get_extension()): # Load from project filesystem
+			if debug: print("loaded_scene from res:// directory: ", scene_full_path)
 			return load(scene_full_path).instantiate()
 
 	else:
@@ -14063,17 +14321,19 @@ func load_scene_instance(scene_full_path: String) -> Node:
 			# Pull from collection_lookup # Pull from Memory
 			if not collection_lookup.is_empty() and collection_lookup.has(collection_name) and scene_lookup.keys().has(scene_full_path) and is_instance_valid(scene_lookup[scene_full_path]):
 				loaded_scene = collection_lookup[collection_name][scene_full_path].duplicate()
-				if debug: print("loaded_scene: ", loaded_scene)
+				if debug: print("loaded_scene from scenes in memory collection_lookup[collection_name]: ", loaded_scene)
 
 			else: # Fallback loading directly from disk single thread when not in lookup 
 				var imported_base_path: String = project_scenes_path.path_join(collection_name)
 				var imported_textures_path: String = imported_base_path.path_join("textures".path_join("/"))
 				loaded_scene = load_gltf_scene_instance(scene_full_path, imported_textures_path)
+				if debug: print("loaded_scene directly from user:// directory: ", loaded_scene)
 			mutex.unlock()
 		else:
 			push_error("Attempting to load an unsupported file type. Only 'glb' is currently supported with 'gltf' and 'obj' planned.")
 
 
+		#await get_tree().process_frame # Seems to need await to fully load scene
 		return loaded_scene
 
 
@@ -15591,16 +15851,170 @@ func process_texture(origin_file_path: String, path_to_save_scene: String, new_s
 			#if user_dir.copy(origin_file_path, path_to_copy_file) != OK:
 				#if debug: print("Failed to copy file from ", origin_file_path, " to ", path_to_copy_file)
 
+
+
+
+#func get_textures_from_fbx(fbx_path: String) -> Array[String]:
+	#var texture_paths: Array[String] = []
+#
+	#var scene_resource = load(fbx_path)
+	#if scene_resource == null or not scene_resource is PackedScene:
+		#printerr("Failed to load FBX as PackedScene: ", fbx_path)
+		#return texture_paths
+#
+	#var scene = scene_resource.instantiate()
+#
+	#var mesh_instances = scene.get_children_recursive().filter(func(node): return node is MeshInstance3D)
+	#for mesh_instance in mesh_instances:
+		#var mesh: Mesh = mesh_instance.mesh
+		#if mesh == null:
+			#continue
+#
+		#for surface_index in mesh.get_surface_count():
+			#var material: Material = mesh.surface_get_material(surface_index)
+			#if material == null:
+				#continue
+#
+			#if material is StandardMaterial3D:
+				#var standard_material: StandardMaterial3D = material
+				#for tex_param in [
+					#"albedo_texture",
+					#"normal_texture",
+					#"metallic_texture",
+					#"roughness_texture",
+					#"emission_texture",
+					#"ao_texture",
+				#]:
+					#var texture = standard_material.get(tex_param)
+					#if texture and texture is Texture2D:
+						#texture_paths.append(texture.resource_path)
+#
+	#return texture_paths
+#
+#
+#
+#func get_missing_fbx_dependencies(fbx_file_path: String) -> Array[String]:
+	#var missing_paths: Array[String] = []
+#
+	#var import_file_path = fbx_file_path + ".import"
+	#if not FileAccess.file_exists(import_file_path):
+		#printerr("Import metadata file not found: ", import_file_path)
+		#return missing_paths
+#
+	#var file = FileAccess.open(import_file_path, FileAccess.READ)
+	#if file == null:
+		#printerr("Failed to open .import file")
+		#return missing_paths
+#
+	#var text = file.get_as_text()
+	#file.close()
+#
+	## Parse like an INI (TOML-ish)
+	#var config = ConfigFile.new()
+	#var err = config.parse(text)
+	#if err != OK:
+		#printerr("Failed to parse import config")
+		#return missing_paths
+#
+	## Dependencies section usually contains original texture paths
+	#if config.has_section("deps"):
+		#for key in config.get_section_keys("deps"):
+			#var dep_path = config.get_value("deps", key)
+			## Filter textures only if you want
+			#if dep_path.get_extension() == ".png" or dep_path.get_extension() == ".psd":
+			##if dep_path.ends_with(".png") or dep_path.ends_with(".jpg") or dep_path.ends_with(".tga"):
+				#missing_paths.append(dep_path)
+#
+	#return missing_paths
+
+
+#func get_all_descendants(root: Node3D, arr: Array[Node3D] = []) -> Array[Node3D]:
+	#for child in root.get_children():
+		#if child is Node3D:
+			#arr.append(child)
+			#get_all_descendants(child, arr)
+	#return arr
+
+
+func get_all_material_texture_paths_from_scene(scene_path: String) -> Array[String]:
+	var textures: Array[String] = []
+	var loaded_scene = load(scene_path)
+
+	if not loaded_scene or not (loaded_scene is PackedScene):
+		printerr("Invalid scene at path: ", scene_path)
+		return textures
+
+	var root = loaded_scene.instantiate()
+
+	# Get all MeshInstance3D nodes
+	var mesh_instances = root.find_children("*", "MeshInstance3D", true, false)
+	#var mesh_instances = root.get_children_recursive().filter(func(n): return n is MeshInstance3D)
+	#get_all_descendants(root: Node3D, arr: Array[Node3D] = [])
+
+	for mesh_instance in mesh_instances:
+		var mesh: Mesh = mesh_instance.mesh
+		if mesh == null:
+			continue
+
+		for surface_index in mesh.get_surface_count():
+			var material = mesh.surface_get_material(surface_index)
+			if material is StandardMaterial3D:
+				for prop in [
+					"albedo_texture",
+					"normal_texture",
+					"roughness_texture",
+					"metallic_texture",
+					"emission_texture",
+					"ao_texture"
+				]:
+					var tex = material.get(prop)
+					if tex and tex is Texture2D:
+						textures.append(tex.resource_path)
+					elif tex != null:
+						# Broken/missing reference? Still try to get it
+						if tex.has_meta("resource_path"):
+							textures.append(str(tex.get_meta("resource_path")))
+						else:
+							textures.append("Unknown or missing texture")
+
+	#return textures.unique()
+	return unique_strings(textures)
+
+
+func unique_strings(arr: Array[String]) -> Array[String]:
+	var seen := {}
+	for s in arr:
+		seen[s] = true
+	var result := seen.keys()
+	# If result is untyped and you want a typed version:
+	var typed: Array[String] = []
+	typed.assign(result)
+	return typed
+
+
+
+
 var collection_file_names: PackedStringArray = []
 ## Process files that get dragged from filesystem dock into the Scene Viewer Panel
 func process_packedscene(origin_file_path: String, path_to_save_scene: String, scene_count: int, new_sub_collection_tab: Control) -> void:
 	
-	
+
+	#var missing_textures = get_missing_fbx_dependencies(origin_file_path)
+	#for tex_path in missing_textures:
+		#print("Missing texture (as expected by FBX): ", tex_path)
+	var texture_paths = get_all_material_texture_paths_from_scene(origin_file_path)
+
+	for tex in texture_paths:
+		print("Texture path (real or missing): ", tex)
+
+
+
 	var dep_path: String = ""
 	
 		# TEST
 	if debug: print("Do a check here is destination folder has dep if not or included in dropped files if not add popup to warning message")
 	for dep in ResourceLoader.get_dependencies(origin_file_path):
+		print("dep: ", dep)
 		
 		# From each .tscn scene file get the dependencies base directory of 
 		# where the scene file expects to find the textures in the project res://
@@ -16208,8 +16622,9 @@ func export_gltf(root: Node, save_path: String) -> void:
 
 
 
-
-
+# FIXME Does not fire signal to create_scene_preview when PhysicsBody3D is no collision or Node3D
+# FIXME Block updating visible_scene_preview_collisions when cycling bodytype selection change
+## Enable or disable CollisionShape3D selection button based on selected PhysicsBody3D.
 func do_button_conflict_matching() -> void:
 	var first_conflict: bool = false
 	var second_conflict: bool = false
@@ -16373,6 +16788,7 @@ func toggle_physics_body_type_3d(direction: int) -> void:
 	elif current_index >= Physics_Body_Type_3D.size():
 		current_index = 0
 	
+	#print("current_index: ", current_index)
 	# Update the next body type (use the enum value by its index)
 	next_type_3d = Physics_Body_Type_3D.values()[current_index]
 	update_physics_body_type_button()
@@ -16416,8 +16832,9 @@ func _on_change_body_type_3d_button_pressed() -> void:
 
 func update_update_physics_body_type_3d_variables() -> void:
 	current_type_3d = Physics_Body_Type_3D.find_key(next_type_3d) # Get body type name as string
-	body_3d_number.set_text(str(next_type_3d))
 	emit_signal("change_physics_body_type_3d", current_type_3d)
+	body_3d_number.set_text(str(next_type_3d))
+	
 
 
 
@@ -16745,9 +17162,11 @@ func get_default_material() -> BaseMaterial3D:
 
 
 func get_current_material() -> BaseMaterial3D:
-	var current_material: BaseMaterial3D
-	
-	current_material = materials_3d_array[current_material_index]
+	var current_material: BaseMaterial3D = null
+	if not materials_3d_array.is_empty():
+		current_material = materials_3d_array[current_material_index]
+	else:
+		push_warning("No materials were found within your project res:// directory.")
 	return current_material
 
 

@@ -150,8 +150,8 @@ func change_scene_load_state_on_hover(state: bool) -> void:
 func _on_heart_texture_button_toggled(toggled_on: bool) -> void:
 	# Important for initializing scene_buttons if tab has not been changed after startup
 	#if scene_buttons.size() <= 1: # 1 for Node2D MultiSelectBox
-	if scene_buttons.is_empty():
-		get_scene_buttons()
+	#if scene_buttons.is_empty():
+	get_scene_buttons()
 	# Clear all hearts
 	if Input.is_key_pressed(KEY_SHIFT):
 		if debug: print("clearing all heart buttons")
@@ -265,6 +265,7 @@ func _on_scene_search_line_edit_text_changed(new_text: String) -> void:
 	if new_text != "":
 		reset_text = true # Reset flag
 		apply_accent_color()
+		get_scene_buttons()
 		filter_buttons()
 
 	elif reset_text:

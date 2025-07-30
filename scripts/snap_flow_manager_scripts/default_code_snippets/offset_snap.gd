@@ -4,7 +4,10 @@ extends TransformBase
 # Get scene_preview and other node from connections?
 #var change_pivot: bool
 var count: int = 0
-func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
+
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+#func transform(scene_preview: Node3D, scene_preview_aabb: AABB, vector_normal: Vector3, process: bool = true) -> bool:
+#func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
 	count += 1
 	print("count: ", count)
 	process = false
@@ -15,7 +18,7 @@ func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = t
 #	return object_to_snap.position
 
 	# Assuming the first child is MeshInstance3D
-	var child = object_to_snap.get_child(0) as MeshInstance3D
+	var child = scene_preview.get_child(0) as MeshInstance3D
 	
 	# Check if the cast was successful
 	if child:

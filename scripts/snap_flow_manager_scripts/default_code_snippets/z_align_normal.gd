@@ -1,15 +1,17 @@
 extends TransformBase
 
-func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
-	var vector_normal_normalized = vector_normal.normalized()
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+#func transform(scene_preview: Node3D, scene_preview_aabb: AABB, vector_normal: Vector3, process: bool = true) -> bool:
+#func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
+	var vector_normal_normalized = snap_vector_normal.normalized()
 	if vector_normal_normalized.y == 1 or vector_normal_normalized.y == -1:
 		print("on top")
 	else:
 		# Extract the original global transform (position, rotation, scale)
-		var original_global_transform: Transform3D = object_to_snap.global_transform
+		var original_global_transform: Transform3D = scene_preview.global_transform
 
-		# Create the new rotation using looking_at
-		var new_basis: Basis = Basis().looking_at(vector_normal, Vector3.UP, true)
+		# Create the new rotation using looking_at and the snap surface vector normal
+		var new_basis: Basis = Basis().looking_at(snap_vector_normal, Vector3.UP, true)
 
 	#	var original_origin: Vector3 = original_global_transform.origin as Vector3
 		# Apply the new basis (rotation)
@@ -20,5 +22,5 @@ func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = t
 		new_transform.basis = new_transform.basis.scaled(original_global_transform.basis.get_scale())
 
 		# Set the global transform to the new transform (with the new rotation and preserved scale)
-		object_to_snap.global_transform = new_transform
+		scene_preview.global_transform = new_transform
 	return process

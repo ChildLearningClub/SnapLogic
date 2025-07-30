@@ -1,17 +1,15 @@
-[gd_scene load_steps=10 format=3 uid="uid://fkq4y06rutkk"]
+[gd_scene load_steps=8 format=3 uid="uid://fkq4y06rutkk"]
 
 [ext_resource type="Script" uid="uid://b8bqc4lipr0n8" path="res://addons/scene_snap/scripts/snap_flow_manager_graph.gd" id="1_ayjo4"]
 [ext_resource type="Script" uid="uid://bc0nlpsb4hwfv" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/object_to_snap.gd" id="2_n7jn7"]
 [ext_resource type="PackedScene" uid="uid://j5p4gfvmil3h" path="res://addons/scene_snap/plugin_scenes/tag.tscn" id="3_ocqev"]
-[ext_resource type="Script" uid="uid://dqnbmdi80yaru" path="res://addons/scene_snap/scripts/tag.gd" id="4_03ico"]
 [ext_resource type="Script" uid="uid://cbtfypov00xkc" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/snap_to_object.gd" id="4_n7jn7"]
-[ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="6_jlomf"]
+[ext_resource type="Script" uid="uid://dqnbmdi80yaru" path="res://addons/scene_snap/scripts/tag.gd" id="4_wd2wf"]
 [ext_resource type="PackedScene" uid="uid://ddihubesyoh55" path="res://addons/scene_snap/plugin_scenes/graph_node_code_tab.tscn" id="6_wd2wf"]
-[ext_resource type="Script" uid="uid://fsks6f4wmist" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/graph_node_code_tab.gd" id="7_ocqev"]
-
-[sub_resource type="GDScriptSyntaxHighlighter" id="GDScriptSyntaxHighlighter_wd2wf"]
+[ext_resource type="Script" uid="uid://fsks6f4wmist" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/graph_node_code_tab.gd" id="7_03ico"]
 
 [node name="GraphEdit" type="GraphEdit"]
+custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -19,208 +17,157 @@ snapping_enabled = false
 right_disconnects = true
 connections = Array[Dictionary]([{
 "from_node": &"IndividualTags",
-"from_port": 0,
-"keep_alive": false,
-"to_node": &"SnapToObject",
-"to_port": 0
-}, {
-"from_node": &"SnapToObject",
-"from_port": 0,
+"from_port": 5,
 "keep_alive": false,
 "to_node": &"OutputSnap",
-"to_port": 3
+"to_port": 4
 }])
-zoom = 0.412008
+zoom = 0.751315
 script = ExtResource("1_ayjo4")
 
-[node name="Modifiers" type="GraphFrame" parent="."]
+[node name="InputFilters" type="GraphFrame" parent="."]
 visible = false
 layout_mode = 1
-offset_left = 549.345
-offset_top = 236.753
-offset_right = 964.328
-offset_bottom = 744.783
-scale = Vector2(0.412008, 0.412008)
+offset_left = 477.546
+offset_top = 140.001
+offset_right = 1097.26
+offset_bottom = 585.461
+scale = Vector2(0.751315, 0.751315)
 mouse_filter = 1
-position_offset = Vector2(240.826, 451.228)
-title = "Modifiers"
-
-[node name="Button" type="Button" parent="Modifiers"]
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 0
-text = "+"
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Modifiers"]
-layout_mode = 2
-
-[node name="GraphNode" type="GraphNode" parent="Modifiers/VBoxContainer"]
-layout_mode = 2
-offset_right = 378.0
-offset_bottom = 78.0
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode"]
-layout_mode = 2
-
-[node name="GraphNode2" type="GraphNode" parent="Modifiers/VBoxContainer"]
-layout_mode = 2
-offset_top = 82.0
-offset_right = 378.0
-offset_bottom = 160.0
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode2"]
-layout_mode = 2
-
-[node name="GraphNode3" type="GraphNode" parent="Modifiers/VBoxContainer"]
-layout_mode = 2
-offset_top = 164.0
-offset_right = 378.0
-offset_bottom = 242.0
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode3"]
-layout_mode = 2
-
-[node name="GraphNode4" type="GraphNode" parent="Modifiers/VBoxContainer"]
-layout_mode = 2
-offset_top = 246.0
-offset_right = 378.0
-offset_bottom = 324.0
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode4"]
-layout_mode = 2
-
-[node name="GraphNode5" type="GraphNode" parent="Modifiers/VBoxContainer"]
-layout_mode = 2
-offset_top = 328.0
-offset_right = 378.0
-offset_bottom = 406.0
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Modifiers/VBoxContainer/GraphNode5"]
-layout_mode = 2
-
-[node name="InputFilters" type="GraphFrame" parent="."]
-layout_mode = 1
-offset_left = 251.411
-offset_top = 35.9194
-offset_right = 569.409
-offset_bottom = 404.894
-scale = Vector2(0.412008, 0.412008)
-mouse_filter = 1
-position_offset = Vector2(-482.299, -36.2234)
+position_offset = Vector2(-493.985, -96.0491)
 title = "Tags of the Objects to Place"
 
 [node name="SnapToObjectsFrame" type="GraphFrame" parent="."]
-layout_mode = 1
-offset_left = 418.275
-offset_top = 36.6045
-offset_right = 695.275
-offset_bottom = 244.604
-scale = Vector2(0.412008, 0.412008)
-mouse_filter = 1
-position_offset = Vector2(-77.2971, -34.5607)
-title = "Tags of Objects to Snap to"
-
-[node name="ObjectToSnap" type="GraphNode" parent="."]
 visible = false
 layout_mode = 1
-offset_left = 267.892
-offset_top = 60.9502
-offset_right = 502.892
-offset_bottom = 257.366
-scale = Vector2(0.412008, 0.412008)
+offset_left = 765.832
+offset_top = 140.001
+offset_right = 1042.83
+offset_bottom = 348.001
+scale = Vector2(0.751315, 0.751315)
 mouse_filter = 1
-position_offset = Vector2(-442.299, 24.5297)
-resizable = true
-title = "ObjectToSnap"
+position_offset = Vector2(-110.276, -96.0491)
+title = "Tags of Objects to Snap to"
+
+[node name="IndividualTags" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 507.598
+offset_top = 228.265
+offset_right = 742.618
+offset_bottom = 516.245
+scale = Vector2(0.751315, 0.751315)
+mouse_filter = 1
+position_offset = Vector2(-453.985, 21.4312)
+title = "Scene Preview Tag"
 ignore_invalid_connection_type = true
 slot/0/left_enabled = false
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_type = 1
+slot/0/left_color = Color(0.846, 0.399, 0, 1)
 slot/0/left_icon = null
 slot/0/right_enabled = true
-slot/0/right_type = 0
-slot/0/right_color = Color(0.733511, 0, 0.308387, 1)
+slot/0/right_type = 1
+slot/0/right_color = Color(0.846, 0.399, 0, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 1
+slot/1/left_color = Color(0.846, 0.399, 0, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = true
+slot/1/right_type = 1
+slot/1/right_color = Color(0.846, 0.399, 0, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = false
+slot/2/left_type = 1
+slot/2/left_color = Color(0.846, 0.399, 0, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = true
+slot/2/right_type = 1
+slot/2/right_color = Color(0.846, 0.399, 0, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = false
+slot/3/left_type = 1
+slot/3/left_color = Color(0.846, 0.399, 0, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = true
+slot/3/right_type = 1
+slot/3/right_color = Color(0.846, 0.399, 0, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+slot/4/left_enabled = false
+slot/4/left_type = 1
+slot/4/left_color = Color(0.846, 0.399, 0, 1)
+slot/4/left_icon = null
+slot/4/right_enabled = true
+slot/4/right_type = 1
+slot/4/right_color = Color(0.846, 0.399, 0, 1)
+slot/4/right_icon = null
+slot/4/draw_stylebox = true
+slot/5/left_enabled = false
+slot/5/left_type = 1
+slot/5/left_color = Color(0.846, 0.399, 0, 1)
+slot/5/left_icon = null
+slot/5/right_enabled = true
+slot/5/right_type = 1
+slot/5/right_color = Color(0.846, 0.399, 0, 1)
+slot/5/right_icon = null
+slot/5/draw_stylebox = true
+script = ExtResource("2_n7jn7")
 
-[node name="InputLineEdit" type="LineEdit" parent="ObjectToSnap"]
-clip_contents = true
-custom_minimum_size = Vector2(0, 30)
+[node name="Tag" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
 layout_mode = 2
-text = "floor, tile, ground, house"
-placeholder_text = "Comma Separated Text Filters"
-expand_to_text_length = true
-emoji_menu_enabled = false
-caret_blink = true
-caret_blink_interval = 0.5
-caret_column = 26
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "window"
 
-[node name="AddNewInputTagsBox" type="Button" parent="."]
-layout_mode = 1
-offset_right = 24.0
-offset_bottom = 31.0
-text = "+"
+[node name="Tag2" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "tiles"
+
+[node name="Tag3" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "door"
+
+[node name="Tag4" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "poster"
+
+[node name="Tag5" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "power"
+
+[node name="Tag6" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "synty"
 
 [node name="SnapToObject" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 434.756
-offset_top = 53.4968
-offset_right = 586.756
-offset_bottom = 180.498
-scale = Vector2(0.412008, 0.412008)
+offset_left = 795.884
+offset_top = 170.805
+offset_right = 951.886
+offset_bottom = 297.806
+scale = Vector2(0.751315, 0.751315)
 mouse_filter = 1
-position_offset = Vector2(-37.2971, 6.43927)
-title = "Snap To Object"
+position_offset = Vector2(-70.2763, -55.0491)
+title = "Snap To Object Tag"
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 1
@@ -237,228 +184,27 @@ script = ExtResource("4_n7jn7")
 custom_minimum_size = Vector2(116, 35)
 layout_mode = 2
 mouse_default_cursor_shape = 6
-script = ExtResource("4_03ico")
+script = ExtResource("4_wd2wf")
 metadata/tag_text = "wall"
 
-[node name="ObjectModifier" type="GraphNode" parent="."]
-visible = false
+[node name="OutputSnap" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 483.153
-offset_top = 323.804
-offset_right = 612.164
-offset_bottom = 658.794
-scale = Vector2(0.412008, 0.412008)
-size_flags_horizontal = 4
-size_flags_vertical = 4
+offset_left = 1027.8
+offset_top = 133.496
+offset_right = 2527.81
+offset_bottom = 3895.5
+scale = Vector2(0.751315, 0.751315)
+size_flags_horizontal = 3
 mouse_filter = 1
-position_offset = Vector2(80.169, 662.512)
-title = "Object Modifier"
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(0.47451, 0, 0.2, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-slot/1/left_enabled = true
-slot/1/left_type = 0
-slot/1/left_color = Color(0.47451, 0, 0.2, 1)
-slot/1/left_icon = null
-slot/1/right_enabled = false
-slot/1/right_type = 0
-slot/1/right_color = Color(1, 1, 1, 1)
-slot/1/right_icon = null
-slot/1/draw_stylebox = true
-slot/2/left_enabled = true
-slot/2/left_type = 0
-slot/2/left_color = Color(0.47451, 0, 0.2, 1)
-slot/2/left_icon = null
-slot/2/right_enabled = false
-slot/2/right_type = 0
-slot/2/right_color = Color(1, 1, 1, 1)
-slot/2/right_icon = null
-slot/2/draw_stylebox = true
-slot/3/left_enabled = true
-slot/3/left_type = 0
-slot/3/left_color = Color(0.47451, 0, 0.2, 1)
-slot/3/left_icon = null
-slot/3/right_enabled = false
-slot/3/right_type = 0
-slot/3/right_color = Color(1, 1, 1, 1)
-slot/3/right_icon = null
-slot/3/draw_stylebox = true
-slot/4/left_enabled = true
-slot/4/left_type = 0
-slot/4/left_color = Color(0.47451, 0, 0.2, 1)
-slot/4/left_icon = null
-slot/4/right_enabled = false
-slot/4/right_type = 0
-slot/4/right_color = Color(1, 1, 1, 1)
-slot/4/right_icon = null
-slot/4/draw_stylebox = true
-
-[node name="Label" type="Label" parent="ObjectModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "Rotation"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label2" type="Label" parent="ObjectModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "Scale"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label3" type="Label" parent="ObjectModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "Collision"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Body" type="Label" parent="ObjectModifier"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-text = "Body"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label5" type="Label" parent="ObjectModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "Animation"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Body3DModifier" type="GraphNode" parent="."]
-visible = false
-layout_mode = 1
-offset_left = 400.328
-offset_top = 327.065
-offset_right = 572.349
-offset_bottom = 508.075
-scale = Vector2(0.412008, 0.412008)
-mouse_filter = 1
-position_offset = Vector2(-120.858, 670.427)
-title = "Modifier Body 3D"
+position_offset = Vector2(238.409, -104.707)
+resizable = true
+title = "Output Code Snippet Snap Modifier"
 ignore_invalid_connection_type = true
 slot/0/left_enabled = true
 slot/0/left_type = 0
 slot/0/left_color = Color(1, 1, 1, 1)
 slot/0/left_icon = null
 slot/0/right_enabled = false
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-slot/1/left_enabled = true
-slot/1/left_type = 0
-slot/1/left_color = Color(1, 1, 1, 1)
-slot/1/left_icon = null
-slot/1/right_enabled = false
-slot/1/right_type = 0
-slot/1/right_color = Color(1, 1, 1, 1)
-slot/1/right_icon = null
-slot/1/draw_stylebox = true
-slot/2/left_enabled = true
-slot/2/left_type = 0
-slot/2/left_color = Color(1, 1, 1, 1)
-slot/2/left_icon = null
-slot/2/right_enabled = false
-slot/2/right_type = 0
-slot/2/right_color = Color(1, 1, 1, 1)
-slot/2/right_icon = null
-slot/2/draw_stylebox = true
-slot/3/left_enabled = false
-slot/3/left_type = 0
-slot/3/left_color = Color(1, 1, 1, 1)
-slot/3/left_icon = null
-slot/3/right_enabled = false
-slot/3/right_type = 0
-slot/3/right_color = Color(1, 1, 1, 1)
-slot/3/right_icon = null
-slot/3/draw_stylebox = true
-
-[node name="Label" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "StaticBody3D"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label2" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "RigidBody3D"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label3" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "CharacterBody3D"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label4" type="Label" parent="Body3DModifier"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="IndividualTags" type="GraphNode" parent="."]
-layout_mode = 1
-offset_left = 269.127
-offset_top = 52.8118
-offset_right = 504.127
-offset_bottom = 340.786
-scale = Vector2(0.412008, 0.412008)
-mouse_filter = 1
-position_offset = Vector2(-439.301, 4.77663)
-title = "Individual Tag Connections"
-ignore_invalid_connection_type = true
-slot/0/left_enabled = false
-slot/0/left_type = 1
-slot/0/left_color = Color(0.846, 0.399, 0, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 1
-slot/0/right_color = Color(0.846, 0.399, 0, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-script = ExtResource("2_n7jn7")
-
-[node name="Tag" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_03ico")
-metadata/tag_text = "window"
-
-[node name="OutputSnap" type="GraphNode" parent="."]
-layout_mode = 1
-offset_left = 599.288
-offset_top = -198.813
-offset_right = 1551.87
-offset_bottom = 2109.19
-scale = Vector2(0.412008, 0.412008)
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 1
-position_offset = Vector2(362.046, -605.95)
-resizable = true
-title = "Output Snap"
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(0.588235, 0, 0.247059, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
 slot/0/right_type = 0
 slot/0/right_color = Color(0.588235, 0, 0.247059, 1)
 slot/0/right_icon = null
@@ -490,7 +236,7 @@ slot/3/right_type = 0
 slot/3/right_color = Color(1, 1, 1, 1)
 slot/3/right_icon = null
 slot/3/draw_stylebox = true
-slot/4/left_enabled = false
+slot/4/left_enabled = true
 slot/4/left_type = 0
 slot/4/left_color = Color(1, 1, 1, 1)
 slot/4/left_icon = null
@@ -499,90 +245,174 @@ slot/4/right_type = 0
 slot/4/right_color = Color(1, 1, 1, 1)
 slot/4/right_icon = null
 slot/4/draw_stylebox = true
-
-[node name="Label" type="Label" parent="OutputSnap"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "Snap Down"
+slot/5/left_enabled = false
+slot/5/left_type = 0
+slot/5/left_color = Color(1, 1, 1, 1)
+slot/5/left_icon = null
+slot/5/right_enabled = false
+slot/5/right_type = 0
+slot/5/right_color = Color(1, 1, 1, 1)
+slot/5/right_icon = null
+slot/5/draw_stylebox = true
 
 [node name="GraphNodeCodeTab" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(848, 739)
+custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "      Offset Snap"
-script = ExtResource("7_ocqev")
+vertical_alignment = 1
+script = ExtResource("7_03ico")
+user_code_snippet = "extends TransformBase
+# NOTE: object_to_snap is any mesh that has a tag
+# that is connected to this Output
+# Get scene_preview and other node from connections?
+#var change_pivot: bool
+var count: int = 0
+
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+#func transform(scene_preview: Node3D, scene_preview_aabb: AABB, vector_normal: Vector3, process: bool = true) -> bool:
+#func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
+	count += 1
+	print(\"count: \", count)
+	process = false
+#	if change_pivot:
+#		change_pivot = false
+#	print(\"scene_preview children\", object_to_snap.get_children())
+#	object_to_snap.position += Vector3(1, 0, 0)
+#	return object_to_snap.position
+
+	# Assuming the first child is MeshInstance3D
+	var child = scene_preview.get_child(0) as MeshInstance3D
+	
+	# Check if the cast was successful
+	if child:
+		child.position += Vector3(5, 0, 0)
+	else:
+		print(\"The child is not a MeshInstance3D.\")
+		
+	return process
+"
 
 [node name="GraphNodeCodeTab2" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(848, 739)
+custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "      Surface Normal Z Forward"
-script = ExtResource("7_ocqev")
+vertical_alignment = 1
+script = ExtResource("7_03ico")
+user_code_snippet = "extends TransformBase
+
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+	print(\"we are connected\")
+	return process
+	"
 
 [node name="GraphNodeCodeTab3" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(848, 739)
+custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "       Z Align Normal"
-script = ExtResource("7_ocqev")
+vertical_alignment = 1
+script = ExtResource("7_03ico")
+user_code_snippet = "extends TransformBase
 
-[node name="Label3" type="Label" parent="OutputSnap"]
-visible = false
-layout_mode = 2
-text = "      Surface Normal Z Forward"
-
-[node name="Button" type="Button" parent="OutputSnap/Label3"]
-layout_mode = 0
-offset_right = 24.0
-offset_bottom = 24.0
-toggle_mode = true
-icon = ExtResource("6_jlomf")
-flat = true
-
-[node name="CodeEdit" type="CodeEdit" parent="OutputSnap/Label3"]
-clip_contents = false
-layout_mode = 2
-offset_top = 25.0
-offset_right = 476.0
-offset_bottom = 325.0
-text = "extends Node3D
-
-func transform(object_to_snap: Node3D, vector_normal: Vector3, run_continuus: bool = true) -> bool:
-	var vector_normal_normalized = vector_normal.normalized()
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+#func transform(scene_preview: Node3D, scene_preview_aabb: AABB, vector_normal: Vector3, process: bool = true) -> bool:
+#func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
+	var vector_normal_normalized = snap_vector_normal.normalized()
 	if vector_normal_normalized.y == 1 or vector_normal_normalized.y == -1:
 		print(\"on top\")
 	else:
 		# Extract the original global transform (position, rotation, scale)
-		var original_global_transform: Transform3D = object_to_snap.global_transform
+		var original_global_transform: Transform3D = scene_preview.global_transform
 
-		# Create the new rotation using looking_at
-		var new_basis: Basis = Basis().looking_at(vector_normal, Vector3.UP, true)
+		# Create the new rotation using looking_at and the snap surface vector normal
+		var new_basis: Basis = Basis().looking_at(snap_vector_normal, Vector3.UP, true)
 
 	#	var original_origin: Vector3 = original_global_transform.origin as Vector3
 		# Apply the new basis (rotation)
-		var new_transform: Transform3D = Transform3D(new_basis, original_global_transform.origin)
+		#var new_transform: Transform3D = Transform3D(new_basis, original_global_transform.origin)
+		var new_transform: Transform3D = Transform3D(new_basis, collision_point)
+	#	var original_basis: Basis = original_global_transform.basis as Basis
+		# Preserve the original scale by multiplying the new basis with the scale
+		new_transform.basis = new_transform.basis.scaled(original_global_transform.basis.get_scale())
+
+		# Set the global transform to the new transform (with the new rotation and preserved scale)
+		scene_preview.global_transform = new_transform
+	return process
+"
+
+[node name="GraphNodeCodeTab4" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
+custom_minimum_size = Vector2(1302, 737)
+layout_mode = 2
+text = "       New Code Snippet"
+vertical_alignment = 1
+script = ExtResource("7_03ico")
+user_code_snippet = "extends TransformBase
+
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+	var vector_normal_normalized = snap_vector_normal.normalized()
+	if vector_normal_normalized.y == 1 or vector_normal_normalized.y == -1:
+		print(\"on top\")
+	else:
+		print(\"scene_preview_aabb front: \", scene_preview_aabb)
+		var offset_local: Vector3 = Vector3(scene_preview_aabb.size.z / .399, 0, 0) # NOTE: For objects with none center origin.
+		var original_global_transform: Transform3D = scene_preview.global_transform
+		var x_dir: Vector3 = vector_normal_normalized
+		var z_dir: Vector3 = Vector3.DOWN.cross(x_dir).normalized()
+		var y_dir: Vector3 = z_dir.cross(x_dir).normalized()
+		var new_basis: Basis = Basis(x_dir, y_dir, z_dir)
+		var offset_rotated: Vector3 = new_basis * offset_local
+		var new_transform: Transform3D = Transform3D(new_basis, collision_point + offset_rotated)
+		new_transform.basis = new_transform.basis.scaled(original_global_transform.basis.get_scale())
+		scene_preview.global_transform = new_transform
+	return process"
+
+[node name="GraphNodeCodeTab5" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
+custom_minimum_size = Vector2(1302, 737)
+layout_mode = 2
+text = "       New Code Snippet"
+vertical_alignment = 1
+script = ExtResource("7_03ico")
+user_code_snippet = "extends TransformBase
+
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+	var vector_normal_normalized = snap_vector_normal.normalized()
+	if vector_normal_normalized.y == 1 or vector_normal_normalized.y == -1:
+		scene_preview.global_position = collision_point
+		# Reset rotation of x and z axis while keeping y.
+		scene_preview.rotation = Vector3(0.0, scene_preview.rotation.y, 0.0)
+		#print(\"on top\")
+	else:
+		var scaled_offset: float = (scene_preview_aabb.size.z / 2) * scene_preview.scale.z
+		# Offset the object from the collision_point 1/2 its size * its scale.
+		var offset_local: Vector3 = Vector3(0, 0, scaled_offset)
+
+		#print(\"scene_preview scale: \", scene_preview.scale)
+		# Extract the original global transform (position, rotation, scale)
+		var original_global_transform: Transform3D = scene_preview.global_transform
+
+		# Create the new rotation using looking_at and the snap surface vector normal
+		var new_basis: Basis = Basis().looking_at(snap_vector_normal, Vector3.UP, true)
+		var offset_rotated: Vector3 = new_basis * offset_local
+	#	var original_origin: Vector3 = original_global_transform.origin as Vector3
+		# Apply the new basis (rotation)
+		var new_transform: Transform3D = Transform3D(new_basis, collision_point + offset_rotated)
 
 	#	var original_basis: Basis = original_global_transform.basis as Basis
 		# Preserve the original scale by multiplying the new basis with the scale
 		new_transform.basis = new_transform.basis.scaled(original_global_transform.basis.get_scale())
 
 		# Set the global transform to the new transform (with the new rotation and preserved scale)
-		object_to_snap.global_transform = new_transform
-	return run_continuus"
-placeholder_text = "Your Code here"
-scroll_fit_content_height = true
-scroll_fit_content_width = true
-caret_blink = true
-syntax_highlighter = SubResource("GDScriptSyntaxHighlighter_wd2wf")
-highlight_all_occurrences = true
-draw_tabs = true
-gutters_draw_executing_lines = true
-gutters_draw_line_numbers = true
-code_completion_enabled = true
-indent_automatic = true
+		scene_preview.global_transform = new_transform
+	return process"
+
+[node name="AddCodeSnippetButton" type="Button" parent="OutputSnap"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Create New Code Snippet"
 
 [connection signal="connection_request" from="." to="." method="_on_connection_request"]
 [connection signal="disconnection_request" from="." to="." method="_on_disconnection_request"]
 [connection signal="end_node_move" from="." to="." method="_on_end_node_move"]
 [connection signal="frame_rect_changed" from="." to="." method="_on_frame_rect_changed"]
-[connection signal="pressed" from="AddNewInputTagsBox" to="." method="_on_add_new_input_tags_box_pressed"]
-[connection signal="update_tag_cache" from="SnapToObject" to="." method="_on_snap_to_object_update_tag_cache"]
 [connection signal="update_tag_cache" from="IndividualTags" to="." method="_on_individual_tags_update_tag_cache"]
-[connection signal="toggled" from="OutputSnap/Label3/Button" to="." method="_on_button_toggled"]
+[connection signal="update_tag_cache" from="SnapToObject" to="." method="_on_snap_to_object_update_tag_cache"]
+[connection signal="pressed" from="OutputSnap/AddCodeSnippetButton" to="." method="_on_button_pressed"]

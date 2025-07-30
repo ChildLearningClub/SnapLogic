@@ -8,7 +8,7 @@ extends Control
 var debug = preload("res://addons/scene_snap/scripts/print_debug.gd").new().run()
 #var scene_data_cache: SceneDataCache = SceneDataCache.new()
 
-signal tag_added_or_removed(scene_view: Button) ## Signal when tag added or removed to scene_view.gd
+signal tag_added_or_removed(scene_view: Button) ## Signal when tag added or removed to scene_view.gd to update cache
 #signal update_scene_mesh_tags(scene_view: Button, shared_tags: Array[String])
 
 #const TAG = preload("res://addons/scene_snap/plugin_scenes/tag.tscn")
@@ -647,7 +647,7 @@ func store_tags_in_button_array_extended(scene_view: Button, flow_container: Flo
 
 
 
-
+# NOTE: Reads from button variables not from cache
 func create_tags(scene_view: Button) -> void:
 	for tag_text: String in scene_view.shared_tags:
 		add_tag(flow_shared_tags, tag_text)
