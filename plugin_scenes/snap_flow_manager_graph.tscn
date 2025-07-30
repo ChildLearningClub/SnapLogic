@@ -13,44 +13,51 @@ custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-snapping_enabled = false
+scroll_offset = Vector2(-592.56, -192.63)
 right_disconnects = true
+connections = Array[Dictionary]([{
+"from_node": &"IndividualTags",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"OutputSnap",
+"to_port": 4
+}])
 zoom = 0.971495
 script = ExtResource("1_ayjo4")
 
 [node name="InputFilters" type="GraphFrame" parent="."]
 visible = false
 layout_mode = 1
-offset_left = 186.25
-offset_top = 103.848
-offset_right = 805.961
-offset_bottom = 549.308
+offset_left = 223.392
+offset_top = 172.229
+offset_right = 779.394
+offset_bottom = 541.209
 scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
-position_offset = Vector2(-493.985, -96.0491)
+position_offset = Vector2(-380, -21)
 title = "Tags of the Objects to Place"
 
 [node name="SnapToObjectsFrame" type="GraphFrame" parent="."]
 visible = false
 layout_mode = 1
-offset_left = 559.021
-offset_top = 103.848
-offset_right = 836.021
-offset_bottom = 311.848
+offset_left = 534.27
+offset_top = 55.6493
+offset_right = 811.27
+offset_bottom = 263.649
 scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
-position_offset = Vector2(-110.276, -96.0491)
+position_offset = Vector2(-60, -141)
 title = "Tags of Objects to Snap to"
 
 [node name="IndividualTags" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 225.109
-offset_top = 217.98
-offset_right = 460.13
-offset_bottom = 505.96
+offset_left = 262.252
+offset_top = 212.06
+offset_right = 497.273
+offset_bottom = 500.04
 scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
-position_offset = Vector2(-453.985, 21.4312)
+position_offset = Vector2(-340, 20)
 title = "Scene Preview Tag"
 ignore_invalid_connection_type = true
 slot/0/left_enabled = false
@@ -71,45 +78,16 @@ mouse_default_cursor_shape = 6
 script = ExtResource("4_wd2wf")
 metadata/tag_text = "window"
 
-[node name="SnapToObject" type="GraphNode" parent="."]
-layout_mode = 1
-offset_left = 597.88
-offset_top = 143.68
-offset_right = 753.882
-offset_bottom = 270.68
-scale = Vector2(0.971495, 0.971495)
-mouse_filter = 1
-position_offset = Vector2(-70.2763, -55.0491)
-title = "Snap To Object Tag"
-ignore_invalid_connection_type = true
-slot/0/left_enabled = true
-slot/0/left_type = 1
-slot/0/left_color = Color(0.846, 0.399, 0, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 1
-slot/0/right_color = Color(0.846, 0.399, 0, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-script = ExtResource("4_n7jn7")
-
-[node name="Tag" type="Control" parent="SnapToObject" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_wd2wf")
-metadata/tag_text = "wall"
-
 [node name="OutputSnap" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 897.767
-offset_top = 95.4374
-offset_right = 2397.78
-offset_bottom = 3857.44
+offset_left = 805.189
+offset_top = 98.7805
+offset_right = 2305.19
+offset_bottom = 3860.78
 scale = Vector2(0.971495, 0.971495)
 size_flags_horizontal = 3
 mouse_filter = 1
-position_offset = Vector2(238.409, -104.707)
+position_offset = Vector2(218.868, -96.6032)
 resizable = true
 title = "Output Code Snippet Snap Modifier"
 ignore_invalid_connection_type = true
@@ -169,7 +147,6 @@ slot/5/right_icon = null
 slot/5/draw_stylebox = true
 
 [node name="GraphNodeCodeTab" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "      Offset Snap"
 vertical_alignment = 1
@@ -206,7 +183,6 @@ func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_norm
 "
 
 [node name="GraphNodeCodeTab2" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "      Surface Normal Z Forward"
 vertical_alignment = 1
@@ -219,7 +195,6 @@ func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_norm
 	"
 
 [node name="GraphNodeCodeTab3" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "       Z Align Normal"
 vertical_alignment = 1
@@ -253,7 +228,6 @@ func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_norm
 "
 
 [node name="GraphNodeCodeTab4" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "       New Code Snippet"
 vertical_alignment = 1
@@ -279,7 +253,6 @@ func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_norm
 	return process"
 
 [node name="GraphNodeCodeTab5" type="Label" parent="OutputSnap" instance=ExtResource("6_wd2wf")]
-custom_minimum_size = Vector2(1302, 737)
 layout_mode = 2
 text = "       New Code Snippet"
 vertical_alignment = 1
@@ -322,10 +295,39 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Create New Code Snippet"
 
+[node name="SnapToObject" type="GraphNode" parent="."]
+layout_mode = 1
+offset_left = 573.13
+offset_top = 95.4805
+offset_right = 729.132
+offset_bottom = 222.481
+scale = Vector2(0.971495, 0.971495)
+mouse_filter = 1
+position_offset = Vector2(-20, -100)
+title = "Snap To Object Tag"
+ignore_invalid_connection_type = true
+slot/0/left_enabled = true
+slot/0/left_type = 1
+slot/0/left_color = Color(0.846, 0.399, 0, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 1
+slot/0/right_color = Color(0.846, 0.399, 0, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+script = ExtResource("4_n7jn7")
+
+[node name="Tag" type="Control" parent="SnapToObject" instance=ExtResource("3_ocqev")]
+custom_minimum_size = Vector2(116, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 6
+script = ExtResource("4_wd2wf")
+metadata/tag_text = "wall"
+
 [connection signal="connection_request" from="." to="." method="_on_connection_request"]
 [connection signal="disconnection_request" from="." to="." method="_on_disconnection_request"]
 [connection signal="end_node_move" from="." to="." method="_on_end_node_move"]
 [connection signal="frame_rect_changed" from="." to="." method="_on_frame_rect_changed"]
 [connection signal="update_tag_cache" from="IndividualTags" to="." method="_on_individual_tags_update_tag_cache"]
-[connection signal="update_tag_cache" from="SnapToObject" to="." method="_on_snap_to_object_update_tag_cache"]
 [connection signal="pressed" from="OutputSnap/AddCodeSnippetButton" to="." method="_on_button_pressed"]
+[connection signal="update_tag_cache" from="SnapToObject" to="." method="_on_snap_to_object_update_tag_cache"]

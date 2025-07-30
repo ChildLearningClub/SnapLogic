@@ -11392,10 +11392,8 @@ func update_current_scene_path(scene_full_path: String, scene: Button) -> void:
 		emit_signal("pass_current_scene_up", scene_full_path)
 		
 		mutex.lock()
-		if debug: print("material_lookup[scene_full_path]: ", material_lookup[scene_full_path])
-		if material_lookup[scene_full_path].size() > 1:
-			pass
-			
+		#if debug: print("material_lookup[scene_full_path]: ", material_lookup[scene_full_path])
+		if material_lookup.has(scene_full_path) and material_lookup[scene_full_path].size() > 1:
 			material_button_surface_selection.disabled = false
 		else:
 			current_selected_surface_index = 0

@@ -5,5 +5,46 @@
 [resource]
 script = ExtResource("1_a5nb6")
 scene_favorites = Array[String]([])
-scene_data = Dictionary[String, Dictionary]({})
+scene_data = Dictionary[String, Dictionary]({
+"user://global_collections/scenes/Global Collections/Construction/SM_Bld_Concrete_Wall_02.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["wall"]),
+"t": Array[String](["wall"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Bld_House_Wall_Window_01.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"]),
+"t": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Bld_House_Wall_Window_02.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"]),
+"t": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Bld_House_Wall_Window_03.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"]),
+"t": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Bld_House_Wall_Window_04.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"]),
+"t": Array[String](["window", "mmmmmmmmmmmmmmmmmmmmmmm"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Prop_Poster_01.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["poster"]),
+"t": Array[String](["poster"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Prop_Poster_02.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["poster"]),
+"t": Array[String](["poster"])
+}),
+"user://global_collections/scenes/Global Collections/Construction/SM_Prop_Poster_03.glb": Dictionary[String, Array]({
+"g": Array[String]([]),
+"s": Array[String](["poster"]),
+"t": Array[String](["poster"])
+})
+})
 metadata/_custom_type_script = "uid://brpm11rpgw7q1"
