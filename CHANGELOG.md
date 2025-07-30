@@ -22,7 +22,7 @@ V0.8.2-alpha main-branch - 2025-06-13
 - Fixed broken cycling of scenes when filters applied in non popup window mode.
 
 
-CHANGELOG: V0.8.3-alpha
+V0.8.3-alpha main-branch - 2025-06-25
 - Scene data cache properly cleaned up at start and collection removal
 - Scene data cache updated when collection renamed
 - KEY_SHIFT and mouse button click on tags updated from removing all tags to only removing global tags
@@ -39,7 +39,7 @@ CHANGELOG: V0.8.3-alpha
 - Enabled tags in this version.
 
 
-CHANGELOG: V0.8.4-dev dev-branch - Active
+V0.8.4-dev dev-branch - Active
 - **Fix:** On initial creation of collections scene_view buttons now always created even if thumbnails already exist.
 - **Fix:** "tags" are now referenced from cache, making them available immediately, rather then "tags" stored in the button or directly from the scene's metadata.
 - **Fix:** "tags" now properly being saved to packed .tscn project scenes. - Moved embed_shared_and_decrypted_global_tags_in_scene() before save_and_instantiate_scene().
