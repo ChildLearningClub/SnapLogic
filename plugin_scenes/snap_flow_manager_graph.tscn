@@ -15,24 +15,17 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 snapping_enabled = false
 right_disconnects = true
-connections = Array[Dictionary]([{
-"from_node": &"IndividualTags",
-"from_port": 5,
-"keep_alive": false,
-"to_node": &"OutputSnap",
-"to_port": 4
-}])
-zoom = 0.751315
+zoom = 0.971495
 script = ExtResource("1_ayjo4")
 
 [node name="InputFilters" type="GraphFrame" parent="."]
 visible = false
 layout_mode = 1
-offset_left = 477.546
-offset_top = 140.001
-offset_right = 1097.26
-offset_bottom = 585.461
-scale = Vector2(0.751315, 0.751315)
+offset_left = 186.25
+offset_top = 103.848
+offset_right = 805.961
+offset_bottom = 549.308
+scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
 position_offset = Vector2(-493.985, -96.0491)
 title = "Tags of the Objects to Place"
@@ -40,22 +33,22 @@ title = "Tags of the Objects to Place"
 [node name="SnapToObjectsFrame" type="GraphFrame" parent="."]
 visible = false
 layout_mode = 1
-offset_left = 765.832
-offset_top = 140.001
-offset_right = 1042.83
-offset_bottom = 348.001
-scale = Vector2(0.751315, 0.751315)
+offset_left = 559.021
+offset_top = 103.848
+offset_right = 836.021
+offset_bottom = 311.848
+scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
 position_offset = Vector2(-110.276, -96.0491)
 title = "Tags of Objects to Snap to"
 
 [node name="IndividualTags" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 507.598
-offset_top = 228.265
-offset_right = 742.618
-offset_bottom = 516.245
-scale = Vector2(0.751315, 0.751315)
+offset_left = 225.109
+offset_top = 217.98
+offset_right = 460.13
+offset_bottom = 505.96
+scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
 position_offset = Vector2(-453.985, 21.4312)
 title = "Scene Preview Tag"
@@ -69,51 +62,6 @@ slot/0/right_type = 1
 slot/0/right_color = Color(0.846, 0.399, 0, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
-slot/1/left_enabled = false
-slot/1/left_type = 1
-slot/1/left_color = Color(0.846, 0.399, 0, 1)
-slot/1/left_icon = null
-slot/1/right_enabled = true
-slot/1/right_type = 1
-slot/1/right_color = Color(0.846, 0.399, 0, 1)
-slot/1/right_icon = null
-slot/1/draw_stylebox = true
-slot/2/left_enabled = false
-slot/2/left_type = 1
-slot/2/left_color = Color(0.846, 0.399, 0, 1)
-slot/2/left_icon = null
-slot/2/right_enabled = true
-slot/2/right_type = 1
-slot/2/right_color = Color(0.846, 0.399, 0, 1)
-slot/2/right_icon = null
-slot/2/draw_stylebox = true
-slot/3/left_enabled = false
-slot/3/left_type = 1
-slot/3/left_color = Color(0.846, 0.399, 0, 1)
-slot/3/left_icon = null
-slot/3/right_enabled = true
-slot/3/right_type = 1
-slot/3/right_color = Color(0.846, 0.399, 0, 1)
-slot/3/right_icon = null
-slot/3/draw_stylebox = true
-slot/4/left_enabled = false
-slot/4/left_type = 1
-slot/4/left_color = Color(0.846, 0.399, 0, 1)
-slot/4/left_icon = null
-slot/4/right_enabled = true
-slot/4/right_type = 1
-slot/4/right_color = Color(0.846, 0.399, 0, 1)
-slot/4/right_icon = null
-slot/4/draw_stylebox = true
-slot/5/left_enabled = false
-slot/5/left_type = 1
-slot/5/left_color = Color(0.846, 0.399, 0, 1)
-slot/5/left_icon = null
-slot/5/right_enabled = true
-slot/5/right_type = 1
-slot/5/right_color = Color(0.846, 0.399, 0, 1)
-slot/5/right_icon = null
-slot/5/draw_stylebox = true
 script = ExtResource("2_n7jn7")
 
 [node name="Tag" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
@@ -123,48 +71,13 @@ mouse_default_cursor_shape = 6
 script = ExtResource("4_wd2wf")
 metadata/tag_text = "window"
 
-[node name="Tag2" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_wd2wf")
-metadata/tag_text = "tiles"
-
-[node name="Tag3" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_wd2wf")
-metadata/tag_text = "door"
-
-[node name="Tag4" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_wd2wf")
-metadata/tag_text = "poster"
-
-[node name="Tag5" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_wd2wf")
-metadata/tag_text = "power"
-
-[node name="Tag6" type="Control" parent="IndividualTags" instance=ExtResource("3_ocqev")]
-custom_minimum_size = Vector2(116, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 6
-script = ExtResource("4_wd2wf")
-metadata/tag_text = "synty"
-
 [node name="SnapToObject" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 795.884
-offset_top = 170.805
-offset_right = 951.886
-offset_bottom = 297.806
-scale = Vector2(0.751315, 0.751315)
+offset_left = 597.88
+offset_top = 143.68
+offset_right = 753.882
+offset_bottom = 270.68
+scale = Vector2(0.971495, 0.971495)
 mouse_filter = 1
 position_offset = Vector2(-70.2763, -55.0491)
 title = "Snap To Object Tag"
@@ -189,11 +102,11 @@ metadata/tag_text = "wall"
 
 [node name="OutputSnap" type="GraphNode" parent="."]
 layout_mode = 1
-offset_left = 1027.8
-offset_top = 133.496
-offset_right = 2527.81
-offset_bottom = 3895.5
-scale = Vector2(0.751315, 0.751315)
+offset_left = 897.767
+offset_top = 95.4374
+offset_right = 2397.78
+offset_bottom = 3857.44
+scale = Vector2(0.971495, 0.971495)
 size_flags_horizontal = 3
 mouse_filter = 1
 position_offset = Vector2(238.409, -104.707)

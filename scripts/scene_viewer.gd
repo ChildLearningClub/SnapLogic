@@ -2754,7 +2754,7 @@ func add_scenes_to_collections(collection_name: String, sub_folders_path: String
 
 
 		if create_scene_buttons_state and collection_scene_full_paths_array:
-			print("creating buttons now")
+			#print("creating buttons now")
 			for scene_full_path: String in collection_scene_full_paths_array:
 				create_scene_buttons(scene_full_path, new_sub_collection_tab, new_scene_view, false)
 		#if post_create_buttons_array:
