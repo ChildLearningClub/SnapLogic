@@ -1,0 +1,96 @@
+[gd_scene load_steps=3 format=3 uid="uid://bj8aldjxrqrxx"]
+
+[ext_resource type="Script" uid="uid://ctev41e1p2dyc" path="res://addons/scene_snap/scripts/foldable_container_code.gd" id="1_b1soe"]
+
+[sub_resource type="GDScriptSyntaxHighlighter" id="GDScriptSyntaxHighlighter_esgi2"]
+
+[node name="FoldableContainerCode" type="FoldableContainer"]
+custom_minimum_size = Vector2(0, 810)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -104.5
+offset_right = 120.0
+offset_bottom = 104.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+title = "Offset Snap"
+script = ExtResource("1_b1soe")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_top = -32
+
+[node name="RemoveCodeSnippetButton" type="Button" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.8862745, 0, 0, 1)
+theme_override_colors/font_focus_color = Color(0.8862745, 0, 0, 1)
+theme_override_colors/font_pressed_color = Color(0.8862745, 0, 0, 1)
+theme_override_colors/font_hover_color = Color(0.8862745, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0.8862745, 0, 0, 1)
+theme_override_constants/outline_size = 2
+text = "X"
+flat = true
+
+[node name="CodeEdit" type="CodeEdit" parent="."]
+layout_mode = 2
+text = "extends TransformBase
+# NOTE: object_to_snap is any mesh that has a tag
+# that is connected to this Output
+# Get scene_preview and other node from connections?
+#var change_pivot: bool
+var count: int = 0
+
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+#func transform(scene_preview: Node3D, scene_preview_aabb: AABB, vector_normal: Vector3, process: bool = true) -> bool:
+#func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:
+	count += 1
+	print(\"count: \", count)
+	process = false
+#	if change_pivot:
+#		change_pivot = false
+#	print(\"scene_preview children\", object_to_snap.get_children())
+#	object_to_snap.position += Vector3(1, 0, 0)
+#	return object_to_snap.position
+
+	# Assuming the first child is MeshInstance3D
+	var child = scene_preview.get_child(0) as MeshInstance3D
+	
+	# Check if the cast was successful
+	if child:
+		child.position += Vector3(5, 0, 0)
+	else:
+		print(\"The child is not a MeshInstance3D.\")
+		
+	return process
+"
+placeholder_text = "extends TransformBase
+
+## Shape how objects with tags will interact with other tagged objects or directly with all other objects.
+func transform(scene_preview: Node3D, scene_preview_aabb: AABB, snap_vector_normal: Vector3, snap_aabb: AABB, collision_point: Vector3, process: bool = true) -> bool:
+	print(\"connect tag to me to run code that you place here\")
+	print(\"scene_preview: \", scene_preview) # The object/scene that you are placing within the 3D Viewport.
+	print(\"scene_preview_aabb: \", scene_preview_aabb) # The AABB bounding box of the object that you are placing within the 3D Viewport.
+	print(\"snap_vector_normal: \", snap_vector_normal) # The vector_normal of the object's surface the mouse pointer is hitting in the 3D Viewport.
+	print(\"snap_aabb: \", snap_aabb) # The AABB bounding box of the object the mouse pointer is hitting in the 3D Viewport.
+	#process = false # NOTE: to run code snippet once, uncomment this line. true(default) to run continuously.
+	return process"
+scroll_fit_content_height = true
+scroll_fit_content_width = true
+caret_blink = true
+syntax_highlighter = SubResource("GDScriptSyntaxHighlighter_esgi2")
+highlight_all_occurrences = true
+draw_tabs = true
+gutters_draw_executing_lines = true
+gutters_draw_line_numbers = true
+code_completion_enabled = true
+indent_automatic = true
+
+[connection signal="pressed" from="MarginContainer/RemoveCodeSnippetButton" to="." method="_on_remove_code_snippet_button_pressed"]
+[connection signal="code_completion_requested" from="CodeEdit" to="." method="_on_code_edit_code_completion_requested"]
+[connection signal="text_changed" from="CodeEdit" to="." method="_on_code_edit_text_changed"]

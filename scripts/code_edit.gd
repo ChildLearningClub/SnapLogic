@@ -21,7 +21,6 @@ func _ready():
 
 
 
-
 #@tool
 #extends CodeEdit
 #
@@ -40,4 +39,12 @@ func _ready():
 #
 #func _on_code_completion_requested() -> void:
 	#add_code_completion_option(CodeEdit.KIND_FUNCTION, "[display text]", "[text inserted into code]")
+	#update_code_completion_options(true)
+
+
+#func _on_text_changed() -> void:
+	##code_edit.add_code_completion_option(CodeEdit.KIND_PLAIN_TEXT, "func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:", "func transform(object_to_snap: Node3D, vector_normal: Vector3, process: bool = true) -> bool:")
+	#add_code_completion_option(CodeEdit.KIND_PLAIN_TEXT, "return process", "return process")
+	#add_code_completion_option(CodeEdit.KIND_PLAIN_TEXT, "extends TransformBase", "extends TransformBase")
+	#add_code_completion_option(CodeEdit.KIND_FUNCTION, "func", "func", Color(0.9, 0.29, 0.3, 1))
 	#update_code_completion_options(true)

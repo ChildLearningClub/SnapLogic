@@ -27,14 +27,21 @@ signal save_manager_state ## Save the current state of graph when save_manager_s
 
 
 @onready var settings = EditorInterface.get_editor_settings()
+@onready var output_snap: GraphNode = $OutputSnap
+@onready var add_code_snippet_button: Button = %AddCodeSnippetButton
 
-const SnapManagerData = preload("res://addons/scene_snap/scripts/snap_flow_manager_data.gd")
+#const SnapManagerData = preload("res://addons/scene_snap/scripts/snap_flow_manager_data.gd")
 
 var graph_scene_path: String = "res://addons/scene_snap/plugin_scenes/snap_manager_graph.tscn"
 #var scene_path: String = "res://addons/scene_snap/plugin_scenes/snap_manager_graph.tscn"
 var data_path: String = "res://addons/scene_snap/resources/snap_manager_data.tres"
 
 const SceneSnapPlugin = preload("res://addons/scene_snap/scene_snap_plugin.gd")
+const GRAPH_NODE_CODE_TAB = preload("res://addons/scene_snap/plugin_scenes/graph_node_code_tab.tscn")
+const FOLDABLE_CONTAINER_CODE = preload("uid://bj8aldjxrqrxx")
+
+
+
 
 # FIXME connect to codeedit nodes as they are instantiated
 #@onready var code_edit: CodeEdit = $OutputSnap/CodeEdit
@@ -46,7 +53,8 @@ const SceneSnapPlugin = preload("res://addons/scene_snap/scene_snap_plugin.gd")
 
 
 # Array of things to attach to Input frame
-var input_graph_nodes: Array[StringName] = ["ObjectToSnap", "IndividualTags"]
+#var input_graph_nodes: Array[StringName] = ["ObjectToSnap", "IndividualTags"]
+var input_graph_nodes: Array[StringName] = ["SnapToObject", "IndividualTags"]
 
 var snap_to_objects_frame_nodes: Array[StringName] = ["SnapToObject"]
 #var snap_manager_data: SnapManagerData = null
@@ -109,8 +117,31 @@ var selected_scene_view_button_tags:  Array[String] = []
 			#if selected_scene_view_button.tags != [] and selected_scene_view_button.tags.has(node_indices[connection.from_node][connection.from_port]) and \
 			#scene_viewer_panel_instance.scene_tags[closest_object.name].has(node_indices[connection.to_node][connection.to_port]):
 
+#func _physics_process(delta: float) -> void:
+	#queue_redraw()
+	##zoom += .0000001
+
+
 
 func _ready() -> void:
+	#output_snap.set_slot_enabled_left(add_code_snippet_button.get_index(), false)
+	#output_snap.set_slot_enabled_left(output_snap.get_child_count() -1, false)
+	# Connect up the save_manager_state signal for each GraphNodeCodeTab to save when changing user code snippets.
+	for child in output_snap.get_children():
+		#if child is Label and child.name.begins_with("GraphNodeCodeTab"):
+		if child is FoldableContainer and child.name.begins_with("FoldableContainerCode"):
+			set_foldable_connections(child)
+			#child.remove_connection.connect(do_connection_removal)
+			#child.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
+			## HACK To trigger redraw of connections when code-edit openned or closed.
+			#child.redraw_connections.connect(func() -> void:
+					##print("moving output snap")
+					## NOTE: Does not appear to move node, but does appear to force connection to redraw.
+					#output_snap.position.x -= 10
+					#output_snap.size.y = 0)
+					##await get_tree().process_frame
+					##output_snap.position.x += 10)
+			##print("child name: ", child.name)
 
 	#code_edit.text_changed.connect(_on_code_changed)
 	#if debug: print("self.get_path(): ", self.get_path())
@@ -119,7 +150,11 @@ func _ready() -> void:
 		
 	for snap_to_node: StringName in snap_to_objects_frame_nodes:
 		attach_graph_element_to_frame(snap_to_node, "SnapToObjectsFrame")
-		
+
+	
+
+
+
 	#plugin_ref = SceneSnapPlugin.new()
 	#var tag_node: Control = find_child("Tag")
 	#tag_node.name = "BLOBY"
@@ -127,7 +162,7 @@ func _ready() -> void:
 
 	#save_connections(data_path)
 	#var snap_manager_data = SnapManagerData.new()
-	pass
+
 	#if scene_path == "":
 		#scene_path = "res://addons/scene_snap/plugin_scenes/snap_manager_graph_original.tscn"
 		#emit_signal("scene_path_original", true)
@@ -149,6 +184,20 @@ var scene_name: String = ""
 #func _physics_process(delta: float) -> void:
 	#if debug: print("connections: ", get_connection_list())
 	##if debug: print("tags: ", selected_scene_view_button.tags)
+
+	
+
+
+
+func set_foldable_connections(code_tab: FoldableContainer) -> void:
+	code_tab.remove_connection.connect(do_connection_removal)
+	code_tab.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
+	# HACK To trigger redraw of connections when code-edit openned or closed.
+	code_tab.redraw_connections.connect(func() -> void:
+			# NOTE: Does not appear to move node, but does appear to force connection to redraw.
+			output_snap.position.x -= 10
+			output_snap.size.y = 0)
+
 
 
 
@@ -199,7 +248,104 @@ func get_scene_aabb(scene_preview: Object) -> AABB:
 	var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
 	for mesh_node: MeshInstance3D in mesh_node_instances:
 		scene_aabb = scene_aabb.merge(mesh_node.mesh.get_aabb())
+	#scene_aabb.position = scene_aabb.get_center()
+	#scene_aabb.position = scene_preview.position
+	#scene_aabb.size = scene_preview.scale
 	return scene_aabb
+
+
+
+
+
+# Reference: https://www.youtube.com/watch?v=LGxix92cnWk (Nanotch Gamedev)
+func get_global_aabb(obj_mesh: Mesh, obj_global_transform: Transform3D) -> AABB:
+	var global_position: Vector3 = obj_global_transform.origin
+
+	obj_global_transform.origin = Vector3.ZERO
+	
+	# Get Mesh Vertices
+	var mesh_points: SurfaceTool = SurfaceTool.new()
+	mesh_points.create_from(obj_mesh, 0)
+	var mesh_points_array: Array = mesh_points.commit_to_arrays()
+	var vertices: Array = mesh_points_array[ArrayMesh.ARRAY_VERTEX]
+	
+	# Apply the transform and set the vertex to from AABB
+	var start: Vector3 = Vector3.ZERO
+	var end: Vector3 = Vector3.ZERO
+	for point: Vector3 in (vertices as Array[Vector3]):
+		point = obj_global_transform * point
+	
+		if point.x > start.x: start.x = point.x
+		if point.x < end.x: end.x = point.x
+
+		if point.y > start.y: start.y = point.y
+		if point.y < end.y: end.y = point.y
+
+		if point.z > start.z: start.z = point.z
+		if point.z < end.z: end.z = point.z
+
+	var new_AABB: AABB = AABB(start, -(end - start))
+	new_AABB.position = new_AABB.position + global_position - (new_AABB.size)
+	return new_AABB
+
+
+
+#func get_scene_aabb(scene_preview: Node3D) -> AABB:
+	#var scene_aabb: AABB
+	#var initialized := false
+#
+	#var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
+	#for mesh_node in mesh_node_instances:
+		#if not mesh_node is MeshInstance3D:
+			#continue
+		#
+		#var mesh = mesh_node.mesh
+		#if mesh == null:
+			#continue
+#
+		#var local_aabb: AABB = mesh.get_aabb()
+		#var global_xform: Transform3D = mesh_node.global_transform
+#
+		## Get and transform the 8 corners
+		#var corners := get_aabb_corners(local_aabb)
+		#for i in corners.size():
+			#corners[i] = global_xform * corners[i]
+#
+		## Calculate min and max points from transformed corners
+		#var min_point = corners[0]
+		#var max_point = corners[0]
+		#for i in range(1, corners.size()):
+			#min_point = min_point.min(corners[i])
+			#max_point = max_point.max(corners[i])
+#
+		#var transformed_aabb = AABB(min_point, max_point - min_point)
+#
+		#if initialized:
+			#var combined_min = scene_aabb.position.min(transformed_aabb.position)
+			#var combined_max = (scene_aabb.position + scene_aabb.size).max(transformed_aabb.position + transformed_aabb.size)
+			#scene_aabb = AABB(combined_min, combined_max - combined_min)
+		#else:
+			#scene_aabb = transformed_aabb
+			#initialized = true
+#
+	#return scene_aabb
+#
+#
+#func get_aabb_corners(aabb: AABB) -> Array[Vector3]:
+	#var pos = aabb.position
+	#var size = aabb.size
+#
+	#return [
+		#pos,
+		#pos + Vector3(size.x, 0, 0),
+		#pos + Vector3(0, size.y, 0),
+		#pos + Vector3(0, 0, size.z),
+		#pos + Vector3(size.x, size.y, 0),
+		#pos + Vector3(size.x, 0, size.z),
+		#pos + Vector3(0, size.y, size.z),
+		#pos + size
+	#]
+
 
 
 ## Saved here and through scene_snap_plugin.gd _enter_tree() TODO Move into one maybe signal up to save
@@ -438,17 +584,7 @@ func _on_object_to_snap_2_rename_tag(tag: Control, new_name: String) -> void:
 	##tag_node.name = "BLOBY"
 
 
-func _on_add_new_input_tags_box_pressed() -> void:
-	if debug: print("add new group tag box")
-	
-	pass # Replace with function body.
 
-# FIXME Will need to fix to connect to this signal as user creates new graphnodes in snap flow manager.
-# NOTE: The "update_tag_cache" signal originates from base_tag_graph_node.gd when tags added or removed 
-# and gets passed up to this script which then emits signal of same name "update_tag_cache" up to scene_snap_plugin.gd
-#func _on_individual_tags_update_tag_cache(tag_text: String, tag_index: int, store_tag: bool) -> void:
-	#emit_signal("update_tag_cache", tag_text, tag_index, store_tag)
-## Pass up signal for tags added or removed from "Individual Tag Connections"
 func _on_individual_tags_update_tag_cache(tag: Control, store_tag: bool) -> void:
 	emit_signal("update_tag_cache", tag, store_tag)
 
@@ -477,4 +613,73 @@ func _on_end_node_move() -> void:
 
 ## Save state after resizing a frame
 func _on_frame_rect_changed(frame: GraphFrame, new_rect: Rect2) -> void:
+	emit_signal("save_manager_state")
+
+
+func _on_button_pressed() -> void:
+	#var output_snap_child_size: int = output_snap.get_children().size()
+	#output_snap.move_child(add_code_snippet_button, output_snap_child_size - 1)
+	#await get_tree().process_frame
+	var code_tab: FoldableContainer = FOLDABLE_CONTAINER_CODE.instantiate()
+	#var code_tab: Label = GRAPH_NODE_CODE_TAB.instantiate()
+	output_snap.add_child(code_tab)
+	
+	# Enable the left size input slot.
+	#await get_tree().process_frame
+	var output_snap_child_size: int = output_snap.get_children().size()
+	output_snap.move_child(add_code_snippet_button, output_snap_child_size)
+	#await get_tree().process_frame
+	#output_snap.set_slot_enabled_left(output_snap_child_size -2, true) # NOTE: -1 To account for the button in slot_index 0
+	#output_snap.set_slot_enabled_left(output_snap_child_size -1, false)
+	#output_snap.set_slot_enabled_left(output_snap.get_child_count(), false)
+	#output_snap.clear_slot(add_code_snippet_button.get_index())
+	#output_snap.set_slot_enabled_left(add_code_snippet_button.get_index(), false)
+	#output_snap.set_slot_enabled_left(0, false)
+	
+	#output_snap.set_slot_enabled_left(output_snap_child_size -1, true) # NOTE: -1 To account for the button in slot_index 0
+	#output_snap.set_slot_enabled_left(output_snap_child_size, false)
+	code_tab.owner = self
+	#code_tab.name = "GraphNodeCodeTab"
+	code_tab.name = "FoldableContainerCode"
+	#code_tab.text = "       New Code Snippet"
+	code_tab.title = "New Code Snippet"
+	# FIXME connection only made for new code snippets created during session.
+	#code_tab.remove_connection.connect(do_connection_removal)
+	set_foldable_connections(code_tab)
+	#output_snap.move_child(add_code_snippet_button, output_snap_child_size)
+	emit_signal("save_manager_state")
+
+
+#func set_foldable_connections(code_tab: FoldableContainer) -> void:
+	#code_tab.remove_connection.connect(do_connection_removal)
+	#code_tab.remove_connection.connect(do_connection_removal)
+	#code_tab.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
+	## HACK To trigger redraw of connections when code-edit openned or closed.
+	#code_tab.redraw_connections.connect(func() -> void:
+			## NOTE: Does not appear to move node, but does appear to force connection to redraw.
+			#output_snap.position.x -= 10
+			#output_snap.size.y = 0)
+
+
+func do_connection_removal(code_snippet: FoldableContainer, slot_index: int) -> void:
+	# Get the to_node and to_port from the matching connection
+	var connections: Array[Dictionary] = self.get_connection_list()
+
+	# Remove connections to and from the deleted code snippet
+	for c: Dictionary in connections:
+		if c.to_node == code_snippet.get_parent().name and c.to_port == slot_index:
+			disconnect_node(c.from_node, c.from_port, code_snippet.get_parent().name, slot_index)
+		if c.from_node == code_snippet.get_parent().name and c.from_port == slot_index:
+			disconnect_node(code_snippet.get_parent().name, slot_index, c.to_node, c.to_port)
+
+	# Get current updated connections
+	connections = get_connection_list()
+
+	for c: Dictionary in connections:
+		if c.to_port > slot_index:
+			c.to_port -= 1  # Directly mutate the dictionary
+
+	# Update the connections
+	set_connections(connections)
+
 	emit_signal("save_manager_state")

@@ -2,7 +2,7 @@
 extends Control
 
 
-signal remove_tag
+signal remove_tag(tag: Object) ## Tag that we want to remove.
 signal tag_enter_pressed
 signal rebuild_tags
 #@onready var tags: NinePatchRect = $Tags

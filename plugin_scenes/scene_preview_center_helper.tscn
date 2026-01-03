@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bb0xqrnupqwyc"]
+
+[ext_resource type="Script" uid="uid://ba5f22c2icrph" path="res://addons/scene_snap/scripts/snap_flow_manager_scripts/scene_center_helper_script.gd" id="1_hy47e"]
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_hy47e")

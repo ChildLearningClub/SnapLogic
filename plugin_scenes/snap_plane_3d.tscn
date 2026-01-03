@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3 uid="uid://4m7ce0lfwrgx"]
+
+[ext_resource type="Shader" uid="uid://cwx5sk6jugu00" path="res://addons/scene_snap/shaders/snap_plane.gdshader" id="1_unr6r"]
+[ext_resource type="Script" uid="uid://cwkiw601std5g" path="res://addons/scene_snap/scripts/snap_plane_3d.gd" id="2_a2kbq"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_a2kbq"]
+render_priority = 0
+shader = ExtResource("1_unr6r")
+shader_parameter/subdivisions = 32.0
+shader_parameter/grid_width = 0.02
+shader_parameter/background_color = Color(0.2, 0.2, 0.2, 1)
+shader_parameter/background_color_two = Color(0.1, 0.1, 0.1, 1)
+shader_parameter/grid_color = Color(0.8, 0.8, 0.8, 1)
+shader_parameter/dashed_scale_x = 0.02
+shader_parameter/dashed_scale_y = 0.02
+shader_parameter/dashed_count_x = 1.0
+shader_parameter/dashed_count_y = 1.0
+shader_parameter/point_width = 0.021
+shader_parameter/point_color = Color(0, 0, 0, 1)
+shader_parameter/point_scale_x = 0.05
+shader_parameter/point_scale_y = 0.05
+shader_parameter/inside_width = 0.01
+shader_parameter/inside_subdivisions = 6.0
+shader_parameter/inside_color = Color(0.8, 0.8, 0.8, 0.8)
+shader_parameter/in_dashed_scale_x = 0.3
+shader_parameter/in_dashed_scale_y = 0.3
+shader_parameter/in_dashed_count_x = 6.0
+shader_parameter/in_dashed_count_y = 6.0
+shader_parameter/highlight_position = Vector3(0, 0, 0)
+shader_parameter/highlight_radius = 0.2
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_a2kbq"]
+material = SubResource("ShaderMaterial_a2kbq")
+size = Vector2(100, 100)
+orientation = 2
+
+[node name="SnapPlane3D" type="MeshInstance3D"]
+transform = Transform3D(-4.371133e-08, 0, 0.99999887, 0, 0.9999991, 0, -0.9999987, 0, -4.371134e-08, 0, 0, 0)
+mesh = SubResource("PlaneMesh_a2kbq")
+script = ExtResource("2_a2kbq")

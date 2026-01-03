@@ -74,28 +74,9 @@ KEY R AND E RESPECTIVELY (NOTE: WITH KEY PRESSED, RIGHT MOUSE CLICK FOR FINER CO
 
 
 
-------------------------------------------------------------------------------
-LIMITATIONS:
-
-CURRENTLY A LOT:
-- THE MATERIAL APPLIED TO A SCENE THAT IS PLACED CANNOT BE CHANGED THROUGH THE MATERIAL CYCLE BUTTON.
-- NO DRAG AND DROP OR SCENE BUTTON PRESS TO ADD INTO SCENE
-- SNAPPING WHICH IS A PRIMARY FOCUS OF THE ADDON IS NOT EVEN IMPLEMETED!
-- A LOT THINGS ARE STILL BROKEN
-- EXPECT ERRORS AND MAYBE CRASHES!
-
-
-
 
 https://github.com/user-attachments/assets/83d59cc3-6e99-445b-99a4-bd2ff98258e2
 
-
-
-NOTE: Logic Snapping v0.8.3-alpha Highly experimental... if you couldn't already tell ;). Issues you can expect:
-- ERROR: The target vector can't be zero.
-- Tags not always being placed with mesh.
-- reloading project for tags to be connected to mesh.
-- reconnecting already connected lines in graph edit for them to function.
 
 
 TROUBLESHOOTING:

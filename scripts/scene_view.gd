@@ -48,7 +48,8 @@ signal get_scene_ready_state(collection_name: String, scene_full_path: String) #
 @onready var sub_viewport_container: SubViewportContainer = $SubViewportContainer
 
 @onready var sub_viewport: SubViewport = $SubViewportContainer/SubViewport
-@onready var heart_aspect_ratio_container: AspectRatioContainer = $HBoxContainer/HeartAspectRatioContainer
+@onready var heart_aspect_ratio_container: AspectRatioContainer = %HeartAspectRatioContainer
+@onready var h_box_container: HBoxContainer = $HBoxContainer
 @onready var label_aspect_ratio_container: AspectRatioContainer = $HBoxContainer/LabelAspectRatioContainer
 @onready var heart_texture_button: TextureButton = %HeartTextureButton
 @onready var _3d_label: Label = %"3DLabel"
@@ -89,7 +90,7 @@ const TAGS_NOT_ACTIVE = preload("uid://dyvik5amxqleb")
 
 # FIXME not correct path or used
 #@onready var project_scenes_path: String = "res://scenes/"
-
+var theme_style: String = ""
 var scene_file: PackedScene
 var scene_full_path: String = ""
 var collection_name: String = ""
@@ -152,7 +153,8 @@ var sharing_disabled: bool = false
 
 
 func _ready() -> void:
-	
+	# NOTE: Spacing of Modern style theme is large and needs to be adjusted. 
+	update_style(theme_style)
 	# Hide button until after thumbnail and button sizes set
 	visible = false
 	#call_deferred("get_thumbnail")
@@ -344,6 +346,7 @@ func _drop_data(position, data):
 
 
 #var set_min: bool = true
+# FIXME This is being run before thumbnail_size_value is properly set.
 func set_size_flags() -> void:
 	if debug: print("thumbnail_size_value: ", thumbnail_size_value)
 	if thumbnail_size_value <= full_label_size:
@@ -353,19 +356,33 @@ func set_size_flags() -> void:
 	set_scene_view_size(thumbnail_size_value)
 
 func get_collection_name() -> void:
-	collection_name = scene_full_path.split("/")[-2].to_snake_case()
+	if scene_full_path:
+		collection_name = scene_full_path.split("/")[-2].to_snake_case()
+
+
+func update_style(theme_style: String) -> void:
+		match theme_style:
+			#"Classic":
+				#h_box_container.add_theme_constant_override("separation", -1)
+			"Modern":
+				h_box_container.add_theme_constant_override("separation", -6)
+			_:
+				h_box_container.add_theme_constant_override("separation", -1)
+
 
 
 # NOTE: Called for every button in collection for every step in the slider so should reduce load by using flags
 func set_scene_view_size(size: float) -> void:
 	slider_value = size
-	#if debug: print("size: ", size)
+	var scale_size = size / 256
 
-	var scale_size = slider_value / 256
 	if child_sprite:
 		child_sprite.scale = Vector2(scale_size, scale_size)
+		#child_sprite.position = Vector2(0.0, 25.0)
 
+	
 	self.custom_minimum_size.x = size
+	#self.size.x = size
 	self.custom_minimum_size.y = size * 1.3
 
 	# File name
@@ -420,7 +437,7 @@ func set_scene_view_size(size: float) -> void:
 		if not set_3d_label_visible:
 			set_3d_label_visible = true
 			if debug: print("set 3d hidden")
-			heart_aspect_ratio_container.set_stretch_mode(int(2)) # STRETCH_FIT
+			#heart_aspect_ratio_container.set_stretch_mode(int(2)) # STRETCH_FIT
 			label_aspect_ratio_container.hide()
 			#animation_texture_button.hide()
 			#texture_rect_body.hide()
@@ -430,7 +447,7 @@ func set_scene_view_size(size: float) -> void:
 		if set_3d_label_visible:
 			set_3d_label_visible = false
 			if debug: print("set 3d visible")
-			heart_aspect_ratio_container.set_stretch_mode(int(3)) # STRETCH_COVER
+			#heart_aspect_ratio_container.set_stretch_mode(int(3)) # STRETCH_COVER
 			label_aspect_ratio_container.show()
 			#if show_animation_texture_button:
 				#animation_texture_button.show()
@@ -444,7 +461,7 @@ func set_scene_view_size(size: float) -> void:
 	# Additionals
 	if size <= min_additions_size:
 		h_box_container_additions.hide()
-		if debug: print("FIND REPLACEMENT INDICATOR FOR HIDDEN ADDITIONALS")
+		#if debug: print("FIND REPLACEMENT INDICATOR FOR HIDDEN ADDITIONALS")
 		#circle_texture_button.show()
 	else:
 		#circle_texture_button.hide()
@@ -497,7 +514,6 @@ func set_scene_view_size(size: float) -> void:
 # NOTE: I don't know what I was doing here? 
 # NOTE: This should update the scene preview to the button pressed
 func _on_pressed() -> void:
-	#EditorInterface.open_scene_from_path(scene_full_path, false)
 	if allow_press and scene_full_path:# and thumbnail_cache_path:
 		emit_signal("update_selected_scene_view_button", self)
 		emit_signal("scene_snap_mode", scene_full_path)
@@ -975,8 +991,9 @@ var continue_function: bool = false
 func _on_mouse_entered() -> void:
 	if debug: print("scene_full_path: ", scene_full_path)
 	if debug: print("collection_name: ", collection_name)
+	#get_collection_name()
 	if not scene_full_path.is_empty() and not collection_name.is_empty():
-		#if debug: print("get_scene_ready_state")
+		if debug: print("get_scene_ready_state")
 		emit_signal("get_scene_ready_state", collection_name, scene_full_path)
 	# NOTE: check needs to be done here for if collection_lookup[collection_name][scene_full_path] has scene instance
 	await get_tree().process_frame # allow time to get return scene_ready state of from signal above 
@@ -1003,6 +1020,7 @@ func _on_mouse_entered() -> void:
 			add_child(sub_viewport_container) # THE LOADED SCENE
 			# Center loaded scene on button
 			sub_viewport_container.position = Vector2(0.0, 13.0)
+			#sub_viewport_container.position = Vector2(0.0, 25.0)
 
 			# Hide so does not share same space with Sprite2D
 			sub_viewport_container.hide() 
@@ -1560,3 +1578,33 @@ var tag_panel_hover_opened: bool = false
 		#new_editor_plugin_instance.remove_control_from_docks(new_tag_panel)
 		#new_tag_panel.queue_free()
 		#new_tag_panel = null
+
+
+func _on_selected_texture_button_button_down() -> void:
+	allow_press = false # Ignore so mouse that is passed up to button does not trigger scene_preview
+
+
+func _on_selected_texture_button_button_up() -> void:
+	# Re-enable scene_preview after delay
+	await get_tree().create_timer(0.1).timeout 
+	allow_press = true
+
+
+func _on_heart_texture_button_button_down() -> void:
+	allow_press = false # Ignore so mouse that is passed up to button does not trigger scene_preview
+
+
+func _on_heart_texture_button_button_up() -> void:
+	# Re-enable scene_preview after delay
+	await get_tree().create_timer(0.1).timeout 
+	allow_press = true
+
+
+func _on_circle_texture_button_button_down() -> void:
+	allow_press = false # Ignore so mouse that is passed up to button does not trigger scene_preview
+
+
+func _on_circle_texture_button_button_up() -> void:
+	# Re-enable scene_preview after delay
+	await get_tree().create_timer(0.1).timeout 
+	allow_press = true

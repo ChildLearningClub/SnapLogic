@@ -9,6 +9,6 @@ class_name TransformBase
 
 
 
-func transform(object_to_snap: Node3D, vector_normal: Vector3, run_continuus: bool = true) -> bool:
-# YOUR TRANSFORM CODE HERE
-	return run_continuus
+#func transform(object_to_snap: Node3D, vector_normal: Vector3, run_continuus: bool = true) -> bool:
+## YOUR TRANSFORM CODE HERE
+	#return run_continuus

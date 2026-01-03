@@ -17,6 +17,7 @@ var scenedock_tree: Tree
 signal all_scenes_loaded_re_emit
 signal enter_tree_complete
 signal open_popup_complete
+signal main_container_ready ## When the main_container global var is filled.
 
 # TEST MULTI THREADING
 signal task_completed(result)
@@ -30,22 +31,38 @@ signal task_completed(result)
 #@onready var shared_collections_path: String = "user://shared_collections/scenes/"
 #@onready var project_scenes_path: String = "res://scenes/"
 @onready var project_scenes_path: String = "res://collections/"
+
 #@onready var project_textures_path: String = "res://textures/"
 
 # TODO Why did I choose this file path structure? Was is so that imported into project matched path from scenes, which I later switched to collections?
 # The first shared_collections and global_collections folders allow for having scenes and thumbnail_cache folders for each.
 # the Shared Collections and Global Collections names help to match the main tab names exactly.
-var file_paths: Array[String] = ["global_collections/scenes/Global Collections", "shared_collections/scenes/Shared Collections"]
+#var file_paths: Array[String] = ["global_collections/scenes/Global Collections", "shared_collections/scenes/Shared Collections"]
 #"global_collections/thumbnail_cache_global/Global Collections",
 #"shared_collections/thumbnail_cache_shared/Shared Collections"]
 
 # Scene Viewer needs to be load otherwise get error below on intial addon import:
 # scene/resources/resource_format_text.cpp:284 - Parse Error: Busy. [Resource file res://addons/scene_snap/plugin_scenes/scene_viewer.tscn:29]
 # Failed loading resource: res://addons/scene_snap/plugin_scenes/scene_viewer.tscn. Make sure resources have been imported by opening the project in the editor at least once.
-var SCENE_VIEWER = load("res://addons/scene_snap/plugin_scenes/scene_viewer.tscn")
-#const SCENE_VIEWER = preload("res://addons/scene_snap/plugin_scenes/scene_viewer.tscn")
+
+#var SCENE_VIEWER = load("res://addons/scene_snap/plugin_scenes/scene_viewer.tscn")
+#var SCENE_VIEWER
+
+# NOTE: Get ERROR: Path to node is invalid: 'HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport'.
+
+
+const SCENE_VIEWER = preload("res://addons/scene_snap/plugin_scenes/scene_viewer.tscn")
 const POPUP_WINDOW = preload("res://addons/scene_snap/plugin_scenes/popup_window.tscn")
 const MAIN_FAVORITES_TAB = preload("res://addons/scene_snap/plugin_scenes/main_favorites_tab.tscn")
+const SCENE_PREVIEW_CENTER_HELPER = preload("res://addons/scene_snap/plugin_scenes/scene_preview_center_helper.tscn")
+
+const SNAP_PLANE_3D = preload("res://addons/scene_snap/plugin_scenes/snap_plane_3d.tscn")
+
+const LINE_DRAG_PLACE = preload("res://addons/scene_snap/plugin_scenes/line_drag_place.tscn")
+const PATH3D_SCRIPT = preload("res://addons/scene_snap/scripts/path_3d.gd")
+
+const NonCollisionObjectSnapping = preload("res://addons/scene_snap/resources/runtime_logic/non_collision_object_snapping.gd")
+
 
 # SnapManager Viewer const
 #const SnapManagerGraph = preload("res://addons/scene_snap/scripts/snap_flow_manager_graph.gd")
@@ -74,8 +91,12 @@ const graph_scene_path: String = "res://addons/scene_snap/plugin_scenes/snap_flo
 #const ExtendFbxDocument = preload("res://addons/scene_snap/extend_fbx_document.gd")
 
 
+#var scene_to_place: Node
+var placed_scenes: Array[Node] = []
+var remove_scene: bool = true
+var placed_multimesh_paths: Array[Node] = []
 # Scene Viewer variables
-@export var number: int
+var number: int
 
 
 var scene_viewer_panel_instance : Control
@@ -122,6 +143,10 @@ var reference_collision_scene_child: CollisionShape3D = null
 #var scene_preview_mesh: StaticBody3D = null
 var scene_preview_mesh: Node3D = null
 
+var virtual_plane_enabled: bool = false
+var virtual_plane_3d_instance: MeshInstance3D
+var virtual_planes_array: Array[MeshInstance3D] = []
+
 var snap_on_rotate: bool = false
 var snap_flush_front: bool = false
 ## TEMP DISABLED
@@ -134,11 +159,27 @@ var multi_select_enabled: bool = false
 #var set_snap_ray_cast_3d: bool = true
 
 var mesh_instance_3d: MeshInstance3D
-var collision_point: Vector3
+var collision_point: Vector3 = Vector3.ZERO
+#var collision_point: Vector3 # TODO: Find if duplicate of below
+var drag_line: Path3D
+var line_start_point: Vector3 = Vector3.ZERO
+var drag_distance_start_path: float = 0.05 ## Sets the distance that the user needs to click and drag before the multi-mesh line is created.
+var collision_shape_type: String
+var primitive_collision_offset: Vector3 = Vector3.ZERO
+#var num_segments = 10  # You can change this for more/less precision
+var add_start_point: bool = true
+#var skip_initial_point: bool = true
+var create_as_line: bool = true ## If false will create as path
+#var drag_lines: Array[Path3D] = []
+#var last_point_added: Vector3 = Vector3.INF
+#var place_objects: bool = false
+#var stored_collision_points: Array[Vector3]
 
+#var surface_collision_point: Vector3 = Vector3.ZERO
 
+var idle_distance: float = 50.0
 # Snap Flush Variables
-var snap_down: bool = true
+var snap_down: bool = false
 var snap_flush_bottom: bool = false
 var snap_flush_top: bool = false
 var snap_flush_left: bool = false
@@ -158,21 +199,40 @@ var wall: bool = true
 var center_pipe: bool = false
 var from: Vector3
 var to: Vector3
+var update_script: bool = true
 
 # Scene Preview Variables
+#var scene_preview_scale: Vector3 = Vector3.ONE
+#var scene_preview_rotation: Vector3 = Vector3.ZERO
 var last_scene_preview_pos: Vector3
 var last_scene_preview_scale: Vector3 = Vector3.ONE
 var last_scene_preview_rotation: Vector3 = Vector3.ZERO
 var last_scene_preview: Node
 var scene_number: int = 0
+var current_selected_scene_number: int = -1
+var collision_button_pressed: bool = false
 
 var update_visible_scenes: bool = true
 # Flags
+#var focus_scene_preview: bool = true
+#var body_quick_scroll: bool = false
+var combine_collisions: bool = true
+var combine_meshes: bool = true
+var mesh_node_instances: Array[Node]
+var evaluating_user_code: bool = false
+var center_scene_preview: bool = false
 var quick_scroll_enabled: bool = false
 var allow_pressed: bool = true
 var object_rotated: bool = false
 var object_scaled: bool =  false
 
+#@onready var terrain_3d_plugin_active = EditorInterface.is_plugin_enabled("terrain_3d")
+
+var min_p: Vector3 = Vector3.ZERO
+var min_n: Vector3 = Vector3.ZERO
+var terrain_3d_plugin_active: bool = false
+var terra_brush_plugin_active: bool = false
+var idle: bool = true
 var mesh_hit: bool = false
 var collision_hit: bool = false
 var snap_front_flush_enabled: bool = false
@@ -191,14 +251,20 @@ var new_raycast_3d: RayCast3D
 var preview_offset: Vector3
 var rotated_global_transform: Basis
 var last_scene_path: String = ""
-var current_visible_buttons: Array[Node] = []
+#var current_visible_buttons: Array[Node] = []
 var connect_scene_view_button_signals: bool = true
 var panel_floating_on_start: bool
 var show_favorites_tab_on_startup: bool
 #var instantiate_panel: bool = false
 
-var settings
+var settings: EditorSettings
+var expand_to_selected: bool = false
 
+var static_body_3d_creating_collisions: Array[String] = ["SIMPLIFIED_CONVEX", "SINGLE_CONVEX", "SINGLE_CONVEX", "TRIMESH"]
+#var handled_object_classes: Array[String] = ["Node3D", "StaticBody3D", "RigidBody3D", "CharacterBody3D", "TerraBrush", "Terrain3D"]
+var handled_built_in_classes: Array[String] = ["Node3D", "StaticBody3D", "RigidBody3D", "CharacterBody3D", "Path3D"]
+var handled_plugin_classes: Array[String] = ["TerraBrush", "Terrain3D"]
+#var handled_object_classes: Array[String] = ["Node3D", "TerraBrush", "Terrain3D"]
 var current_collision_3d_state: String# = "NO_COLLISION"
 var current_body_3d_type: String# = "StaticBody3D"
 var current_body_2d_type: String# = "StaticBody2D"
@@ -216,12 +282,30 @@ var pinned_tree_item: TreeItem = null
 var pinned_node: Node = null
 var tree_items: Array[TreeItem]
 
-var save_path: String = ""
+#var save_path: String = ""
 var theme_accent_color: Color
 var selected_scene_view_button: Button
 var scene_link_enabled: bool = false
-var current_main_tab: Control
-var current_sub_tab: Control
+var current_main_tab: Control ## The currently selected Main Tab within the Scene Viewer Panel. (Global Collections, Shared Collections, Favorites, Project Scenes)
+var current_sub_tab: Control ## The currently selected Sub Collection Tab within the Scene Viewer Panel. (New Collection, ..., ...) found under Global Collections / Shared Collections.
+var current_collection_buttons: Array[Node] = [] ## All thumbnail buttons visible and non-visible that are within the collection or main tab.
+var current_visible_buttons: Array[Node] = [] ## Filtered array of thumbnail buttons that are visible on screen within the collection or main tab.
+var current_selected_buttons: Array[Button] = [] ## Thumbnail buttons that are selected within the Scene Viewer Panel.
+
+var last_sub_tab: Control
+
+var main_container: TabContainer
+var main_container_tabs_names: Array
+var scene_filter_text_dict: Dictionary
+var sub_container_order_dict: Dictionary
+var sub_container_selection_dict: Dictionary
+var slider_value: float
+var scene_viewer_attached_bottom_panel: bool
+#var editor_viewport_camera: Camera3D
+#var collection_name: String
+#var scene_name_no_ext: String
+
+#var center_helper_node: Node3D
 #var main_container: TabContainer
 #var skip_on_start: bool = true
 
@@ -316,16 +400,16 @@ var save_to_original_scene_path: bool = true
 #var snap_connections: Array[Dictionary] = []
 
 
-const SnapManagerData = preload("res://addons/scene_snap/scripts/snap_flow_manager_data.gd")
+#const SnapManagerData = preload("res://addons/scene_snap/resources/snap_flow_manager_data.gd")
 #var user_favorites: Favorites = Favorites.new()
 var scene_data_cache: SceneDataCache = SceneDataCache.new()
 
 
 
 
-var node_indices: Dictionary = {}
+var node_indices: Dictionary = { }
 #var port_tag_text_dict: Dictionary[int, Array] = {}
-var port_tag_text_dict: Dictionary[int, String] = {}
+var port_tag_text_dict: Dictionary[int, String] = { }
 var grouped_tags: Array[String] = []
 var single_tag: String = ""
 var closest_object_scale: Vector3 = Vector3.ZERO
@@ -336,8 +420,10 @@ var mutex: Mutex = Mutex.new()
 var sharing_disabled: bool = true
 
 ##VERSION 2
+# NOTE: When a tag is added or removed update the node_indices array. 
 ### Cache the tags and their relationship to snap_flow_manager_graph.connections for quick lookup in the process()
 #func cache_snap_flow_manager_graph_tags(tag_text: String, tag_index: int, store_tag: bool = true) -> void:
+# FIXME Broken! 
 func cache_snap_flow_manager_graph_tags(tag: Control, store_tag: bool = true) -> void:
 	var tag_index: int = tag.get_index()
 	var tag_text: String = tag.tag_line_edit.get_text()
@@ -349,13 +435,16 @@ func cache_snap_flow_manager_graph_tags(tag: Control, store_tag: bool = true) ->
 
 		if graphnode_name == tag.get_parent().name:
 			if store_tag:
-				port_tag_text_dict = {}
-				port_tag_text_dict[tag_index] = tag_text
-				node_indices[graphnode_name] = port_tag_text_dict
+				# Add the new tag to node_indices
+				if not node_indices.has(graphnode_name):
+					node_indices[graphnode_name] = { }
+				node_indices[graphnode_name][tag_index] = tag_text
 				if debug: print("node_indices: ", node_indices)
 
 			# FIXME Does not remove from snap to object to output snap when that tag removed
 			else: # Remove the tag from the node_indices dictionary when the X pressed on the tag
+				#if node_indices.has(graphnode_name) and node_indices[graphnode_name].has(tag_index) \
+				#and node_indices[graphnode_name][tag_index] == tag_text:
 				if debug: print("tag_text: ", tag_text)
 				if node_indices.has(graphnode_name):
 					if debug: print("passed 1")
@@ -365,6 +454,11 @@ func cache_snap_flow_manager_graph_tags(tag: Control, store_tag: bool = true) ->
 					if debug: print("passed 3")
 				#if node_indices.has(graphnode_name) and node_indices[graphnode_name].has(tag_index) \
 				#and node_indices[graphnode_name][tag_index] == tag_text:
+					# Remove the tag from node_indices
+					node_indices[graphnode_name].erase(tag_index)
+					if debug: print("Removed tag from node_indices: ", node_indices)
+				
+				
 					# Get the to_node and to_port from the matching connection
 					var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
 					if debug: print("connections: ", connections)
@@ -382,10 +476,11 @@ func cache_snap_flow_manager_graph_tags(tag: Control, store_tag: bool = true) ->
 						if from_node == tag.get_parent().name and from_port == tag_index:
 							snap_flow_manager_graph.disconnect_node(tag.get_parent().name, tag_index, to_node, to_port)
 
-					node_indices[graphnode_name].erase(tag_index)
-					if debug: print("remove from node_indices")
-					if debug: print("node_indices: ", node_indices)
-						#node_indices[graphnode_name]
+					## Remove the actual tag itself from the node_indices.
+					#node_indices[graphnode_name].erase(tag_index)
+					#if debug: print("remove from node_indices")
+					#if debug: print("node_indices: ", node_indices)
+						##node_indices[graphnode_name]
 
 	save_snap_flow_manager_state()
 
@@ -403,7 +498,7 @@ func cache_snap_flow_manager_graph_tags2() -> void:
 			continue
 		var index: int = 0
 		
-		port_tag_text_dict = {}
+		port_tag_text_dict = { }
 		for child in graphnode.get_children():
 			
 			# FIXME Group some tags and keep individual ones seperate will want to change this to a flag
@@ -452,14 +547,45 @@ func cache_snap_flow_manager_graph_tags2() -> void:
 
 
 
+#var new_scene_snap
+#var new_snap_logic_runtime
+
+const SNAP_LOGIC_RUNTIME = preload("res://addons/scene_snap/resources/runtime_logic/snap_logic_runtime.tscn")
+#func _forward_3d_force_draw_over_viewport(new_snap_logic_runtime) -> void:
+	#new_snap_logic_runtime.draw_circle(new_snap_logic_runtime.get_local_mouse_position(), 64, Color.WHITE)
+
+
 
 
 func _enter_tree() -> void:
+	#new_scene_snap = NonCollisionObjectSnapping.new()
+	#new_snap_logic_runtime = SNAP_LOGIC_RUNTIME.instantiate()
+	#new_snap_logic_runtime = new_snap_logic_runtime.get_child(0)
+	##var new_plugin = EditorPlugin.new()
+	#set_force_draw_over_forwarding_enabled()
+	#new_plugin._forward_3d_draw_over_viewport(new_snap_logic_runtime.get_child(0))
+	
+	#add_custom_type("SnapLogicRuntime", "Control", preload("res://addons/scene_snap/resources/runtime_logic/snap_logic_runtime.gd"), preload("res://addons/scene_snap/icons/grey_heart.svg"))
+	
+	#print("Engine.get_version_info(): ", Engine.get_version_info())
+	#var godot_version_info: Dictionary = Engine.get_version_info()
+#
+	#if godot_version_info["major"] <= 4:
+		#push_error("Sorry :( SnapLogic is only supported on Godot version 4 and above.")
+		#_exit_tree()
+		#return
+
+
+
+
 	scene_data_cache = ResourceLoader.load("res://addons/scene_snap/resources/scene_data_cache.tres")
 ## Clear scene_data_cache before versioning
 	#scene_data_cache.scene_favorites.clear()
 	#scene_data_cache.scene_data.clear()
+	#scene_data_cache.scene_materials.clear()
 	#ResourceSaver.save(scene_data_cache)
+
+
 
 
 
@@ -487,6 +613,7 @@ func _enter_tree() -> void:
 	snap_panel_menu = SNAP_MENU_PANEL.instantiate()
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, snap_panel_menu)
 	
+	
 	#var graph_scene_path: String = "res://addons/scene_snap/plugin_scenes/snap_flow_manager_graph.tscn"
 	# CAUTION: If snap_flow_manager_graph is not loaded properly and then saved by save_snap_manager_state() may lead to file curruption
 	#snap_flow_manager_graph = ResourceLoader.load(graph_scene_path, "", ResourceLoader.CACHE_MODE_IGNORE).instantiate()
@@ -497,6 +624,7 @@ func _enter_tree() -> void:
 	cache_snap_flow_manager_graph_tags2()
 	snap_flow_manager_graph.update_tag_cache.connect(cache_snap_flow_manager_graph_tags)
 	snap_flow_manager_graph.save_manager_state.connect(save_snap_flow_manager_state)
+
 	
 	# FIXME HACK Works but don't like it
 	# TODO Find better way Maybe when SHIFT_Q?? add in then and then reparent when openned from panel NOTE Didn't work so maybe this is best
@@ -542,19 +670,44 @@ func _enter_tree() -> void:
 # FIXME TODO NOTE left off going to graphedit script and saving scene anytime a change is made not just saving the updated connections so reuse code above
 
 
+	snap_panel_menu.create_snap_plane.connect(
+		func(open: bool) -> void:
+			virtual_plane_3d_instance = SNAP_PLANE_3D.instantiate()
+			EditorInterface.get_edited_scene_root().add_child(virtual_plane_3d_instance)
+			#virtual_plane_3d_instance.owner = EditorInterface.get_edited_scene_root()
+			#virtual_plane_3d_instance.name = "VirtualPlane3D"
+			virtual_planes_array.append(virtual_plane_3d_instance)
+			virtual_plane_enabled = true
+	)
+
+	snap_panel_menu.clear_virtual_planes.connect(
+		func() -> void:
+			for virtual_plane_3d_instance: MeshInstance3D in virtual_planes_array:
+				virtual_plane_3d_instance.queue_free()
+			virtual_planes_array.clear()
+	)
+
+	#snap_panel_menu.enable_create_as_line.connect(
+		#func(line: bool) -> void:
+			#create_as_line = line
+	#)
+
+	#snap_panel_menu.change_path_shape_3d.connect(
+		#func(current_3d_path_state: String) -> void:
+			#if current_3d_path_state == "PATH3DLINE":
+				#create_as_line = true
+			#elif current_3d_path_state == "PATH3DDRAW":
+				#create_as_line = false
+	#)
 
 
-
-
-
-
-
-
-
-
-
-
-
+	snap_panel_menu.change_path_shape_3d.connect(
+		func(current_state: Variant) -> void:
+			if current_state == 0: # Path3DState.LINE
+				create_as_line = true
+			elif current_state == 1: # Path3DState.DRAW
+				create_as_line = false
+	)
 
 
 
@@ -604,18 +757,66 @@ func _enter_tree() -> void:
 
 
 
+
+
 	var base_control = EditorInterface.get_base_control()
+
+
 
 	# Get the Editor_Scene_Tabs and Monitor on tab_hovered signals to remove scene_preview
 	var editor_scene_tabs = get_child_of_type(base_control, "EditorSceneTabs", true)
 	var editor_scene_tabbar = get_child_of_type(editor_scene_tabs, "TabBar", true)
-	editor_scene_tabbar.tab_hovered.connect(func(tab: int):
-		scene_preview_3d_active = false
-		remove_existing_scene_preview())
 
-	var scenedock = get_child_of_type(base_control, "SceneTreeDock", true)
-	scenedock_editor = get_child_of_type(scenedock, "SceneTreeEditor")
-	scenedock_tree = get_child_of_type(scenedock_editor, "Tree")
+
+	editor_scene_tabbar.tab_hovered.connect(
+		func(tab: int):
+			clean_up_scene_preview()
+	)
+
+
+
+
+
+	# Support for Godot 4.6 change in Editor SceneTree node structure.
+	var info: Dictionary = Engine.get_version_info()
+	var scenedock: Node = get_child_of_type(base_control, "SceneTreeDock", true)
+	if (info["major"] == 4 and info["minor"] <= 5) or (info["major"] == 4 and info["minor"] == 6 and info["status"] == "dev1"):
+		scenedock_editor = get_child_of_type(scenedock, "SceneTreeEditor")
+		scenedock_tree = get_child_of_type(scenedock_editor, "Tree")
+	elif info["major"] == 4 and info["minor"] >= 6:
+		var v_box_container: VBoxContainer = get_child_of_type(scenedock, "VBoxContainer")
+		var margin_container: MarginContainer = get_child_of_type(v_box_container, "MarginContainer")
+		scenedock_editor = get_child_of_type(margin_container, "SceneTreeEditor")
+		scenedock_tree = get_child_of_type(scenedock_editor, "Tree")
+		# 4.6dev 456
+		##scenedock_editor = get_child_of_type(v_box_container, "SceneTreeEditor")
+		##scenedock_tree = get_child_of_type(scenedock_editor, "Tree")
+
+
+	#var scenedock = get_child_of_type(base_control, "SceneTreeDock", true)
+	#for child in scenedock.get_children():
+		#if child.get_class() == "VBoxContainer":
+			#print("HBoxContainer children: ", child.get_children())
+		##print("Child:", child.name, "Class:", child.get_class())
+
+
+	#var scene_tree_dock_instances: Array[Node] = base_control.find_children("*", "SceneTreeDock", true, false)
+	#var scenedock = scene_tree_dock_instances[0]
+	#print("scene_tree_dock_instances: ", scene_tree_dock_instances)
+	#
+#
+	#var scene_tree_editor_instances: Array[Node] = scenedock.find_children("*", "SceneTreeEditor", true, false)
+	#scenedock_editor = scene_tree_editor_instances[0]
+	#print("scene_tree_editor_instances: ", scene_tree_editor_instances)
+	#
+	#var tree_instances: Array[Node] = scenedock_editor.find_children("*", "Tree", true, false)
+	#scenedock_tree = tree_instances[0]
+	#print("tree_instances: ", tree_instances)
+
+
+
+
+
 
 
 	# Monitor mouse events for hovering over the Scene Tree
@@ -637,15 +838,29 @@ func _enter_tree() -> void:
 	# FIXME Giving error Internal script error! Opcode: 0 (please report) for await not sure why 
 	# maybe cause of engine crashing on saves and changes
 	# Clear pinned node from scene_pinned_node dict if removed from scene tree
-	get_tree().node_removed.connect(func(node: Node) -> void:
-		# Create timer to delay until after scene_changed
-		await get_tree().create_timer(1).timeout
-		#if debug: print("allow_pin_removal: ", allow_pin_removal)
-		if node == pinned_node and allow_pin_removal:
-			# Remove pinned node from dictionary
-			scene_pinned_node.erase(EditorInterface.get_edited_scene_root()))
-			#if debug: print("node removed: ", node))
-	#get_tree().node_added.connect(add_global_tris)
+
+	get_tree().node_removed.connect(
+		func(node: Node) -> void:
+			# Create timer to delay until after scene_changed
+			await get_tree().create_timer(1).timeout
+			#if debug: print("allow_pin_removal: ", allow_pin_removal)
+			if node == pinned_node and allow_pin_removal:
+				# Remove pinned node from dictionary
+				scene_pinned_node.erase(EditorInterface.get_edited_scene_root())
+	)
+
+
+
+
+	#get_tree().node_removed.connect(func(node: Node) -> void:
+		## Create timer to delay until after scene_changed
+		#await get_tree().create_timer(1).timeout
+		##if debug: print("allow_pin_removal: ", allow_pin_removal)
+		#if node == pinned_node and allow_pin_removal:
+			## Remove pinned node from dictionary
+			#scene_pinned_node.erase(EditorInterface.get_edited_scene_root()))
+			##if debug: print("node removed: ", node))
+	##get_tree().node_added.connect(add_global_tris)
 
 
 	
@@ -680,7 +895,7 @@ func _enter_tree() -> void:
 
 
 
-
+	
 
 	#await get_tree().create_timer(5).timeout
 	
@@ -688,17 +903,24 @@ func _enter_tree() -> void:
 	#ResourceUID.add_id(8576626692258089695, "res://collections/kenny_space_station_kit/textures/colormap.png")
 	#if ResourceUID.has_id(ResourceUID.text_to_id(dep_uid)):
 		#if debug: print("IT HAS IT WHY NOT WORKING!!")
-	
-	
+	#var SCENE_VIEWER = ResourceLoader.load("res://addons/scene_snap/plugin_scenes/scene_viewer.tscn", "", ResourceLoader.CACHE_MODE_IGNORE)
+	#await get_tree().create_timer(5).timeout
+	#SCENE_VIEWER = load("res://addons/scene_snap/plugin_scenes/scene_viewer.tscn")
 	#if debug: print("This should be the very first thing to print")
 	scene_viewer_panel_instance = SCENE_VIEWER.instantiate()
+	scene_viewer_panel_instance.scene_snap_plugin_ref = self
 	#scene_viewer_panel_instance.sharing_disabled = sharing_disabled
 	await wait_ready(scene_viewer_panel_instance, "scene_viewer_panel_instance")
 	#scene_viewer_panel_instance.sharing_disabled = sharing_disabled
 	#if debug: print("scene_viewer_panel_instance: ", scene_viewer_panel_instance)
 	#if debug: print("user_favorites.scene_favorites: ", user_favorites.scene_favorites)
-	# Works but error
-	
+
+	call_deferred("defer_main_tab_container_signal_connection")
+
+
+
+
+
 
 
 	# Copy data stored in cache to script variables
@@ -737,6 +959,12 @@ func _enter_tree() -> void:
 		sharing_disabled = settings.get_setting("scene_snap_plugin/disable_sharing_functionality_shared_collections_and_shared_tags")
 	else:
 		settings.set_setting("scene_snap_plugin/disable_sharing_functionality_shared_collections_and_shared_tags", sharing_disabled)
+
+	# Store the auto_expand_to_selected user setting in a var. NOTE: Used to prevent expanding of Path3D drag_line.
+	if settings.has_setting("docks/scene_tree/auto_expand_to_selected"):
+		expand_to_selected = settings.get_setting("docks/scene_tree/auto_expand_to_selected")
+
+
 
 	#var debug_print_setting: String = "scene_snap_plugin/enable_plugin_debug_print_statements"
 	## If the setting does not exist create it and set it to false
@@ -822,14 +1050,31 @@ func _enter_tree() -> void:
 	
 	# FIXME apply_multi_node_collisions
 	#scene_viewer_panel_instance.change_collision_shape_3d.connect(apply_multi_node_collisions)
-	scene_viewer_panel_instance.change_physics_body_type_3d.connect(func(current_3d_type: String) -> void: current_body_3d_type = current_3d_type)
-	#scene_viewer_panel_instance.change_physics_body_type_3d.connect(apply_multi_node_body_type)
-	scene_viewer_panel_instance.change_physics_body_type_2d.connect(func(current_2d_type: String) -> void: current_body_2d_type = current_2d_type)
-	scene_viewer_panel_instance.change_hold_state_3d.connect(func(current_hold_state_3d: String) -> void: current_hold_3d_state = current_hold_state_3d)
+
+	scene_viewer_panel_instance.change_physics_body_type_3d.connect(
+		func(current_3d_type: String) -> void:
+			current_body_3d_type = current_3d_type
+	)
+
+	scene_viewer_panel_instance.change_physics_body_type_2d.connect(
+		func(current_2d_type: String) -> void:
+			current_body_2d_type = current_2d_type
+	)
+
+	scene_viewer_panel_instance.change_hold_state_3d.connect(
+		func(current_hold_state_3d: String) -> void:
+			current_hold_3d_state = current_hold_state_3d
+	)
+
+	scene_viewer_panel_instance.instantiate_as_scene.connect(
+		func(add_as_scene: bool) -> void:
+			create_as_scene = add_as_scene
+	)
+
+	scene_viewer_panel_instance.update_scene_buttons.connect(update_current_selected_buttons)
 	
-	
-	scene_viewer_panel_instance.instantiate_as_scene.connect(func(add_as_scene: bool) -> void: create_as_scene = add_as_scene)
-	scene_viewer_panel_instance.enable_node_pinning.connect(func(enable_node_pinning: bool) -> void:
+	scene_viewer_panel_instance.enable_node_pinning.connect(
+		func(enable_node_pinning: bool) -> void:
 			node_pinning_enabled = enable_node_pinning
 			if not enable_node_pinning:
 				pinned_node = null
@@ -838,21 +1083,15 @@ func _enter_tree() -> void:
 				get_tree_items() # Get current tree items
 				for tree_item: TreeItem in tree_items: # Erase pins for all tree_items
 					if tree_item.get_button_by_id(0, 10) != -1:
-						tree_item.erase_button(0, tree_item.get_button_by_id(0, 10)))
+						tree_item.erase_button(0, tree_item.get_button_by_id(0, 10))
+	)
 
+	scene_viewer_panel_instance.get_current_scene_preview.connect(
+		func() -> void:
+			scene_viewer_panel_instance.current_scene_preview = scene_preview
+	)
 
-	scene_viewer_panel_instance.get_current_scene_preview.connect(func() -> void: scene_viewer_panel_instance.current_scene_preview = scene_preview)
-
-
-## FIXME Does not trigger filtering
-	#scene_viewer_panel_instance.initialize_filters.connect(func() -> void:
-				##await get_tree().create_timer(10).timeout
-				#update_selected_buttons_for_tab(current_main_tab))
-				##var main_container: TabContainer = scene_viewer_panel_instance.main_tab_container
-				###var main_tab: Control = main_container.get_current_tab_control()
-				##selected_main_tab_changed(main_container.current_tab))
-
-	#scene_viewer_panel_instance.initialize_filters.connect(call_deferred("initialize_filters"))
+	scene_viewer_panel_instance.initialize_filters.connect(apply_collection_filters)
 
 
 	## Update scene_preview material to selected button material
@@ -871,7 +1110,10 @@ func _enter_tree() -> void:
 						#var default_material: StandardMaterial3D = scene_viewer_panel_instance.material_lookup[scene_full_path][non_selected_surface_index]
 						#mesh_node.set_surface_override_material(non_selected_surface_index, default_material))
 
-	scene_viewer_panel_instance.match_target_scale.connect(func(match_target_scale: bool) -> void: match_scale = match_target_scale)
+	scene_viewer_panel_instance.match_target_scale.connect(
+		func(match_target_scale: bool) -> void:
+			match_scale = match_target_scale
+	)
 
 
 	## Reset first scene view button selection to 0 when changing tabs
@@ -880,17 +1122,17 @@ func _enter_tree() -> void:
 
 	# This gets passed up from scene_view.gd to scene_viewer.gd to here to set selected_scene_view_button on button pressed
 	# FIXME RESET SELECTED BUTTON ON KEY -Q AND RIGHT MOUSE
-	scene_viewer_panel_instance.update_selected_scene_view_button.connect(func(scene_view_button: Button) -> void:
+	scene_viewer_panel_instance.update_selected_scene_view_button.connect(
+		func(scene_view_button: Button) -> void:
 			scene_number = scene_view_button.get_index() - 1
 			selected_scene_view_button = scene_view_button # Used to get plain text tags to load into mesh of scene_to_place
-			
 			snap_flow_manager_graph.selected_scene_view_button = scene_view_button
-			if debug: print("updating scene_preview to button pressed scene")
 			if scene_preview_3d_active:
-				remove_existing_scene_preview()
-				create_scene_preview() # NOTE: The newly created scene_preview will use this updated scene_view_button
+				refresh_scene_preview()
 			else:
-				activate_scene_preview())
+				activate_scene_preview()
+	)
+
 
 
 #		func (tab: int, main_tab: Control) -> void: scene_viewer_panel_instance.current_scene_path = current_visible_buttons[0].scene_full_path)
@@ -898,39 +1140,20 @@ func _enter_tree() -> void:
 		#func (tab: int) -> void: scene_viewer_panel_instance.current_scene_path = current_visible_buttons[0].scene_full_path)
 
 
-	scene_viewer_panel_instance.make_resources_unique.connect(func (make_resources_unique: bool) -> void: make_unique = make_resources_unique)
-	
 	scene_viewer_panel_instance.visible_scene_preview_collisions.connect(toggle_scene_preview_collisions)
-	
 
-	scene_viewer_panel_instance.set_enable_collision.connect(func (set_enable_collision: bool) -> void: enable_collisions = set_enable_collision)
+	scene_viewer_panel_instance.make_resources_unique.connect(
+		func(make_resources_unique: bool) -> void:
+			make_unique = make_resources_unique
+	)
 	
-	#scene_viewer_panel_instance.visible_scene_preview_collisions.connect(func (show_collisions: bool) -> void: scene_preview_collisions = show_collisions)
-	
-	#scene_viewer_panel_instance.visible_scene_preview_collisions.connect(
-		#func (show_collisions: bool) -> void:
-			#if scene_preview != null:
-				#if debug: print("scene_preview: ", scene_preview)
-			#scene_preview_collisions = show_collisions)
-			
-	#scene_viewer_panel_instance.set_no_collision.connect(
-		#func (set_no_collision: bool) -> void:
-			#if set_no_collision:
-				#scene_preview_collisions_last_state = scene_preview_collisions
-				#scene_preview_collisions = false
-			#else:
-				#scene_preview_collisions = scene_preview_collisions_last_state)
-
-	
+	scene_viewer_panel_instance.set_enable_collision.connect(
+		func(set_enable_collision: bool) -> void:
+			enable_collisions = set_enable_collision
+	)
 
 	scene_viewer_panel_instance.gen_lods.connect(generate_lods)
-		#for scene_view_button in scene_viewer_panel_instance.scene_view_instances:
-			#scene_view_button.pass_up_scene_number.connect(update_selected_scene_number)
 
-		
-	#if debug: print("current_scene_path: ", current_scene_path)
-	#popup_window_instance = POPUP_WINDOW.instantiate()
-	
 	await get_tree().process_frame
 	
 	
@@ -945,7 +1168,7 @@ func _enter_tree() -> void:
 	else:
 		#add_control_to_bottom_panel()
 		add_control_to_bottom_panel(scene_viewer_panel_instance, "Scene Viewer")
-
+		scene_viewer_attached_bottom_panel = true
 
 	
 	
@@ -962,6 +1185,7 @@ func _enter_tree() -> void:
 			main_container.add_child(main_favorite_tab)
 			main_favorite_tab.owner = scene_viewer_panel_instance
 
+
 	# Does not load but no error 
 	#scene_viewer_panel_instance.last_session_favorites = user_favorites.scene_favorites
 	
@@ -976,22 +1200,41 @@ func _enter_tree() -> void:
 
 	# Connect signals from buttons when all instanced
 	#await wait_ready(scene_viewer_panel_instance.scene_view_instances)
-	# Reference: https://forum.godotengine.org/t/awaiting-a-user-signal/2398/2 (vonagam)
-	await Signal(self, "all_scenes_loaded_re_emit")
-	for scene_view_button in scene_viewer_panel_instance.scene_view_instances:
-		scene_view_button.pass_up_scene_number.connect(update_selected_scene_number)
+
+	
+
+	## Reference: https://forum.godotengine.org/t/awaiting-a-user-signal/2398/2 (vonagam)
+	#await Signal(self, "all_scenes_loaded_re_emit")
+	#for scene_view_button in scene_viewer_panel_instance.scene_view_instances:
+		#scene_view_button.pass_up_scene_number.connect(update_selected_scene_number)
 
 
 	#scene_viewer_panel_instance.initialize_filters.connect(call_deferred("initialize_filters"))
 	#if debug: print("EVERYTHING IS READY THIS SHOULD PRINT AT THE END")
+	
+
+	# NOTE: Need way to know when project scene_view thumbnail buttons all created
+	#changed_tab_functions()
+	# NOTE: Wait for the Project Scene and Favorites scene_view buttons to be created before continuing.
+	await scene_viewer_panel_instance.project_scene_buttons_created
+	changed_tab_functions()
+	for scene_view_button in scene_viewer_panel_instance.scene_view_instances:
+		scene_view_button.pass_up_scene_number.connect(update_selected_scene_number)
+
 	emit_signal("enter_tree_complete")
+
+	#call_deferred("changed_tab_functions")
 	#scene_viewer_panel_instance.last_session_favorites = user_favorites.scene_favorites
 
 	
 	#await get_tree().create_timer(6).timeout
 
 
-
+	#call_deferred("_check_terrain3d_plugin")
+#
+#func _check_terrain3d_plugin():
+	#await get_tree().create_timer(10).timeout
+	#terrain_3d_plugin_active = EditorInterface.is_plugin_enabled("terrain_3d")
 
 
 
@@ -1026,6 +1269,15 @@ func _enter_tree() -> void:
 		##const SNAP_MANAGER_GRAPH = load("res://addons/scene_snap/plugin_scenes/snap_flow_manager_graph.tscn").instantiate()
 		##snap_manager_graph_instance = load("res://addons/scene_snap/plugin_scenes/snap_flow_manager_graph.tscn").instantiate()
 
+
+## The main_tab_container is not ready when enter_tree() is run so needs to be deferred with an await.
+func defer_main_tab_container_signal_connection() -> void:
+	await get_tree().process_frame
+	if scene_viewer_panel_instance.main_tab_container:
+		main_container = scene_viewer_panel_instance.main_tab_container
+		if not main_container.tab_changed.is_connected(selected_main_tab_changed):
+			main_container.tab_changed.connect(selected_main_tab_changed)
+	emit_signal("main_container_ready")
 
 
 #region Save and Restore
@@ -1084,6 +1336,7 @@ func _enter_tree() -> void:
 #func save_snap_manager_data(snap_flow_manager_graph: Control, snap_manager_data: Resource, graph_scene_path: String) -> void:
 # NOTE Can only save on exit not while graphedit is open
 func save_snap_flow_manager_state() -> void:
+
 	if debug: print("SAVING SNAP FLOW MANAGER")
 	
 	#var snap_manager_data = SnapManagerData.new()
@@ -1099,7 +1352,9 @@ func save_snap_flow_manager_state() -> void:
 	#if debug: print("graph_edit_child_control_nodes: ", graph_edit_child_control_nodes)
 	if ResourceSaver.save(packed_scene, graph_scene_path) != OK:
 		push_error("An error occurred while saving the snap flow manager graph to disk.")
-
+	# change flag to update the script once within the evaluate_user_code() function.
+	update_script = true
+	graph_is_dirty = true
 
 	# EDIT NOTE: **NOT** Required to read connections when snap manager (GraphEdit) panel closed.
 	# Get the connections from snap_flow_manager_graph.tscn, store them in snap_manager_data.gd and then save the connections to disk using snap_manager_data.tres
@@ -1119,27 +1374,43 @@ func save_snap_flow_manager_state() -> void:
 
 # NOTE Required for follow focus to function when in window popup mode
 func selected_main_tab_changed(tab: int) -> void:
-	# Clear out stale buttons in "Favorites" scene_buttons that have been "Freed" from favorites collection in other tabs.
-	# NOTE: After being cleared above any none "Freed" buttons are regenerated and added to "Favorites" scene_buttons in main_base_tab.gd get_scene_buttons()
-	for main_tab: Control in scene_viewer_panel_instance.main_tab_container.get_children():
-		if main_tab.name == "Favorites":
-			main_tab.scene_buttons.clear()
-
-	#if debug: print("this is the tab: ", tab)
 	var main_container: TabContainer = scene_viewer_panel_instance.main_tab_container
-	#var main_tab: Control = main_container.get_current_tab_control()
-	current_main_tab = main_container.get_current_tab_control()
+	if main_container:
+		# Set the current_main_tab variables
+		current_main_tab = main_container.get_current_tab_control()
+		# Pass to scene_viewer_panel_instance for thumbnail refresh
+		scene_viewer_panel_instance.current_main_tab = current_main_tab
+
+		changed_tab_functions()
+		#update_current_collection_buttons(current_main_tab)
+		#update_current_selected_buttons()
+		#update_scene_preview_to_focused_button()
+		#initialize_scene_preview = true
+
+
+		#update_selected_buttons_for_tab(current_main_tab)
+		#update_scene_preview_and_visible_buttons()
+
+		## Clear out stale buttons in "Favorites" scene_buttons that have been "Freed" from favorites collection in other tabs.
+		## NOTE: After being cleared above any none "Freed" buttons are regenerated and added to "Favorites" scene_buttons in main_base_tab.gd get_scene_buttons()
+		#for main_tab: Control in main_container.get_children():
+			#if main_tab.name == "Favorites":
+				#main_tab.scene_buttons.clear()
 
 
 
+	# ALERT SOURCE OF DUPLICATE CREATE_SCENE_PREVIEW
 	#Connect signals as tabs are openned after checking if connection does not already exists
-	if not current_main_tab.update_visible_buttons.is_connected(update_scene_preview_and_visible_buttons):
-		current_main_tab.update_visible_buttons.connect(update_scene_preview_and_visible_buttons)
+	# NOTE: Sets create_scene_preview to get_current_visible_buttons() when filters changed
+	current_main_tab.update_visible_buttons.connect(func() -> void: initialize_scene_preview = true)
+
+	#if not current_main_tab.update_visible_buttons.is_connected(update_scene_preview_and_visible_buttons):
+		#current_main_tab.update_visible_buttons.connect(update_scene_preview_and_visible_buttons)
 
 	#if debug: print("THIS IS THE MAIN TAB NAME: ", main_tab.name)
 	#update_selected_buttons_for_tab(tab, main_tab)
-	update_selected_buttons_for_tab(current_main_tab)
-	update_scene_preview_and_visible_buttons()
+	#update_selected_buttons_for_tab(current_main_tab)
+	#update_scene_preview_and_visible_buttons()
 
 	#if connect_signals:
 		#connect_main_tab_signals(main_container)
@@ -1147,115 +1418,246 @@ func selected_main_tab_changed(tab: int) -> void:
 
 # FIXME Find way to get current open tab on startup
 func selected_sub_collection_tab_changed(tab: int, main_tab: Control) -> void:
-	if debug: print("this is the tab: ", tab)
+	#await get_tree().create_timer(5).timeout
+	current_sub_tab = scene_viewer_panel_instance.get_current_sub_tab()
+	#var sub_tab_container: TabContainer = main_tab.sub_tab_container
+	#if sub_tab_container.get_current_tab() > -1:
+		#current_sub_tab = sub_tab_container.get_child(sub_tab_container.get_current_tab())
+		##push_error("current_sub_tab name: ", current_sub_tab.name)
+		#scene_viewer_panel_instance.current_sub_tab = current_sub_tab
+	#else: # For edge case when Global or Shared Collection open and no default "New Collection" Tab showing
+		## Pass to scene_viewer_panel_instance for thumbnail refresh
+		#scene_viewer_panel_instance.current_sub_tab = null
 
-	#update_selected_buttons_for_tab(tab, main_tab)
-	update_selected_buttons_for_tab(main_tab)
-	update_scene_preview_and_visible_buttons()
+	changed_tab_functions()
+	#update_current_collection_buttons(main_tab)
+	#update_current_selected_buttons()
+	#update_scene_preview_to_focused_button()
+	#initialize_scene_preview = true
+
+	#update_selected_buttons_for_tab(main_tab)
+	#update_scene_preview_and_visible_buttons()
 
 ## FIXME grabs that last collections default texture not the current collection
 	#await get_tree().process_frame
 	## Update to collection default texture on tab change
 	#scene_viewer_panel_instance._on_default_material_button_pressed()
 
+## Called when Tabs being created when Project Scenes loaded when Collections if any are loaded and switching between tabs.
+func changed_tab_functions() -> void:
+	update_current_collection_buttons()
+	update_current_selected_buttons()
+	update_scene_preview_to_focused_button(true)
+
+	# Reset flag so create_scene_preview can get get_current_visible_buttons()
+	initialize_scene_preview = true 
 
 
-#func update_selected_buttons_for_tab(tab: int, main_tab: Control) -> void:
-## Node2D MultiSelectBox and selected_buttons
-func update_selected_buttons_for_tab(main_tab: Control) -> void:
-	if debug: print("updating selected buttons")
-	if debug: print("main_tab: ", main_tab.name)
+
+## Fills current_collection_buttons with all buttons within the currently opened tab filtering out Node2D MultiSelectBox.
+func update_current_collection_buttons() -> void:
+	if scene_viewer_panel_instance.main_tab_container:
+		current_main_tab = scene_viewer_panel_instance.main_tab_container.get_current_tab_control()
+		if current_main_tab:
+			current_collection_buttons.clear()
+
+			match current_main_tab.name:
+				"Project Scenes", "Favorites":
+					# Clear out stale buttons in "Favorites" scene_buttons that have been "Freed" from favorites collection in other tabs.
+					# NOTE: After being cleared above any none "Freed" buttons are regenerated and added to "Favorites" scene_buttons in main_base_tab.gd get_scene_buttons()
+					if current_main_tab.name == "Favorites":
+						current_main_tab.scene_buttons.clear()
+					current_collection_buttons = current_main_tab.h_flow_container.get_children()
+
+				_:
+					current_sub_tab = scene_viewer_panel_instance.get_current_sub_tab()
+					if current_sub_tab:
+						if current_sub_tab.name == "SubTab": # Will result when openning collection for the first time.
+							return
+
+						## Call method in scene_viewer_panel_instance to unload last tabs materials and load new collections materials into VRAM.
+						##scene_viewer_panel_instance.materials_3d_array.clear()
+
+						#scene_viewer_panel_instance.current_sub_tab = current_sub_tab
+						current_collection_buttons = current_sub_tab.h_flow_container.get_children()
+
+			# Filter out Node2D MultiSelectBox
+			if current_collection_buttons:
+				current_collection_buttons = current_collection_buttons.filter(func(button) -> bool: return button is Button)
+				# Pass to scene_viewer_panel_instance for thumbnail refresh
+				# FIXME Change to scene_viewer_panel_instance.current_collection_buttons = current_collection_buttons for consistency.
+				scene_viewer_panel_instance.scene_buttons = current_collection_buttons
+				scene_viewer_panel_instance.current_collection_buttons = current_collection_buttons
+
+			# FIXME I HAVE THIS CODE REPEATED 3 TIMES HERE scene_viewer.gd func process_collection(filter_duplicates: bool = false) AND main_base_tab.gd get_scene_buttons()
+			# ALERT # FIXME DUPLICATE CODE IN scene_viewer.gd func process_collection(filter_duplicates: bool = false) -> void:
+			# ALERT This is duplicate code of what we just did above in main_base_tab.gd? Why do I have both. TODO Merge into main_base_tab.gd?
+			current_main_tab.get_scene_buttons()
+
+		else:
+			push_warning("the tab could not be found.")
+
+## Fill selected_buttons array with currently selected buttons.
+func update_current_selected_buttons() -> void:
 	scene_viewer_panel_instance.selected_buttons.clear()
 
-	# Create function in main_base_tab.gd to get scene_buttons
-	if main_tab:
-		var scene_buttons: Array[Node]
-		match main_tab.name:
-			"Project Scenes", "Favorites":
-				if debug: print("Project or Favorites")
-				scene_buttons = main_tab.h_flow_container.get_children()
-				
+	for button: Button in current_collection_buttons:
+		if button.selected_texture_button.button_pressed: 
+			scene_viewer_panel_instance.selected_buttons.append(button)
 
-			_:  # NOTE: Or connect to selected_sub_tab_changed signal tab to replace main_tab.sub_tab_container.get_current_tab()
-				if main_tab.sub_tab_container.get_current_tab() > -1:
-					current_sub_tab = main_tab.sub_tab_container.get_child(main_tab.sub_tab_container.get_current_tab())
-					if current_sub_tab:
-						if debug: print("current_sub_tab.name: ",current_sub_tab.name)
-						scene_buttons = current_sub_tab.h_flow_container.get_children()
-
-		#scene_buttons = scene_buttons.filter(func(button): return button is Button)
-		if scene_buttons:
-			for scene_button in scene_buttons:
-				if scene_button is Button and scene_button.selected_texture_button.button_pressed: # for Node2D MultiSelectBox
-					scene_viewer_panel_instance.selected_buttons.append(scene_button)
-
-
-		if debug: print("scene_viewer_panel_instance.selected_buttons: ", scene_viewer_panel_instance.selected_buttons)
-		#main_tab.filter_buttons()
-		main_tab.get_scene_buttons()
-
-	else:
-		push_warning("the tab could not be found.")
+## Filter collection buttons to only those that are visible in tree. # NOTE: Currently not using the return.
+func get_current_visible_buttons() -> Array[Node]:
+	current_visible_buttons.clear()
+	current_visible_buttons = current_collection_buttons.filter(func(button) -> bool: return button.is_visible_in_tree())
+	pass_down_scene_number_to_scene_buttons(current_visible_buttons)
+	return current_visible_buttons
 
 
 ## Get currently visible buttons and create ScenePreview for the one that is focused
-func update_scene_preview_and_visible_buttons() -> void:
+func update_scene_preview_to_focused_button(new_tab: bool) -> void:
+	await get_tree().create_timer(0.1).timeout # Time for the buttons to be loaded into the tree before checking.
+	get_current_visible_buttons()
 	if scene_preview_3d_active and current_visible_buttons:
 		remove_existing_scene_preview()
-		## Find the focused button within the visible on-screen buttons if none get the first button 
-		#scene_number = 0
-		#for button: Button in current_visible_buttons:
-			#if button.has_focus():
-				#scene_number = current_visible_buttons.find(button)
-
-		scene_number = get_focused_button_scene_number()
-
+		scene_number = get_focused_button_scene_number(new_tab)
 		selected_scene_view_button = current_visible_buttons[scene_number]
-
 		initialize_scene_preview = true # Grab list of current buttons in view
 
 		if scene_preview == null and scene_preview_mesh == null:
 			create_scene_preview()
 
 
+
+##func update_selected_buttons_for_tab(tab: int, main_tab: Control) -> void:
+### Node2D MultiSelectBox and selected_buttons
+## FIXME DUPLICATE CODE IN scene_viewer.gd func process_collection(filter_duplicates: bool = false) -> void:
+## FIXME On start this is running before subtabs are being named so default root nodes name "SubTab" being run here. 
+#func update_selected_buttons_for_tab(main_tab: Control) -> void:
+#
+#
+	#if debug: print("updating selected buttons")
+	#print("main_tab: ", main_tab.name)
+	#scene_viewer_panel_instance.selected_buttons.clear()
+#
+	## Create function in main_base_tab.gd to get scene_buttons
+	#if main_tab:
+		##var scene_buttons: Array[Node]
+		#current_collection_buttons.clear()
+#
+		#match main_tab.name:
+			#"Project Scenes", "Favorites":
+				## Clear out stale buttons in "Favorites" scene_buttons that have been "Freed" from favorites collection in other tabs.
+				## NOTE: After being cleared above any none "Freed" buttons are regenerated and added to "Favorites" scene_buttons in main_base_tab.gd get_scene_buttons()
+				#if main_tab.name == "Favorites":
+					#main_tab.scene_buttons.clear()
+#
+				#if debug: print("Project or Favorites")
+				#current_collection_buttons = main_tab.h_flow_container.get_children()
+#
+#
+			#_:  # NOTE: Or connect to selected_sub_tab_changed signal tab to replace main_tab.sub_tab_container.get_current_tab()
+				##if main_tab.sub_tab_container.get_current_tab() > -1:
+					##current_sub_tab = main_tab.sub_tab_container.get_child(main_tab.sub_tab_container.get_current_tab())
+				#if current_sub_tab:
+					#if current_sub_tab.name == "SubTab": # Will result when openning collection for the first time.
+						#return
+					## Pass to scene_viewer_panel_instance for thumbnail refresh
+					#scene_viewer_panel_instance.current_sub_tab = current_sub_tab
+					#
+					#push_error("current_sub_tab.name1: ",current_sub_tab.name)
+					### Call method in scene_viewer_panel_instance to unload last tabs materials and load new collections materials into VRAM.
+					###scene_viewer_panel_instance.materials_3d_array.clear()
+					###for material: BaseMaterial3D in scene_viewer_panel_instance.materials_3d_array:
+						###material = null
+					###scene_viewer_panel_instance.materials_3d_array.clear()
+					###var current_sub_tab_name: String = current_sub_tab.name
+					###if not current_sub_tab == last_sub_tab:
+						###last_sub_tab = current_sub_tab
+					##scene_viewer_panel_instance.materials_3d_array.clear()
+					###scene_viewer_panel_instance.collection_lookup[current_sub_tab.name].clear()
+					##scene_viewer_panel_instance.collection_lookup.clear()
+					##scene_viewer_panel_instance.scene_lookup.clear()
+					#
+					##scene_viewer_panel_instance.load_collection_materials.clear()
+#
+#
+#
+					##push_error("storing materials in vram for collection: ", current_sub_tab.name)
+					## FIXME Use this or pull and load references from cache
+					##scene_viewer_panel_instance.collect_standard_material_3d2(project_scenes_path.path_join(current_sub_tab.name.to_snake_case().path_join("textures")))
+					#
+					#current_collection_buttons = current_sub_tab.h_flow_container.get_children()
+					#push_error("scene_buttons: ",current_collection_buttons.size())
+				##else: # For edge case when Global or Shared Collection open and no default "New Collection" Tab showing
+					### Pass to scene_viewer_panel_instance for thumbnail refresh
+					##scene_viewer_panel_instance.current_sub_tab = null
+					###if debug: print("current sub tab == ''")
+#
+		##scene_buttons = scene_buttons.filter(func(button): return button is Button)
+		#if current_collection_buttons:
+			#current_collection_buttons = current_collection_buttons.filter(func(button) -> bool: return button is Button) # for Node2D MultiSelectBox
+			## Pass to scene_viewer_panel_instance for thumbnail refresh
+			## FIXME Change to scene_viewer_panel_instance.current_collection_buttons = current_collection_buttons for consistency.
+			#scene_viewer_panel_instance.scene_buttons = current_collection_buttons
+			#for button: Button in current_collection_buttons:
+				#if button.selected_texture_button.button_pressed: 
+					#scene_viewer_panel_instance.selected_buttons.append(button)
+#
+#
+		#if debug: print("scene_viewer_panel_instance.selected_buttons: ", scene_viewer_panel_instance.selected_buttons)
+		##main_tab.filter_buttons()
+		#main_tab.get_scene_buttons()
+#
+	#else:
+		#push_warning("the tab could not be found.")
+
+
+### Get currently visible buttons and create ScenePreview for the one that is focused
+#func update_scene_preview_and_visible_buttons() -> void:
+	#if scene_preview_3d_active and current_visible_buttons:
+		#remove_existing_scene_preview()
+		### Find the focused button within the visible on-screen buttons if none get the first button 
+		##scene_number = 0
+		##for button: Button in current_visible_buttons:
+			##if button.has_focus():
+				##scene_number = current_visible_buttons.find(button)
+#
+		##get_visible_scene_view_buttons()
+		##await get_tree().process_frame
+#
+		#scene_number = get_focused_button_scene_number()
+#
+		##var current_visible_buttons_filtered = current_visible_buttons.filter(func(button) -> bool: return is_instance_valid(button))
+		#selected_scene_view_button = current_visible_buttons[scene_number]
+		##if current_visible_buttons_filtered.has(scene_number):
+			##selected_scene_view_button = current_visible_buttons_filtered[scene_number]
+#
+		#initialize_scene_preview = true # Grab list of current buttons in view
+#
+## FIXME This is running 3 times
+		#if scene_preview == null and scene_preview_mesh == null:
+			#create_scene_preview()
+
+
 # FIXME When changing scenes this happens after change causing errors how to trigger before scene change?
 func remove_existing_scene_preview() -> void:
 	if scene_preview != null:# and not scene_preview.is_inside_tree():
-		# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
+		# Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
 		# Cleanup scene_preview from dict for mesh collision
 		var object_id: int = scene_preview.get_instance_id()
 		filtered_object_ids.erase(object_id)
 
-		#get_tree().get_root().remove_child(scene_preview)
-
-		#scene_preview.free()
-		# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
+		
 		scene_preview.queue_free()
-
 		#scene_preview_mesh.free() # FIXME Do I need scene_preview_mesh it is just reference to scene_preview
-		
-		# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
 		scene_preview_mesh = null
-		
-		# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
 		scene_preview = null
-		#scene_preview_3d_active = false
-		#scene_preview.queue_free()
-		#scene_preview.free()
-		
-		
-		#scene_preview_mesh.queue_free()
-		#scene_preview_mesh.free()
-		#get_tree().get_root().remove_child(scene_preview_mesh)
-		#scene_preview_mesh = null
-		#scene_preview_mesh.free()
-		#scene_preview.free()
-
-	#var existing_preview = get_tree().get_root().find_child("ScenePreview", true, false)
-	#if existing_preview:
-		#existing_preview.get_parent().remove_child(existing_preview)
 
 
+func remove_existing_virtual_plane() -> void:
+	virtual_plane_3d_instance.queue_free()
+	if virtual_planes_array.has(virtual_plane_3d_instance):
+		virtual_planes_array.erase(virtual_plane_3d_instance)
 
 
 func _on_scenedock_tree_mouse_entered() -> void:
@@ -1285,6 +1687,7 @@ static func get_child_of_type(node: Node, type: String, recursive: bool = false)
 	var l = node.find_children("", type, recursive, false)
 	assert(len(l) == 1)
 	return l[0]
+
 
 # BUG When button pressed is "open in editor" and switches scene trees if arg declared with item: TreeItem 
 # ERROR: core/object/object.cpp:1249 - Error calling from signal 'button_clicked' to callable: 'EditorPlugin(scene_snap_plugin.gd)::node_pinned': Cannot convert argument 1 from Object to Object.
@@ -1318,7 +1721,7 @@ func node_pinned(item, column: int, id: int, mouse_button_index: int) -> void:
 		# NOTE Works but will still Error when switching back to original scene where scene_preview existed how to fix?
 		# ERROR: editor/editor_data.cpp:1216 - Condition "!p_node->is_inside_tree()" is true.
 		# Remove scene preview because maybe pressed "open in editor" and changed scene trees
-		# TODO # Reload scene_preview when tree returns NOTE: Use same code as pinneded node when changing scenes?
+		# TODO # Reload scene_preview when tree returns NOTE: Use same code as pinned node when changing scenes?
 		remove_existing_scene_preview()
 		
 
@@ -1333,22 +1736,62 @@ func node_pinned(item, column: int, id: int, mouse_button_index: int) -> void:
 
 
 
-# TODO Check if both functions are needed Just get working for now
-#FIXME UPDATE SCALE TOO
+## TODO Check if both functions are needed Just get working for now
+##FIXME UPDATE SCALE TOO
+## NOTE: When cycling collision shapes both update_scene_preview_collisions() and toggle_scene_preview_collisions() execute.?
+## TODO FIXME Simply remove and recreate scene_preview much simplier and less issues.
+#func update_scene_preview_collisions(current_state: String) -> void:
+	#current_collision_3d_state = current_state
+	#if scene_preview != null and scene_preview_collisions:
+		### For the scene_preview only, remove any existing CollisionShape3D nodes in the scene.
+		##var collision_node_instances: Array[Node] = scene_preview.find_children("*", "CollisionShape3D", true, false)
+		##for collision_shape_3d: CollisionShape3D in collision_node_instances:
+			##collision_shape_3d.free()
+#
+		#enable_collisions = true
+		#var save_path = "none"
+		##if debug: print("matching5")
+		## Re-create CollisionShape3D based on the user selected collision.
+		#if debug: print("matching update_scene_preview_collisions: ", scene_preview.get_child(0).get_children())
+		#var scene_preview_child: Node3D = scene_preview.get_child(0)
+		##await match_collision_state(scene_preview, scene_preview.name, save_path, false)
+		#await match_collision_state(scene_preview_child, scene_preview.name, save_path, false, true)
+
+
+
+
+## Recreate the scene_preview when cycling through collision shapes. Store current scene number to recreate in create_scene_preview() when focus lost.  
 func update_scene_preview_collisions(current_state: String) -> void:
 	current_collision_3d_state = current_state
-	if scene_preview != null and scene_preview_collisions:
-		var collision_node_instances: Array[Node] = scene_preview.find_children("*", "CollisionShape3D", true, false)
-		for collision_shape_3d: CollisionShape3D in collision_node_instances:
-			collision_shape_3d.free()
+	if scene_preview_3d_active and scene_preview != null and scene_preview_collisions:
+		collision_button_pressed = true
+		var current_selected_scene: String = scene_preview.get_child(0).name.replace("_", " ")
+		for button: Button in current_visible_buttons:
+			if button.file_label.text.strip_edges() == current_selected_scene.strip_edges():
+				current_selected_scene_number = current_visible_buttons.find(button)
 
-		enable_collisions = true
-		var save_path = "none"
-		if debug: print("matching5")
-		await match_collision_state(scene_preview, scene_preview.name, save_path, false)
+	##if scene_preview_3d_active and scene_preview != null and scene_preview_collisions:
+		#remove_existing_scene_preview()
+		#create_scene_preview()
+		refresh_scene_preview()
 
 
-# Create preview collisions on eye icon visibility changed
+### Create preview collisions on eye icon visibility changed
+#func toggle_scene_preview_collisions(show_collisions: bool) -> void:
+	#scene_preview_collisions = show_collisions
+	#if scene_preview != null and not show_collisions:
+		#var collision_node_instances: Array[Node] = scene_preview.find_children("*", "CollisionShape3D", true, false)
+		#for collision_shape_3d: CollisionShape3D in collision_node_instances:
+			#collision_shape_3d.queue_free()
+#
+	#elif scene_preview != null and show_collisions:
+		#enable_collisions = true
+		#var save_path = "none"
+		#if debug: print("matching scene_preview collisions toggled: ", scene_preview.get_children())
+		#await match_collision_state(scene_preview, scene_preview.name, save_path, false)
+
+
+## Create preview collisions on eye icon visibility changed
 func toggle_scene_preview_collisions(show_collisions: bool) -> void:
 	scene_preview_collisions = show_collisions
 	if scene_preview != null and not show_collisions:
@@ -1356,11 +1799,42 @@ func toggle_scene_preview_collisions(show_collisions: bool) -> void:
 		for collision_shape_3d: CollisionShape3D in collision_node_instances:
 			collision_shape_3d.queue_free()
 
-	elif scene_preview != null and show_collisions:
-		enable_collisions = true
-		var save_path = "none"
-		if debug: print("matching4")
-		await match_collision_state(scene_preview, scene_preview.name, save_path, false)
+	# NOTE: Is also used to update the scene_preview when the PhysicsBody3D changes.
+	if scene_preview != null:
+		# NOTE: Run deferred to give time for change_physics_body_type_3d signal from scene_viewer_panel_instance 
+		# to update current_type_3d required by get_physics_body_3d() within create_scene_preview().
+		call_deferred("refresh_scene_preview")
+
+
+## Remove and re-create the scene preview.
+func refresh_scene_preview() -> void:
+	remove_existing_scene_preview()
+	create_scene_preview()
+
+
+#
+## Create preview collisions on eye icon visibility changed
+## FIXME TODO Combine old and new code, currently only generates collisions when first set to visible and then cycling to next scene.
+#func toggle_scene_preview_collisions(show_collisions: bool) -> void:
+	#scene_preview_collisions = show_collisions
+	#if scene_preview_3d_active and scene_preview != null:
+		#var collision_node_instances: Array[Node] = scene_preview.find_children("*", "CollisionShape3D", true, false)
+		#for collision_shape_3d: CollisionShape3D in collision_node_instances:
+			#if show_collisions:
+				#collision_shape_3d.show()
+				##remove_existing_scene_preview()
+				##create_scene_preview() # NOTE: The newly created scene_preview will use this updated scene_view_button
+			#else:
+				#collision_shape_3d.hide()
+			#
+			##collision_shape_3d.queue_free()
+##
+	##elif scene_preview != null and show_collisions:
+		##enable_collisions = true
+		##var save_path = "none"
+		##if debug: print("matching scene_preview collisions toggled: ", scene_preview.get_children())
+		##await match_collision_state(scene_preview, scene_preview.name, save_path, false)
+
 
 
 
@@ -1370,305 +1844,366 @@ func get_current_tab_order(sub_container_order_dict: Dictionary, main_tab_name: 
 	var current_tab_order: Array = []
 	#if debug: print("sub_container_order_dict.size(): ", sub_container_order_dict[main_tab_name].size())
 	for index: int in range(0, sub_container_order_dict[main_tab_name].size()):
-		#if debug: print(index)
+		if debug: print("index: ", index)
 		var current_sub_tab_name: String = sub_tab_bar.get_tab_title(index)
 		current_tab_order.append(current_sub_tab_name)
 		#if debug: print("current_sub_tab_name: ", current_sub_tab_name)
 	return current_tab_order
 
 
-# # FIXME if adding new folders to user:// after save and close causes (3) scene/main/node.cpp:460 - Parameter "p_child" is null. TODO Combine dictionaries into 1 NOTE Order effects results
-func _set_window_layout(configuration): # NOTE This functionality seems slow to restore config
-	# Restore favorites
-	#scene_viewer_panel_instance.scene_favorites = configuration.get_value("SceneSnapPlugin", "favorites", Array())
-	#scene_viewer_panel_instance.continue_load = true
-	#if debug: print("favorites: ", scene_viewer_panel_instance.scene_favorites)
-	
-	# Restore favorite_materials_index_array
-	scene_viewer_panel_instance.favorite_materials_index_array = configuration.get_value("SceneSnapPlugin", "favorite_materials_index_array", Array())
-	
-	## Restore show animation texture button state
-	#scene_viewer_panel_instance.scene_has_animation = configuration.get_value("SceneSnapPlugin", "scene_has_animation", Array())
-
-	#await get_tree().process_frame # Give scene_viewer_panel_instance time to instantiate and load all its children
-	# HACK Does not allow for minimizing past 456 on first run
-	# Set new project scene_viewer_panel_instance.custom_minimum_size to 456 for initial 2 row display of assets then overwrite min every start after to 173
-	#scene_viewer_panel_instance.custom_minimum_size = Vector2(0.0, 173.0)
-	# CAUTION WILL NEED TO CHANGE IF MORE SIDE PANEL BUTTONS ARE ADDED
-	scene_viewer_panel_instance.custom_minimum_size = Vector2(0.0, 216.0) # Seems to be the min can go without slider moving behind tabs # Increased as a result of adding more sidepanel buttons
-
-
-	# Restore slider value
-	scene_viewer_panel_instance.zoom_v_slider.value = configuration.get_value("SceneSnapPlugin", "zoom_slider_value", float())
-
-	# Get dictionary (Sub Tabs)
-	var sub_container_order_dict = configuration.get_value("SceneSnapPlugin", "sub_container_tabs_order", Dictionary())
-
-	# Get dictionary (Sub Tabs Selection)
-	var sub_container_selection_dict = configuration.get_value("SceneSnapPlugin", "sub_container_tabs_selection", Dictionary())
-	#if debug: print(sub_container_selection_dict)
-	
-	# Restore scene filter text
-	var scene_filter_text_dict = configuration.get_value("SceneSnapPlugin", "scene_filter_text", Dictionary())
-	
-	## Restore previous current selected tab
-	#var current_selected_tabs_dict = configuration.get_value("SceneSnapPlugin", "current_selected_tabs", Dictionary()) #{main_tab: current_tab_name}
-	
-	#if debug: print(scene_filter_text_dict)
-
-
-	# Get array (Main Tabs)
-	var main_container_tabs_names = configuration.get_value("SceneSnapPlugin", "main_container_tabs_order", Array())
-	#if debug: print("main_container_tabs_names: ", main_container_tabs_names)
-	
-	# NOTE: FIXME WHY DO I SET THIS HERE AND NOT ONREADY? MYABE NOT READY AT THAT POINT?
-	var main_container = scene_viewer_panel_instance.main_tab_container
-	await wait_ready(main_container, "scene_viewer_panel_instance.main_tab_container")
-
-	# FIXME TEST WILL THIS WORK WHEN FIRST INSTALLING PLUGIN AND USING?
-	main_container.tab_changed.connect(selected_main_tab_changed)
-
-	# Restore order (Main Tabs)
-	var main_container_tab_order: int = 0
-	#if main_container_tabs_names.has("Favorites"):
-		#var main_favorite_tab: Control = MAIN_FAVORITES_TAB.instantiate()
-		#main_container.add_child(main_favorite_tab)
-		#main_favorite_tab.owner = scene_viewer_panel_instance
-
-	for main_tab_name: String in main_container_tabs_names:
-		# If Sharing diabled in settings then skip restoring Shared Collections
-		if sharing_disabled and main_tab_name == "Shared Collections":
-			continue
-		#if debug: print("MAIN NAME: ", main_tab_name)
-		# HACK
-		#await get_tree().create_timer(1).timeout
-		# FIXME Will error if disabling favorites tab from openning on startup in editor settings
-		await wait_ready(main_container.find_child(main_tab_name, false, true), "main_container.find_child(main_tab_name, false, true)," + main_tab_name)
-		var new_main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
-		#if debug: print("new_main_collection_tab: ", new_main_collection_tab)
-		main_container.move_child(new_main_collection_tab, main_container_tab_order)
-		main_container_tab_order += 1
-		# Restore scene filter text
-		# HACK
-		#await get_tree().create_timer(2).timeout
-		
-		if new_main_collection_tab:
-
-			new_main_collection_tab.scene_search_line_edit.text = scene_filter_text_dict[main_tab_name]
-			# Required to update UI
-			new_main_collection_tab._on_scene_search_line_edit_text_changed(scene_filter_text_dict[main_tab_name])
-			# Restore order (Sub Tabs)
-			if main_tab_name != "Favorites" and main_tab_name != "Project Scenes":
-				# NOTE With SubContainer:
-				#var sub_container_tab_order: int = 0
-				#var sub_container = main_container.find_child(main_tab_name, false, false).find_child("SubTabBar", true, false)
-				#for sub_tab in sub_container_order_dict[main_tab_name]:
-					#if debug: print("sub_tab: ", sub_tab)
-					#sub_container.move_child(sub_container.find_child(sub_tab, false, false), sub_container_tab_order)
-					#sub_container_tab_order += 1
-
-				## NOTE With SubTab:
-				#var previous_tab_order: Dictionary = {}
-				#var previous_tab_order: Array = []
-				#var current_tab_order: Dictionary = {}
-				#var current_tab_order: Array = []
-				#
-				var sub_tab_bar_tab_order: int = 0
-	#
-				#var sub_tab_bar: TabBar = main_container.find_child(main_tab_name, false, false).find_child("SubTabBar", true, false)
-				var sub_tab_container: TabContainer = new_main_collection_tab.sub_tab_container
-				
-				# Restore previous session open tabs and order
-				scene_viewer_panel_instance.create_sub_collection_tabs(sub_container_order_dict[main_tab_name], new_main_collection_tab)
-
-
-
-#################################### KEEP
-				## Add tab in position 0 and change focus to it
-				##if debug: print(get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar))
-				#for previous_sub_tab_name: String in sub_container_order_dict[main_tab_name]:
-					#var move_me: int = get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar).find(previous_sub_tab_name)
-					#sub_tab_bar.move_tab(move_me, sub_tab_bar_tab_order)
-					#sub_tab_bar_tab_order += 1
-#################################### KEEP
-				
-				# Restore selection (Sub Tabs) FIXME Is running same restore tabs for both Global and Shared main tabs
-				# FIXME Problem seems to be that New Collection tab is added automatically but is not included in sub_container_selection_dict
-				# which is throwing off the indexes
-				# FIXME Maybe related to the add in switch code that I added which would make sense since this was not an issue
-				# that is noticed before changing that recently so disable that and see if fixed?
-				# NOTE: Appears to already open previously selected tab on restore without code below and with causes:
-				# ERROR: scene/gui/tab_bar.cpp:683 - Index p_current = 2 is out of bounds (get_tab_count() = 1).
-				#if debug: print("sub_container_selection_dict: ", sub_container_selection_dict)
-# FIXME NOTE: DIABLED FOR NOW UNTIL CAN FIGURE OUT WHAT IS CAUSING IT TO ERROR?
-				#sub_tab_container.set_current_tab(sub_container_selection_dict[main_tab_name])
-#################################### KEEP
-
-
-	# Restore selection (Main Tabs)
-	main_container.current_tab = configuration.get_value("SceneSnapPlugin", "main_container_current_tab", int())
-
-	# Restore Heart Filter Button State
-	var heart_filter_state_dict = configuration.get_value("SceneSnapPlugin", "heart_filter_state", Dictionary())
-	
-	#######################################################################################KEEP
-	## Restore 2D 3D selection state
-	#scene_viewer_panel_instance.next_filter = configuration.get_value("SceneSnapPlugin", "filter_2d_3d_state", int())
-
-	# NOTE filter_2d_3d_state_dict share keys so can be combined TODO combine both into one Dictionay
-	
-	# Reference: https://forum.godotengine.org/t/awaiting-a-user-signal/2398/2 (vonagam)
-	#await Signal(self, "all_scenes_loaded_re_emit")
-	
-	## Restore favorites
-	#scene_viewer_panel_instance.scene_favorites = configuration.get_value("SceneSnapPlugin", "favorites", Array())
-	#if debug: print("favorites I NEED TO SEE THIS SO BIGG PRINT: ", scene_viewer_panel_instance.scene_favorites)
-	
-	
-	# Restore heart filter state
-	for main_tab_name in heart_filter_state_dict.keys():
-		if sharing_disabled and main_tab_name == "Shared Collections":
-			continue
-		var main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
-		main_collection_tab.heart_texture_button.button_pressed = heart_filter_state_dict[main_tab_name]
-
-
-	#for main_tab_name: String in main_container_tabs_names:
-		##if debug: print("MAIN NAME: ", main_tab_name)
-		## HACK
-		##await get_tree().create_timer(1).timeout
-		#await wait_ready(main_container.find_child(main_tab_name, false, true))
-		#var new_main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
-		##if debug: print("new_main_collection_tab: ", new_main_collection_tab)
-		#main_container.move_child(new_main_collection_tab, main_container_tab_order)
-		#main_container_tab_order += 1
-		## Restore scene filter text
-		## HACK
-		##await get_tree().create_timer(2).timeout
-		#
-		#
-		#new_main_collection_tab.scene_search_line_edit.text = scene_filter_text_dict[main_tab_name]
-		## Required to update UI
-		#new_main_collection_tab._on_scene_search_line_edit_text_changed(scene_filter_text_dict[main_tab_name])
-		## Restore order (Sub Tabs)
-		#if main_tab_name != "Favorites" and main_tab_name != "Project Scenes":
-			## NOTE With SubContainer:
-			##var sub_container_tab_order: int = 0
-			##var sub_container = main_container.find_child(main_tab_name, false, false).find_child("SubTabBar", true, false)
-			##for sub_tab in sub_container_order_dict[main_tab_name]:
-				##if debug: print("sub_tab: ", sub_tab)
-				##sub_container.move_child(sub_container.find_child(sub_tab, false, false), sub_container_tab_order)
-				##sub_container_tab_order += 1
+## # FIXME if adding new folders to user:// after save and close causes (3) scene/main/node.cpp:460 - Parameter "p_child" is null. TODO Combine dictionaries into 1 NOTE Order effects results
+#func _set_window_layout(configuration): # NOTE This functionality seems slow to restore config
+	## Restore favorite_materials_index_array
+	#scene_viewer_panel_instance.favorite_materials_index_array = configuration.get_value("SceneSnapPlugin", "favorite_materials_index_array", Array())
 #
-			### NOTE With SubTab:
-			##var previous_tab_order: Dictionary = {}
-			##var previous_tab_order: Array = []
-			##var current_tab_order: Dictionary = {}
-			##var current_tab_order: Array = []
-			##
-			#var sub_tab_bar_tab_order: int = 0
-##
-			##var sub_tab_bar: TabBar = main_container.find_child(main_tab_name, false, false).find_child("SubTabBar", true, false)
-			#var sub_tab_container: TabContainer = new_main_collection_tab.sub_tab_container
-			#
-			## Restore previous session open tabs and order
-			#scene_viewer_panel_instance.create_sub_collection_tabs(sub_container_order_dict[main_tab_name], new_main_collection_tab)
-
-
- ##KEEP 
-			### NOTE I don't know what I did to figure this out, but I did not use AI.
-			###if debug: print(get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar))
-			##for previous_sub_tab_name: String in sub_container_order_dict[main_tab_name]:
-				##var move_me: int = get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar).find(previous_sub_tab_name)
-				##sub_tab_bar.move_tab(move_me, sub_tab_bar_tab_order)
-				##sub_tab_bar_tab_order += 1
- ##KEEP 
-			##
-			 ##Restore selection (Sub Tabs)
-			#sub_tab_container.set_current_tab(sub_container_selection_dict[main_tab_name])
-			
-			
-			
-	## Restore required scenes
-	#required_scenes_dict = configuration.get_value("SceneSnapPlugin", "required_scenes", Dictionary())
-			
-
-		
-		
-		
-	#scene_viewer_panel_config = configuration.get_value("SceneSnapPlugin", "scene_viewer_panel_config", Dictionary())
+	## CAUTION WILL NEED TO CHANGE IF MORE SIDE PANEL BUTTONS ARE ADDED
+	#scene_viewer_panel_instance.custom_minimum_size = Vector2(0.0, 216.0) # Seems to be the min can go without slider moving behind tabs # Increased as a result of adding more sidepanel buttons
+#
+	## Restore slider value
+	#scene_viewer_panel_instance.zoom_v_slider.value = configuration.get_value("SceneSnapPlugin", "zoom_slider_value", float())
 #
 	## Restore Scene_view_panel side button states
-	#create_as_scene = scene_viewer_panel_config.create_as_scene
+	#create_as_scene = configuration.get_value("SceneSnapPlugin", "create_as_scene_button_state", bool())
 	#if create_as_scene:
-		#scene_viewer_panel_instance.scene_creation_toggle_button.button_pressed = true
+		#scene_viewer_panel_instance.scene_instantiate_enabled = true
 	#else:
-		#scene_viewer_panel_instance.scene_creation_toggle_button.button_pressed = false
+		#scene_viewer_panel_instance.scene_instantiate_enabled = false
+#
+	#scene_viewer_panel_instance.next_type_3d = configuration.get_value("SceneSnapPlugin", "body_type_3d_button_state", String())
+	#for number: int in 5: # HACK Cycle back to to correct selection by presseing the button 5 times :( FIXME
+		#scene_viewer_panel_instance._on_change_body_type_3d_button_pressed()
+#
+	#scene_viewer_panel_instance.next_3d_collision_state = configuration.get_value("SceneSnapPlugin", "current_3d_collision_state", int())
+	## Toggle back one because button_press will initialize it to the saved value
+	#scene_viewer_panel_instance.toggle_3d_collision_state(-1)
+	#scene_viewer_panel_instance._on_change_collision_shape_3d_button_pressed()
+#
+	#scene_viewer_panel_instance.gen_lod_button.button_pressed = configuration.get_value("SceneSnapPlugin", "lod_button_state", bool())
+	#scene_viewer_panel_instance.new_main_project_scenes_tab.filter_by_file_system_folder_button.button_pressed = configuration.get_value("SceneSnapPlugin", "filter_by_folder", bool())
+	#scene_viewer_panel_instance._on_enable_pinning_toggle_button_toggled(configuration.get_value("SceneSnapPlugin", "node_pinning_state", bool()))
+#
+#
+	#defer_main_tab_container_signal_connection()
+	#await main_container_ready
+	#push_warning("main_container_ready NOW.")
+	#var sub_container_order_dict = configuration.get_value("SceneSnapPlugin", "sub_container_tabs_order", Dictionary())
+	#var sub_container_selection_dict = configuration.get_value("SceneSnapPlugin", "sub_container_tabs_selection", Dictionary())
+	#var scene_filter_text_dict = configuration.get_value("SceneSnapPlugin", "scene_filter_text", Dictionary())
+	#main_container.current_tab = configuration.get_value("SceneSnapPlugin", "main_container_current_tab", int())
+	#var heart_filter_state_dict = configuration.get_value("SceneSnapPlugin", "heart_filter_state", Dictionary())
+	#for main_tab_name in heart_filter_state_dict.keys():
+		#if sharing_disabled and main_tab_name == "Shared Collections":
+			#continue
+		#var main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
+		#main_collection_tab.heart_texture_button.button_pressed = heart_filter_state_dict[main_tab_name]
+#
+	##await scene_viewer_panel_instance.initialize_filters
+	##push_warning("FINSHED LOADING ALL TABS PLEASE REORDER NOW.")
+#
+	## Get array (Main Tabs)
+	#var main_container_tabs_names = configuration.get_value("SceneSnapPlugin", "main_container_tabs_order", Array())
+	##if debug: print("main_container_tabs_names: ", main_container_tabs_names)
+	## Restore order (Main Tabs)
+	#var main_container_tab_order: int = 0
+	#for main_tab_name: String in main_container_tabs_names:
+			## If Sharing diabled in settings then skip restoring Shared Collections
+			#if sharing_disabled and main_tab_name == "Shared Collections":
+				#continue
+			##if debug: print("MAIN NAME: ", main_tab_name)
+			## HACK
+			##await get_tree().create_timer(1).timeout
+			## FIXME Will error if disabling favorites tab from openning on startup in editor settings
+			##if scene_viewer_panel_instance.main_tab_container:
+				##if debug: print("main_tab_container exists")
+				##main_container = scene_viewer_panel_instance.main_tab_container
+#
+#
+#
+			#await get_tree().process_frame # For main_container variable to be populated.
+			##await wait_ready(main_container.find_child(main_tab_name, false, true), "main_container.find_child(main_tab_name, false, true)," + main_tab_name)
+			#var new_main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
+			##if debug: print("new_main_collection_tab: ", new_main_collection_tab)
+			#main_container.move_child(new_main_collection_tab, main_container_tab_order)
+			#main_container_tab_order += 1
+			## Restore scene filter text
+			## HACK
+			##await get_tree().create_timer(2).timeout
+			#
+			#if new_main_collection_tab:
+#
+				#new_main_collection_tab.scene_search_line_edit.text = scene_filter_text_dict[main_tab_name]
+				## Required to update UI
+				## FIXME Await processed finished from scene_viewer.gd for all subtabs so need open subtab count 
+				## FIXME Issue is here scene_buttons = sub_tab.h_flow_container.get_children() will return empty because they are still being created when this is text filtering called
+				#new_main_collection_tab._on_scene_search_line_edit_text_changed(scene_filter_text_dict[main_tab_name])
+				## Restore order (Sub Tabs)
+				#if main_tab_name != "Favorites" and main_tab_name != "Project Scenes":
+					## NOTE With SubContainer:
+					##var sub_container_tab_order: int = 0
+					##var sub_container = main_container.find_child(main_tab_name, false, false).find_child("SubTabBar", true, false)
+					##for sub_tab in sub_container_order_dict[main_tab_name]:
+						##if debug: print("sub_tab: ", sub_tab)
+						##sub_container.move_child(sub_container.find_child(sub_tab, false, false), sub_container_tab_order)
+						##sub_container_tab_order += 1
+#
+					### NOTE With SubTab:
+					##var previous_tab_order: Dictionary = {}
+					##var previous_tab_order: Array = []
+					##var current_tab_order: Dictionary = {}
+					##var current_tab_order: Array = []
+					##
+					#var sub_tab_bar_tab_order: int = 0
+					#if main_container:
+						#if debug: print("main_container exists")
+					#var main_tab_bar: Control = main_container.find_child(main_tab_name, false, false)
+					#if main_tab_bar:
+						#if debug: print("main_tab_bar exists")
+					#else:
+						#if debug: print("main_tab_bar does not exist")
+					#if debug: print("main_tab_bar children: ", main_tab_bar.get_children())
+#
+					#var sub_tab_bar: TabBar = main_tab_bar.find_child("SubTabContainer", true, false).get_tab_bar()
+					##var sub_tab_bar: TabBar = main_tab_bar.find_child("SubTabBar", true, false)
+					#
+					#if sub_tab_bar:
+						#if debug: print("sub_tab_bar exists")
+					#else:
+						#if debug: print("sub_tab_bar does not exist")
+					##var sub_tab_bar: TabBar = main_container.find_child(main_tab_name, false, false).find_child("SubTabBar", true, false)
+					##await get_tree().process_frame
+					#if sub_tab_bar:
+						#if debug: print("sub_tab_bar exists")
+					#var sub_tab_container: TabContainer = new_main_collection_tab.sub_tab_container
+					#if debug: print("sub_tab_container children size: ", sub_tab_container.get_child_count())
+					#
+					## Restore previous session open tabs and order
+					#scene_viewer_panel_instance.create_sub_collection_tabs(sub_container_order_dict[main_tab_name], new_main_collection_tab)
+					## NOTE: Await all collections to load before reordering them and setting selected tabs.
+					#await get_tree().process_frame
+					##await scene_viewer_panel_instance.initialize_filters
+#
+#
+#
+#
+#
+				##for sub_tab_index: int in main_collection_tab.sub_tab_container.get_tab_count():
+					##var sub_tab_name: String = main_collection_tab.sub_tab_container.get_tab_title(sub_tab_index)
+					##sub_container_tabs_names.append(sub_tab_name)
+				##sub_container_order_dict[main_collection_tab.name] = sub_container_tabs_names
+				##sub_container_selection_dict[main_collection_tab.name] = main_collection_tab.sub_tab_container.current_tab
+#
+#
+	##################################### KEEP
+					### Add tab in position 0 and change focus to it
+					###if debug: print(get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar))
+					#for previous_sub_tab_name: String in sub_container_order_dict[main_tab_name]:
+						#var move_me: int = get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar).find(previous_sub_tab_name)
+						#sub_tab_bar.move_tab(move_me, sub_tab_bar_tab_order)
+						#sub_tab_bar_tab_order += 1
+	##################################### KEEP
+					#
+					## Restore selection (Sub Tabs) FIXME Is running same restore tabs for both Global and Shared main tabs
+					## FIXME Problem seems to be that New Collection tab is added automatically but is not included in sub_container_selection_dict
+					## which is throwing off the indexes
+					## FIXME Maybe related to the add in switch code that I added which would make sense since this was not an issue
+					## that is noticed before changing that recently so disable that and see if fixed?
+					## NOTE: Appears to already open previously selected tab on restore without code below and with causes:
+					## ERROR: scene/gui/tab_bar.cpp:683 - Index p_current = 2 is out of bounds (get_tab_count() = 1).
+					##if debug: print("sub_container_selection_dict: ", sub_container_selection_dict)
+	## FIXME NOTE: DIABLED FOR NOW UNTIL CAN FIGURE OUT WHAT IS CAUSING IT TO ERROR?
+					#sub_tab_container.set_current_tab(sub_container_selection_dict[main_tab_name])
+	###################################### KEEP
+#
+#
+#
+	### Restore selection (Main Tabs)
+	##main_container.current_tab = configuration.get_value("SceneSnapPlugin", "main_container_current_tab", int())
+##
+	### Restore Heart Filter Button State
+	##var heart_filter_state_dict = configuration.get_value("SceneSnapPlugin", "heart_filter_state", Dictionary())
+	##
+	#########################################################################################KEEP
+	#### Restore 2D 3D selection state
+	###scene_viewer_panel_instance.next_filter = configuration.get_value("SceneSnapPlugin", "filter_2d_3d_state", int())
+##
+	### NOTE filter_2d_3d_state_dict share keys so can be combined TODO combine both into one Dictionay
+	##
+	### Reference: https://forum.godotengine.org/t/awaiting-a-user-signal/2398/2 (vonagam)
+	###await Signal(self, "all_scenes_loaded_re_emit")
+	##
+	#### Restore favorites
+	###scene_viewer_panel_instance.scene_favorites = configuration.get_value("SceneSnapPlugin", "favorites", Array())
+	###if debug: print("favorites I NEED TO SEE THIS SO BIGG PRINT: ", scene_viewer_panel_instance.scene_favorites)
+	##
+	##
+	### Restore heart filter state
+	##for main_tab_name in heart_filter_state_dict.keys():
+		##if sharing_disabled and main_tab_name == "Shared Collections":
+			##continue
+		##var main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
+		##main_collection_tab.heart_texture_button.button_pressed = heart_filter_state_dict[main_tab_name]
+#
+#
+#
+#
+	#scene_viewer_panel_instance.saved_data_restored = true
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # FIXME if adding new folders to user:// after save and close causes (3) scene/main/node.cpp:460 - Parameter "p_child" is null. TODO Combine dictionaries into 1 NOTE Order effects results
+func _set_window_layout(configuration): # NOTE This functionality seems slow to restore config
+	# Restore favorite_materials_index_array
+	scene_viewer_panel_instance.favorite_materials_index_array = configuration.get_value("SceneSnapPlugin", "favorite_materials_index_array", Array())
+
+	# CAUTION WILL NEED TO CHANGE IF MORE SIDE PANEL BUTTONS ARE ADDED
+	# TODO Create ability to drag a set distance past min x to collapse to distraction free mode?
+	# NOTE: Min.x of 505.0 allows for smallest x value to get text with 2 thumbnail columns.
+	scene_viewer_panel_instance.custom_minimum_size = Vector2(505.0, 216.0) # Seems to be the min can go without slider moving behind tabs # Increased as a result of adding more sidepanel buttons
+
+	# Restore slider value ALERT BEING RESTORED TO LATE OR NOT REGERESTING WITH create_scene_buttons
+	#scene_viewer_panel_instance.zoom_v_slider.value = configuration.get_value("SceneSnapPlugin", "zoom_slider_value", float())
+	scene_viewer_panel_instance.thumbnail_size_value = configuration.get_value("SceneSnapPlugin", "thumbnail_size_value", float())
+	slider_value = configuration.get_value("SceneSnapPlugin", "zoom_slider_value", float())
+	scene_viewer_panel_instance.zoom_v_slider.value = configuration.get_value("SceneSnapPlugin", "zoom_slider_value", float())
+	scene_viewer_panel_instance.slider_value = configuration.get_value("SceneSnapPlugin", "zoom_slider_value", float())
 
 	# Restore Scene_view_panel side button states
 	create_as_scene = configuration.get_value("SceneSnapPlugin", "create_as_scene_button_state", bool())
 	if create_as_scene:
-		#scene_viewer_panel_instance.scene_creation_toggle_button.button_pressed = true
 		scene_viewer_panel_instance.scene_instantiate_enabled = true
 	else:
 		scene_viewer_panel_instance.scene_instantiate_enabled = false
-		#scene_viewer_panel_instance.scene_creation_toggle_button.button_pressed = false
 
 	scene_viewer_panel_instance.next_type_3d = configuration.get_value("SceneSnapPlugin", "body_type_3d_button_state", String())
 	for number: int in 5: # HACK Cycle back to to correct selection by presseing the button 5 times :( FIXME
 		scene_viewer_panel_instance._on_change_body_type_3d_button_pressed()
-	
-	#scene_viewer_panel_instance.next_3d_collision_state = configuration.get_value("SceneSnapPlugin", "current_3d_collision_state", String())
+
+	# TODO Update this cycling code to same as snap_panel_menu._update_path_shape_ui_and_state()
 	scene_viewer_panel_instance.next_3d_collision_state = configuration.get_value("SceneSnapPlugin", "current_3d_collision_state", int())
 	# Toggle back one because button_press will initialize it to the saved value
 	scene_viewer_panel_instance.toggle_3d_collision_state(-1)
 	scene_viewer_panel_instance._on_change_collision_shape_3d_button_pressed()
 
+	#snap_panel_menu.current_3d_path_state = configuration.get_value("SceneSnapPlugin", "current_3d_path_state", int())
+	#snap_panel_menu.toggle_3d_path_state_down()
+	#snap_panel_menu.toggle_3d_path_state_up()
+	#snap_panel_menu._on_change_path_shape_3d_button_pressed()
 
-	#if configuration.get_value("SceneSnapPlugin", "lod_button_state", bool()):
-		#scene_viewer_panel_instance.gen_lod_button.button_pressed = true
-	#else:
-		#scene_viewer_panel_instance.gen_lod_button.button_pressed = false
-#
-	#if configuration.get_value("SceneSnapPlugin", "filter_by_folder", bool()): # If expression returns true
-		#scene_viewer_panel_instance.new_main_project_scenes_tab.filter_by_file_system_folder_button.button_pressed = true
-	#else:
-		#scene_viewer_panel_instance.new_main_project_scenes_tab.filter_by_file_system_folder_button.button_pressed = false
-#
-	#if configuration.get_value("SceneSnapPlugin", "node_pinning_state", bool()):
-		#scene_viewer_panel_instance._on_enable_pinning_toggle_button_toggled(true)
-	#else:
-		#scene_viewer_panel_instance._on_enable_pinning_toggle_button_toggled(false)
+
+	snap_panel_menu.current_state = configuration.get_value("SceneSnapPlugin", "current_3d_path_state", int())
+	snap_panel_menu._update_path_shape_ui_and_state()
+
+
 
 
 	scene_viewer_panel_instance.gen_lod_button.button_pressed = configuration.get_value("SceneSnapPlugin", "lod_button_state", bool())
 	scene_viewer_panel_instance.new_main_project_scenes_tab.filter_by_file_system_folder_button.button_pressed = configuration.get_value("SceneSnapPlugin", "filter_by_folder", bool())
 	scene_viewer_panel_instance._on_enable_pinning_toggle_button_toggled(configuration.get_value("SceneSnapPlugin", "node_pinning_state", bool()))
 
+	defer_main_tab_container_signal_connection()
+	await get_tree().process_frame
+	# Restore selection (Main Tabs)
+	main_container.current_tab = configuration.get_value("SceneSnapPlugin", "main_container_current_tab", int())
 
-	#required_scenes_dict = configuration.get_value("SceneSnapPlugin", "required_scenes", Dictionary())
-	#required_scenes_dict = configuration.get_value("SceneSnapPlugin", "required_scenes", Dictionary())
-	#required_scenes_dict = configuration.get_value("SceneSnapPlugin", "required_scenes", Dictionary())
-	#var body_type = configuration.get_value("SceneSnapPlugin", "create_as_scene_button_state", bool()
-	#scene_viewer_panel_instance.next_type_3d = Physics_Body_Type_3D.
-	#next_type_3d: Physics_Body_Type_3D = Physics_Body_Type_3D.NO_PHYSICSBODY3D
-			
-			
+	# NOTE: Need to be made global for apply_collection_filters() to ork after collections loaded
+	sub_container_order_dict = configuration.get_value("SceneSnapPlugin", "sub_container_tabs_order", Dictionary())
+	sub_container_selection_dict = configuration.get_value("SceneSnapPlugin", "sub_container_tabs_selection", Dictionary())
+	scene_filter_text_dict = configuration.get_value("SceneSnapPlugin", "scene_filter_text", Dictionary())
+	main_container_tabs_names = configuration.get_value("SceneSnapPlugin", "main_container_tabs_order", Array())
+
+	# Restore previous open Global and Shared Collections
+	for main_tab_name: String in main_container_tabs_names:
+			if sharing_disabled and main_tab_name == "Shared Collections":
+				continue
+
+			var new_main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
+			if new_main_collection_tab:
+				if main_tab_name != "Favorites" and main_tab_name != "Project Scenes":
+					scene_viewer_panel_instance.create_sub_collection_tabs(sub_container_order_dict[main_tab_name], new_main_collection_tab)
+
+	# Restore Heart Filter Button State
+	var heart_filter_state_dict = configuration.get_value("SceneSnapPlugin", "heart_filter_state", Dictionary())
 	
-			
-			
-			
-			
+	# Restore heart filter state
+	for main_tab_name in heart_filter_state_dict.keys():
+		if sharing_disabled and main_tab_name == "Shared Collections":
+			continue
+		var main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
+		if main_collection_tab:
+			main_collection_tab.heart_texture_button.button_pressed = heart_filter_state_dict[main_tab_name]
+
 	scene_viewer_panel_instance.saved_data_restored = true
-	
 
 
-#var scene_viewer_panel_config: Dictionary = {}
 
 
+# FIXME same session text filter being erase when adding new collection NOTE: Does not effect previous session filters
+func apply_collection_filters(restore_last_session_collections: bool) -> void:
+	#await get_tree().create_timer(0.01).timeout # Seems to need this extra bit of time
+	#current_main_tab = main_container.get_current_tab_control()
+	#update_selected_buttons_for_tab(current_main_tab)
+	#update_current_selected_buttons()
+	#get_current_visible_buttons()
+	# NOTE: apply_collection_filters gets run after collections loaded and changed_tab_functions() allows for first clikced button to 
+	# activate scene_preview
+	changed_tab_functions()
+
+	# Set Sub Tab order after all collections loaded TODO: Change to when last collection started load and all sub tabs present.
+	var main_container_tab_order: int = 0
+	for main_tab_name: String in main_container_tabs_names:
+			if sharing_disabled and main_tab_name == "Shared Collections":
+				continue
+			await get_tree().process_frame # For main_container variable to be populated.
+			var new_main_collection_tab: Control = main_container.find_child(main_tab_name, false, true)
+			main_container.move_child(new_main_collection_tab, main_container_tab_order)
+			main_container_tab_order += 1
+			if new_main_collection_tab:
+				new_main_collection_tab.scene_search_line_edit.text = scene_filter_text_dict[main_tab_name]
+				new_main_collection_tab._on_scene_search_line_edit_text_changed(scene_filter_text_dict[main_tab_name])
+				if main_tab_name != "Favorites" and main_tab_name != "Project Scenes":
+					
+					var main_tab_bar: Control = main_container.find_child(main_tab_name, false, false)
+					var sub_tab_bar: TabBar = main_tab_bar.find_child("SubTabContainer", true, false).get_tab_bar()
+					var sub_tab_container: TabContainer = new_main_collection_tab.sub_tab_container
+					##print(sub_tab_container.get_child_count())
+					##scene_viewer_panel_instance.create_sub_collection_tabs(sub_container_order_dict[main_tab_name], new_main_collection_tab)
+
+#region Creates Errors check if needed seems to work without this code.
+					#await get_tree().process_frame
+					#var sub_tab_bar_tab_order: int = 0
+					##await wait_ready(sub_tab_container.get_child_count() == sub_container_order_dict[main_tab_name].size(), "sub tab count match")
+					#for previous_sub_tab_name: String in sub_container_order_dict[main_tab_name]:
+						#var move_me: int = get_current_tab_order(sub_container_order_dict, main_tab_name, sub_tab_bar).find(previous_sub_tab_name)
+						#sub_tab_bar.move_tab(move_me, sub_tab_bar_tab_order)
+						#sub_tab_bar_tab_order += 1
+#endregion
+
+					# Set flag so additional collections loaded after start do not use current tab from config.
+					if restore_last_session_collections:
+						sub_tab_container.set_current_tab(sub_container_selection_dict[main_tab_name])
+
+	### Restore slider value
+	#scene_viewer_panel_instance.zoom_v_slider.value = slider_value
+	#scene_viewer_panel_instance.slider_value = slider_value
+	##scene_viewer_panel_instance.thumbnail_size_value = slider_value
+	await get_tree().process_frame
+	scene_viewer_panel_instance._on_v_slider_value_changed(slider_value)
+
+
+# ALERT Not used maybe remove?
 # Re-emiiting a signal because I don't know how to just await the first one directly
 func set_all_scenes_loaded() -> void:
 	emit_signal("all_scenes_loaded_re_emit")
@@ -1678,7 +2213,7 @@ enum Physics_Body_Type_3D {
 	NODE3D,
 	STATICBODY3D,
 	RIGIDBODY3D,
-	CHARACTERBODY3D
+	CHARACTERBODY3D,
 }
 
 
@@ -1760,6 +2295,13 @@ func wait_ready(object, name: String) -> bool:
 
 # NOTE: Runs during editor use not just on editor close
 func _get_window_layout(configuration):
+	# NOTE: For edge cases where the user begins to rename a collection and closes the editor. 
+	# This will reset the name before storing edited name to reopen on next start.
+	for main_collection_tab: Control in scene_viewer_panel_instance.main_collection_tabs:
+		if main_collection_tab.name == "Global Collections" or main_collection_tab.name == "Shared Collections":
+			# Hide LineEdit and reset
+			main_collection_tab.modify_and_hide_line_edit(true)
+			#push_error("main_collection_tab.passed_rename_collection_check: ", main_collection_tab.passed_rename_collection_check)
 
 	# Save variables back to scene_data_cache.tres resource file before closing editor
 	# Save Favorites to resource file for faster retrival on next start
@@ -1850,7 +2392,10 @@ func _get_window_layout(configuration):
 	
 	
 	var main_container = scene_viewer_panel_instance.main_tab_container
+
 	
+	# Thumbnail size # NOTE: Used to set the size when buttons created before slider resizes all to slider value. 
+	configuration.set_value("SceneSnapPlugin", "thumbnail_size_value", scene_viewer_panel_instance.thumbnail_size_value)
 	# Slider value
 	configuration.set_value("SceneSnapPlugin", "zoom_slider_value", scene_viewer_panel_instance.zoom_v_slider.value)
 
@@ -1858,10 +2403,10 @@ func _get_window_layout(configuration):
 
 
 	# Create Dictionaries
-	var sub_container_order_dict: Dictionary = {} # { main_container_tab: sub_container_tabs_names,}
-	var sub_container_selection_dict: Dictionary = {} # { main_container_tab: sub_container_tabs_selected,}
-	var scene_filter_text_dict: Dictionary = {}
-	var heart_filter_state_dict: Dictionary = {}
+	var sub_container_order_dict: Dictionary = { } # { main_container_tab: sub_container_tabs_names,}
+	var sub_container_selection_dict: Dictionary = { } # { main_container_tab: sub_container_tabs_selected,}
+	var scene_filter_text_dict: Dictionary = { }
+	var heart_filter_state_dict: Dictionary = { }
 	#var filter_2d_3d_state_dict: Dictionary = {}
 	######################################################################################KEEP
 	#var current_filter_2d_3d_state: int
@@ -1963,6 +2508,7 @@ func _get_window_layout(configuration):
 	
 	configuration.set_value("SceneSnapPlugin", "body_type_3d_button_state", scene_viewer_panel_instance.next_type_3d)
 	configuration.set_value("SceneSnapPlugin", "current_3d_collision_state", scene_viewer_panel_instance.next_3d_collision_state)
+	configuration.set_value("SceneSnapPlugin", "current_3d_path_state", snap_panel_menu.current_state)
 	configuration.set_value("SceneSnapPlugin", "lod_button_state", scene_viewer_panel_instance.gen_lod_button.button_pressed)
 
 	configuration.set_value("SceneSnapPlugin", "filter_by_folder", scene_viewer_panel_instance.new_main_project_scenes_tab.filter_by_file_system_folder_button.button_pressed)
@@ -2029,6 +2575,7 @@ func _notification(blah):
 func change_scene_viewer_window_properties(distraction_free_mode: bool) -> void:
 	if distraction_free_mode and popup_window_instance != null:
 		if debug: print("this triggered")
+####### KEEP DISTRACTION FREE MODE
 		#popup_window_instance.set_flag(Window.FLAG_TRANSPARENT, true)
 		#popup_window_instance.set_transparent_background(true)
 
@@ -2041,6 +2588,7 @@ func change_scene_viewer_window_properties(distraction_free_mode: bool) -> void:
 
 		#get_tree().get_root().set_transparent_background(true)
 		#DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_TRANSPARENT, true, 0)
+####### KEEP DISTRACTION FREE MODE
 	else:
 		get_tree().get_root().set_transparent_background(false)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_TRANSPARENT, false, 0)
@@ -2051,7 +2599,7 @@ func _open_popup() -> void:
 	await get_tree().process_frame # Needed to give time to instantiate POPUP_WINDOW when opening popup on start
 	popup_window_instance.name = "Scene Viewer"
 	
-	
+####### KEEP DISTRACTION FREE MODE
 	#DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_TRANSPARENT, true, 0)
 	#get_tree().get_root().set_flag(Window.FLAG_BORDERLESS, true)
 	#popup_window_instance.set_transparent_background(true)
@@ -2071,7 +2619,7 @@ func _open_popup() -> void:
 	#DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_MOUSE_PASSTHROUGH, true, 0)
 	#DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true, 0)
 	#DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true, 0)
-	
+####### KEEP DISTRACTION FREE MODE
 	
 	
 	
@@ -2087,9 +2635,12 @@ func _open_popup() -> void:
 
 	settings.set_setting("scene_snap_plugin/panel_floating_on_start", true)
 	
-	popup_window_instance.attach_dock.connect(reattach_dock)
+	if not popup_window_instance.is_connected("attach_dock", reattach_dock):
+		popup_window_instance.attach_dock.connect(reattach_dock)
 
-	remove_control_from_bottom_panel(scene_viewer_panel_instance)
+	if scene_viewer_attached_bottom_panel:
+		remove_control_from_bottom_panel(scene_viewer_panel_instance)
+		scene_viewer_attached_bottom_panel = false
 
 	popup_window_instance.add_child(scene_viewer_panel_instance)
 	# Allow panel to resize and keep anchored
@@ -2133,11 +2684,17 @@ func reattach_dock() -> void:
 	settings.set_setting("scene_snap_plugin/panel_window_position", scene_viewer_panel_instance.get_parent().position)
 	
 	var panel_parent: Window = scene_viewer_panel_instance.get_parent()
+	#push_error("panel_parent children: ", panel_parent.get_children())
+	#var scene_viewer_panel_instance: Control = panel_parent.get_child(0)
+	
+	#if is_instance_valid(scene_viewer_panel_instance) and panel_parent.get_child(0).name == "Scene Viewer":
+	#await get_tree().process_frame
 	panel_parent.remove_child(scene_viewer_panel_instance)
 	
 	
 	scene_viewer_panel_instance.owner = null
 	add_control_to_bottom_panel(scene_viewer_panel_instance, "Scene Viewer")
+	scene_viewer_attached_bottom_panel = true
 	make_bottom_panel_item_visible(scene_viewer_panel_instance)
 
 	#scene_viewer_panel_instance.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -2154,7 +2711,6 @@ func reattach_dock() -> void:
 	#scene_viewer_panel_instance.grab_focus()
 	panel_parent.queue_free()
 
-	#if debug: print("attaching dock now")
 
 
 
@@ -2187,8 +2743,9 @@ func configure_host_system_folder_structure() -> void:
 	create_folders("user://", "shared_collections/thumbnail_cache_shared/Shared Collections")
 	
 	# Create "New Collection" folder if it does not already exist
-	for path in file_paths:
-		create_folders("user://", path.path_join("New Collection".path_join("textures")))
+	scene_viewer_panel_instance.create_new_collection_folders()
+	#for path in file_paths:
+		#create_folders("user://", path.path_join("New Collection".path_join("textures")))
 
 
 	# NOTE FIXME MOVE OVER TO WHEN FOLDER IS IMPORTED
@@ -2471,22 +3028,22 @@ func multi_select_nodes() -> void:
 			EditorInterface.get_selection().add_node(last_node)
 
 
-# NOTE NOT USED FIXME FIND BEST SOLUTION WAS CAUSING ERRORS NOW THAT REMOVING WHEN NOT SCENE_PREVIEW_ACTIVE = FALSE
-func remove_scene_preview_if_not_selected():
-	await get_tree().create_timer(3.0).timeout
-	var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
-	if selected_nodes.has(scene_preview_mesh):
-		pass
-	else:
-		scene_preview_3d_active = false
-		#remove_existing_scene_preview()
-		# Find and remove ScenePreview
-		var existing_preview = get_tree().get_root().find_child("ScenePreview", true, false)
-		if existing_preview:
-			existing_preview.get_parent().remove_child(existing_preview)
-			# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
-			existing_preview.queue_free()
-			scene_preview = null
+## NOTE NOT USED FIXME FIND BEST SOLUTION WAS CAUSING ERRORS NOW THAT REMOVING WHEN NOT SCENE_PREVIEW_ACTIVE = FALSE
+#func remove_scene_preview_if_not_selected():
+	#await get_tree().create_timer(3.0).timeout
+	#var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
+	#if selected_nodes.has(scene_preview_mesh):
+		#pass
+	#else:
+		#scene_preview_3d_active = false
+		##remove_existing_scene_preview()
+		## Find and remove ScenePreview
+		#var existing_preview = get_tree().get_root().find_child("ScenePreview", true, false)
+		#if existing_preview:
+			#existing_preview.get_parent().remove_child(existing_preview)
+			## Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
+			#existing_preview.queue_free()
+			#scene_preview = null
 
 
 # FIXME BROKEN NOT WORKING
@@ -2497,36 +3054,36 @@ func current_viewport_window(screen_name: String) -> void:
 		editor_viewport_3d_active = false
 
 
-# FIXME Rename associated nodes
-func apply_multi_node_collisions(current_state: String) -> void:
-	var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
-	var skip_collision: bool = false
-	for node: Node in selected_nodes:
-		if node is StaticBody3D or node is RigidBody3D or node is CharacterBody3D:
-			var collision_node_instances: Array[Node] = node.find_children("*", "CollisionShape3D", true, false)
-			for collision_shape_3d: CollisionShape3D in collision_node_instances:
-				collision_shape_3d.free()
-			# NOTE Need to hook into existing code Redundant code from func match_collision_state()
-			#if debug: print("current_collision_3d_state: ", current_collision_3d_state)
-			#if debug: print("current_state: ", current_state)
-			var mesh_node_instances: Array[Node] = node.find_children("*", "MeshInstance3D", true, false)
-			var shape_3d: Shape3D = null
-			match current_state:
-				#"NO_COLLISION":
-					#skip_collision = true
-				"SPHERESHAPE3D":
-					shape_3d = SphereShape3D.new()
-				"BOXSHAPE3D":
-					shape_3d = BoxShape3D.new()
-				"CAPSULESHAPE3D":
-					shape_3d = CapsuleShape3D.new()
-				"CYLINDERSHAPE3D":
-					shape_3d = CylinderShape3D.new()
-				"SIMPLIFIED_CONVEX", "SINGLE_CONVEX", "MULTI_CONVEX", "TRIMESH":
-					shape_3d = null
-
-			if not skip_collision:
-				apply_collision(node, mesh_node_instances, shape_3d, false)
+## FIXME Rename associated nodes
+#func apply_multi_node_collisions(current_state: String) -> void:
+	#var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
+	#var skip_collision: bool = false
+	#for node: Node in selected_nodes:
+		#if node is StaticBody3D or node is RigidBody3D or node is CharacterBody3D:
+			#var collision_node_instances: Array[Node] = node.find_children("*", "CollisionShape3D", true, false)
+			#for collision_shape_3d: CollisionShape3D in collision_node_instances:
+				#collision_shape_3d.free()
+			## NOTE Need to hook into existing code Redundant code from func match_collision_state()
+			##if debug: print("current_collision_3d_state: ", current_collision_3d_state)
+			##if debug: print("current_state: ", current_state)
+			#var mesh_node_instances: Array[Node] = node.find_children("*", "MeshInstance3D", true, false)
+			#var shape_3d: Shape3D = null
+			#match current_state:
+				##"NO_COLLISION":
+					##skip_collision = true
+				#"SPHERESHAPE3D":
+					#shape_3d = SphereShape3D.new()
+				#"BOXSHAPE3D":
+					#shape_3d = BoxShape3D.new()
+				#"CAPSULESHAPE3D":
+					#shape_3d = CapsuleShape3D.new()
+				#"CYLINDERSHAPE3D":
+					#shape_3d = CylinderShape3D.new()
+				#"SIMPLIFIED_CONVEX", "SINGLE_CONVEX", "MULTI_CONVEX", "TRIMESH":
+					#shape_3d = null
+#
+			#if not skip_collision:
+				#apply_collision(node, mesh_node_instances, shape_3d, false)
 
 
 func apply_multi_node_body_type(current_type_3d: String) -> void:
@@ -2576,12 +3133,25 @@ var duplicate_dragging_node: bool = false
 var dragging_node_duplicate: Node = null
 
 func _input(event: InputEvent) -> void:
-	
+	##print("event: ", event)
+	#if event is InputEventMouseButton:
+		#push_error("collision point: ", collision_point)
+		#
+	#if event is InputEventMouseButton and not event.is_pressed():
+		#drag_line = null
+		##push_error("collision point: ", collision_point)
+
+	##if event.is_pressed():
+		#print("event: ", event)
+
 	if scene_preview_3d_active and Input.is_key_pressed(KEY_ESCAPE):
-		remove_existing_scene_preview()
-		scene_preview_3d_active = false
-	
-	
+		clean_up_scene_preview()
+
+	if virtual_plane_enabled and virtual_plane_3d_instance and Input.is_key_pressed(KEY_ESCAPE):
+		remove_existing_virtual_plane()
+		virtual_plane_enabled = false
+
+
 	# If duplicate is created switch selection to duplicate
 	if Input.is_key_pressed(KEY_CTRL) and Input.is_key_pressed(KEY_D):
 		# Give time for duplicate to be created
@@ -2647,11 +3217,14 @@ func _input(event: InputEvent) -> void:
 
 
 
-		# Quick scroll for collision shape swap
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_WHEEL_DOWN) and Input.is_key_pressed(KEY_C):
-			pass
-			#apply_multi_node_collisions()
 
+# TEST idle_distance scroll TODO make different then setting plane distance?
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_WHEEL_DOWN) and Input.is_key_pressed(KEY_I):
+			get_tree().get_root().set_input_as_handled()
+			idle_distance += 1.0
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_WHEEL_UP) and Input.is_key_pressed(KEY_I):
+			get_tree().get_root().set_input_as_handled()
+			idle_distance -= 1.0
 
 
 # TEST
@@ -2668,11 +3241,19 @@ func _input(event: InputEvent) -> void:
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_WHEEL_DOWN) and Input.is_key_pressed(KEY_B):
 			get_tree().get_root().set_input_as_handled()
 			scene_viewer_panel_instance.toggle_physics_body_type_down()
+			#body_quick_scroll = true
+		#else:
+			#await get_tree().create_timer(5).timeout
+			#body_quick_scroll = false
 
 
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_WHEEL_UP) and Input.is_key_pressed(KEY_B):
 			get_tree().get_root().set_input_as_handled()
 			scene_viewer_panel_instance.toggle_physics_body_type_up()
+			#body_quick_scroll = true
+		#else:
+			#await get_tree().create_timer(5).timeout
+			#body_quick_scroll = false
 
 
 		# Quick scroll for materials
@@ -2712,8 +3293,9 @@ func _input(event: InputEvent) -> void:
 				pinned_node == null
 			# Cancel scene_preview if active
 			if scene_preview_3d_active:
-				scene_preview_3d_active = false
-				remove_existing_scene_preview()
+				clean_up_scene_preview()
+				#if scene_preview != null:
+					#scene_preview.queue_free()
 
 
 			## Load scene data for snapping
@@ -2746,6 +3328,9 @@ func _input(event: InputEvent) -> void:
 
 		# FIXME Getting node not found in scene tree when deleting initial node that is duplicated from 
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			if virtual_plane_enabled and virtual_plane_3d_instance:
+				virtual_plane_3d_instance.set_process_mode(4)
+				virtual_plane_enabled = false
 			
 			if dragging_node != null: 
 
@@ -2876,7 +3461,8 @@ func _input(event: InputEvent) -> void:
 				EditorInterface.get_editor_viewport_3d(0).set_input_as_handled()
 				if update_visible_scenes: # updated once when cycling begins and reset to check again when anything other then shift key is pressed
 					if debug: print("running get_visible_scene_view_buttons")
-					get_visible_scene_view_buttons()
+					#get_visible_scene_view_buttons()
+					get_current_visible_buttons()
 					update_visible_scenes = false
 
 				cycle_scene_focus("up")
@@ -2889,7 +3475,8 @@ func _input(event: InputEvent) -> void:
 				get_tree().get_root().set_input_as_handled()
 				EditorInterface.get_editor_viewport_3d(0).set_input_as_handled()
 				if update_visible_scenes:
-					get_visible_scene_view_buttons()
+					#get_visible_scene_view_buttons()
+					get_current_visible_buttons()
 					update_visible_scenes = false
 				cycle_scene_focus("down")
 
@@ -2944,10 +3531,10 @@ func _input(event: InputEvent) -> void:
 
 
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE) and Input.is_key_pressed(KEY_E):
-			
-			# reparent child(0), move pivotnode3d to center of scene, make pivotnode3d parent again 
-			#if debug: print("change state")
-			change_pivot_point_position()
+			pass
+			## reparent child(0), move pivotnode3d to center of scene, make pivotnode3d parent again 
+			##if debug: print("change state")
+			#change_pivot_point_position()
 
 
 		# Change rotation point (snap_point, center, end)
@@ -2960,17 +3547,20 @@ func activate_scene_preview() -> void:
 		dragging_node = null
 		duplicate_dragging_node = false
 	
-	get_visible_scene_view_buttons()
+	#get_visible_scene_view_buttons()
+	get_current_visible_buttons()
 
 	EditorInterface.get_editor_viewport_3d(0).set_input_as_handled()
 	scene_preview_3d_active = not scene_preview_3d_active
 	if not node_pinning_enabled:
 		pinned_node == null
 	if not scene_preview_3d_active:
-		remove_existing_scene_preview()
+		clean_up_scene_preview()
 
 	else: # Recreate the ScenePreview on MOUSE_BUTTON_LEFT and KEY_Q pressed
-		update_scene_preview_and_visible_buttons()
+		#update_scene_preview_and_visible_buttons()
+		#print("update_scene_preview_to_focused_button")
+		update_scene_preview_to_focused_button(false)
 
 
 
@@ -2984,26 +3574,31 @@ func change_selection_to(child:Node):
 
 
 
-## Get all the buttons in the collection 
-func get_visible_scene_view_buttons() -> void:
-	current_visible_buttons.clear()  # Clear the current list at the start
-	if debug: print("updating visible buttons")
-	
-	var main_tabs: Array[Node] = scene_viewer_panel_instance.main_tab_container.get_children()
-	
-	for tab in main_tabs:
-		if tab.visible:
-			if tab.name == "Favorites" or tab.name == "Project Scenes":
-				#await get_tree().process_frame # Required for when in popup window
-				check_button_visible(tab)
-			#elif tab.name == "Project Scenes":
+### Get all the buttons in the collection 
+## FIXME Change to return value
+#func get_visible_scene_view_buttons() -> void:
+	#current_visible_buttons.clear()  # Clear the current list at the start
+	#if debug: print("updating visible buttons")
+	##var get_tab_buttons: bool = true
+	#
+	#var main_tabs: Array[Node] = scene_viewer_panel_instance.main_tab_container.get_children()
+	#
+	#for tab in main_tabs:
+		#if tab.visible:
+			#if tab.name == "Favorites" or tab.name == "Project Scenes":
+				##await get_tree().process_frame # Required for when in popup window
 				#check_button_visible(tab)
-			else:
-				var sub_tabs: Array[Node] = tab.sub_tab_container.get_children()
-				#var sub_tabs: Array[Node] = tab.find_child("SubTabContainer", true, false).get_children()
-				#await get_tree().process_frame # Required for when in popup window
-				for sub_tab: Control in sub_tabs:
-					check_button_visible(sub_tab)
+			##elif tab.name == "Project Scenes":
+				##check_button_visible(tab)
+			#else:
+				#var sub_tabs: Array[Node] = tab.sub_tab_container.get_children()
+				##var sub_tabs: Array[Node] = tab.find_child("SubTabContainer", true, false).get_children()
+				##await get_tree().process_frame # Required for when in popup window
+				##var get_tab_buttons: bool = true
+				#for sub_tab: Control in sub_tabs:
+					#if sub_tab.visible:
+						##get_tab_buttons = false
+						#check_button_visible(sub_tab)
 
 
 # TODO REPLACE WITH
@@ -3024,8 +3619,10 @@ func get_scene_name(scene_full_path: String) -> String:
 
 ## From all the buttons in the collection get just the ones that are visible
 func check_button_visible(tab: Node) -> void:
+	# Update this on tab change. Wait maybe not ready so need to call at time check?
 	var collection_scene_views: Array[Node] = tab.h_flow_container.get_children()
 	#var collection_scene_views: Array[Node] = tab.find_child("HFlowContainer", true, false).get_children()
+	
 	for scene_view_button in collection_scene_views:
 		if scene_view_button is Button:
 			
@@ -3152,11 +3749,9 @@ func cycle_scene_focus(direction: String) -> void:
 ## Fill the scene_view.gd scene_number variable with its index in the scenes Array
 func pass_down_scene_number_to_scene_buttons(scenes: Array[Node]) -> void:
 	for scene in scenes:
-		#scene.pass_up_scene_number.connect(update_selected_scene_number)
-		#if debug: print("finding scene: ", scenes.find(scene))
 		scene.scene_number = scenes.find(scene)
-		
-	
+
+
 func update_selected_scene_number(button_scene_number: int) -> void:
 	scene_number = button_scene_number
 	#if debug: print("changed scene_number to: ", scene_number)
@@ -3349,6 +3944,7 @@ func generate_lods(lod_bias: float = 0.5, normal_merge_angle: float = 25, normal
 
 # TODO Check this function to find duplicate code that can be combined
 func place_scene(scene_to_place: Node3D, scene_preview: Node3D, scene_name: String) -> void:
+	if debug: print("placing scene")
 	# Add the scene to the tree and set owner 
 	if not create_as_scene:
 		# FIXME This gets done twice once at beginning of chain
@@ -3357,7 +3953,7 @@ func place_scene(scene_to_place: Node3D, scene_preview: Node3D, scene_name: Stri
 		if debug: print("this is the body type: ", current_body_3d_type)
 		match current_body_3d_type:
 			
-			"NO_PHYSICSBODY3D":
+			"NO_PHYSICSBODY3D": # FIXME This is not used because is handled at the beginning of create_sccene_preview.
 				if debug: print("THIS FIRED")
 				### TODO CHECK FOR MULTIPLE MESH CHILD FUNCTIONALITY
 				#EditorInterface.get_edited_scene_root().add_child(scene_to_place)
@@ -3417,33 +4013,20 @@ func place_scene(scene_to_place: Node3D, scene_preview: Node3D, scene_name: Stri
 		physics_body_3d.owner = null
 
 
+# I think possible issue here with final mesh not getting the correct "tags" but when placed with no body DOES get the correct "tags"
+# a lot going on, but also await which stops this thread of code
+# NOTE: Removed await but same result, TODO Check if await needed here
+# OKAY THE PROBLEM IS THAT THE EDITED TREE OWNS THAT MESH WHEN IT WORKS AND CAN CHANGE IT, WHEN IT IS NOT LOCAL IT CAN NOT CHANGE THE TAGS
+		await reparent_to_selected_node(physics_body_3d, EditorInterface.get_edited_scene_root())
+		#reparent_to_selected_node(physics_body_3d)
 
-		await reparent_to_selected_node(physics_body_3d)
-		#var selected_node_size: int = EditorInterface.get_selection().get_selected_nodes().size()
-		#if selected_node_size == 1:
-			#for selected_node: Node in EditorInterface.get_selection().get_selected_nodes():
-				#if selected_node.name == "ScenePreview":# and selected_node.get_parent() == node_to_place_under:
-					#if debug: print("selected_node: ", selected_node)
-					#physics_body_3d.reparent(node_to_place_under)
-#
-		#else:
-			#physics_body_3d.reparent(EditorInterface.get_edited_scene_root())
-		
-		
-		
-		
-		physics_body_3d.set_owner(EditorInterface.get_edited_scene_root())
-		
-		
-		
-		#physics_body_3d.owner = EditorInterface.get_edited_scene_root()
+		#physics_body_3d.set_owner(EditorInterface.get_edited_scene_root())
+		physics_body_3d.owner = EditorInterface.get_edited_scene_root()
+
 
 		EditorInterface.get_edited_scene_root().add_child(scene_to_place)
 		scene_to_place.owner = EditorInterface.get_edited_scene_root()
-		
-		#if make_unique:
-			#scene_to_place.duplicate(true)
-		
+
 		for child: Node3D in scene_to_place.get_children():
 			
 			if make_unique:
@@ -3453,254 +4036,186 @@ func place_scene(scene_to_place: Node3D, scene_preview: Node3D, scene_name: Stri
 			scene_to_place.remove_child(child)
 			
 			EditorInterface.get_edited_scene_root().add_child(child)
+			# NOTE: This is the key point where the owner of the mesh is set to the edited scene root and the metadata can properly be edited
 			child.set_owner(EditorInterface.get_edited_scene_root())
 			
 			child.reparent(physics_body_3d)
 
-		# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
+		# Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
 		scene_to_place.queue_free()
-		
-		
+		physics_body_3d.name = scene_name
 
-
-		#physics_body_3d.name = scene_name
-#
-		## Set placed scene to same location and rotation as scene preview
-		#physics_body_3d.global_transform.origin = scene_preview.global_transform.origin
-		#physics_body_3d.global_transform.basis = scene_preview.global_transform.basis
-		#
-		## Add to total tri scene tri count for mesh snapping
-		#var mesh_node_instances: Array[Node] = physics_body_3d.find_children("*", "MeshInstance3D", true, false)
-		#for mesh_child: MeshInstance3D in mesh_node_instances:
-			#add_global_tris(mesh_child)
-#
-			#if not mesh_child.tree_exited.is_connected(remove_global_tris):
-				#mesh_child.tree_exited.connect(remove_global_tris.bind(mesh_child))
-
-		set_object_position_and_add_mesh_tris(physics_body_3d, scene_name)
-
-
+		set_scene_to_place_position(physics_body_3d, scene_to_place.owner)
 	else:
-		
-		## FIXME LEFT OFF HERE
-		#var physics_body_3d: Node3D
-		## TODO Pass down bodytype so not doing another check here 
-		#match current_body_3d_type:
-			#"NO_PHYSICSBODY3D":
-				### TODO CHECK FOR MULTIPLE MESH CHILD FUNCTIONALITY
-				#EditorInterface.get_edited_scene_root().add_child(scene_to_place)
-				#scene_to_place.owner = EditorInterface.get_edited_scene_root()
-				#
-				##if make_unique:
-					##scene_to_place.duplicate(true)
-				#
-				#for child: Node3D in scene_to_place.get_children():
-					#
-					#
-					#if make_unique:
-						#make_mesh_material_unique(child)
-					#
-					#
-					#child.owner = null
-					#scene_to_place.remove_child(child)
-					#
-					#EditorInterface.get_edited_scene_root().add_child(child)
-					#child.set_owner(EditorInterface.get_edited_scene_root())
-					#
-					#await reparent_to_selected_node(child)
-#
-					#child.name = scene_name
-#
-#
-					## Set placed scene to same location and rotation as scene preview
-					#child.global_transform.origin = scene_preview.global_transform.origin
-					##child.global_transform.basis = scene_preview.global_transform.basis
-					#
-				#scene_to_place.queue_free()
-#
-				#return
-		#
-			#_:
-				#if make_unique:
-					#for child: Node3D in scene_to_place.get_children():
-						#make_mesh_material_unique(child)
-
-
-
-
-
-
 		EditorInterface.get_edited_scene_root().add_child(scene_to_place)
-
-
-
-
-		#if make_unique:
-			#scene_to_place.duplicate(true)
-
-		await reparent_to_selected_node(scene_to_place)
-
-# FIXME TODO Implement
-#if make_unique:
-#if child is CollisionShape3D:
-	#child.shape = child.shape.duplicate(true)
-#if child is MeshInstance3D:
-	#child.mesh = child.mesh.duplicate(true)
-
-
-
+		await reparent_to_selected_node(scene_to_place, EditorInterface.get_edited_scene_root())
+		#reparent_to_selected_node(scene_to_place)
 		scene_to_place.owner = EditorInterface.get_edited_scene_root()
+		scene_to_place.name = scene_name
+		set_scene_to_place_position(scene_to_place, scene_to_place.owner)
 
 
-
-
-
-		## Change node name from ScenePreview to scene's file name
-		#scene_to_place.name = scene_name
-		##EditorInterface.get_edited_scene_root().set_editable_instance(scene_to_place, true)
-#
-		## Set placed scene to same location and rotation as scene preview
-		#scene_to_place.global_transform.origin = scene_preview.global_transform.origin
-		#scene_to_place.global_transform.basis = scene_preview.global_transform.basis
-#
-		## Add to total tri scene tri count for mesh snapping
-		#var mesh_node_instances: Array[Node] = scene_to_place.find_children("*", "MeshInstance3D", true, false)
-		#for mesh_child: MeshInstance3D in mesh_node_instances:
-			#add_global_tris(mesh_child)
-#
-			## Connect tree_exit signal to remove tris when node is deleted
-			#if not mesh_child.tree_exited.is_connected(remove_global_tris):
-				#mesh_child.tree_exited.connect(remove_global_tris.bind(mesh_child))
-
-		set_object_position_and_add_mesh_tris(scene_to_place, scene_name)
 
 # TODO: REMOVE add mesh tris from name since no longer doing that here
 # FIXME carry over scale of scene_preview children mesh and collision shapes to object NOTE: What about just using duplicate? because just preview not built up object scene
 # Create scale function that both use rather then copying over scale in var that will keep value between cycling previews
-func set_object_position_and_add_mesh_tris(object: Node3D, scene_name: String) -> void:
-	if debug: print("scene_preview children: ", scene_preview.get_children())
-	if debug: print("object children: ", object.get_children())
-	if debug: print("object: ", object)
-	# FIXME See if this can be put here
-	#EditorInterface.get_edited_scene_root().add_child(object)
-	#object.set_owner(EditorInterface.get_edited_scene_root())
-	if debug: print("scene name: ", scene_name)
-
-	object.name = scene_name
-
-	# FIXED TO ADJUST FOR ROOT NODE OFFSETS
-	# var mesh = scene_preview.get_child(0) as MeshInstance3D
-	# Set placed scene to same location scale and rotation as scene preview
-	object.global_transform.origin = scene_preview.get_child(0).global_transform.origin
-
-	# FIXME Transfer over and set meta from scene preview to object
-
-	# FIXME 
-	# Set placed scene to same location scale and rotation as scene preview
-	#object.global_transform.origin = scene_preview.global_transform.origin
-	# Factor in if object already scaled Ex. for some .fbx imports
-
-	# NOTE: GodotJolt Little exclamation mark warning, but it looks like it can be safely ignored.
-	# Reference: https://github.com/godotengine/godot/issues/5734#issuecomment-2220778601 (hmans)
-	object.scale *= scene_preview.scale
-	
-###################### KEEP 
-	#set_scale(object)
-###################### KEEP 
-	
-	# Set placed scene to same location and rotation as scene preview adjust for .fbx importes with 90x
-	object.rotation = Vector3(object.rotation.x, scene_preview.rotation.y, scene_preview.rotation.z)
-
-	
-# TEST if meta is retained from preview to now
-	if object.has_meta("extras"):
-		var metadata: Dictionary = object.get_meta("extras")
-		if debug: print("object (scene preview) metadata to be carried to placed object: ", metadata)
-
-	embed_shared_and_decrypted_global_tags_in_scene(object)
-	#embed_decrypted_global_tags_in_scene(object)
-
-	#if not selected_scene_view_button:
-		#get_visible_scene_view_buttons()
-	#if current_visible_buttons:
-		# FIXME Will need to be fix if on KEY_Q and right mouse click instance other then first in collection
-		# TODO Change to focused button probably better??
-		#selected_scene_view_button = current_visible_buttons[0]
-
-
-
-	#if not selected_scene_view_button:
-		#get_visible_scene_view_buttons()
-	#if current_visible_buttons:
-		## FIXME Will need to be fix if on KEY_Q and right mouse click instance other then first in collection
-		## TODO Change to focused button probably better??
-		##selected_scene_view_button = current_visible_buttons[0]
-#
-		#var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(object)
-		##await get_tree().process_frame
-		## When placing just mesh
-		#if not first_mesh_node:
-			#first_mesh_node = object
-		#if first_mesh_node.has_meta("extras"):
-			#var metadata: Dictionary = first_mesh_node.get_meta("extras")
-			## Overwrite encrypted global tags with decrypted plain text tags
-			#metadata["global_tags"] = selected_scene_view_button.global_tags
-			##metadata["global_tags"] = selected_scene_view_button.global_tags
-			#first_mesh_node.set_meta("extras", metadata)
-			#if debug: print("first_mesh_node.get_meta('extras'): ", first_mesh_node.get_meta("extras"))
-
-
-
-
-
-
-	### TODO Duplicate code can be made into function
-	#var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(object)
-	##await get_tree().process_frame
-		## When placing just mesh
-	#if not first_mesh_node:
-		#first_mesh_node = object
-	#if first_mesh_node.has_meta("extras"):
-		#var metadata: Dictionary = first_mesh_node.get_meta("extras")
-		## Copy the metadata over from the scene_preview to the placed_scene_object
-		#first_mesh_node.set_meta("extras", scene_preview.get_meta("extras"))
-		#if debug: print("first_mesh_node.get_meta('extras'): ", first_mesh_node.get_meta("extras"))
-
-
-	#var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(object)
-	##await get_tree().process_frame
-	#if first_mesh_node.has_meta("extras"):
-		#var metadata: Dictionary = first_mesh_node.get_meta("extras")
-		#metadata["global_tags"] = selected_scene_view_button.global_tags
-		#first_mesh_node.set_meta("extras", metadata)
-		#if debug: print("first_mesh_node.get_meta('extras'): ", first_mesh_node.get_meta("extras"))
-
-
-
-
-	#if object is MeshInstance3D:
-		#add_global_tris(object)
-#
-		#if not object.tree_exited.is_connected(remove_global_tris):
-			#object.tree_exited.connect(remove_global_tris.bind(object))
+func set_scene_to_place_position(scene_to_place: Node3D, current_scene_root: Node) -> void:
+	pass
+	### Set placed scene to same location scale and rotation as scene preview
+	## FIXME: current_body_3d_type == "NO_PHYSICSBODY3D" Needs to keep parent node to maintain center offset. but needs to be removed later when placing and offset applied to mesh directly.
+	#if center_scene_preview:
+		##if current_body_3d_type == "NO_PHYSICSBODY3D":
+			##scene_to_place.global_transform.origin = scene_preview.global_transform.origin
+		##else:
+		#scene_to_place.global_transform.origin = scene_preview.get_child(0).global_transform.origin
 	#else:
-		## Add to total tri scene tri count for mesh snapping
-		#var mesh_node_instances: Array[Node] = object.find_children("*", "MeshInstance3D", true, false)
-		#for mesh_child: MeshInstance3D in mesh_node_instances:
-			#if debug: print("adding tris")
-			#add_global_tris(mesh_child)
+		#scene_to_place.global_transform.origin = scene_preview.global_transform.origin
 #
-			#if not mesh_child.tree_exited.is_connected(remove_global_tris):
-				#mesh_child.tree_exited.connect(remove_global_tris.bind(mesh_child))
+	## NOTE: GodotJolt Little exclamation mark warning, but it looks like it can be safely ignored.
+	## Reference: https://github.com/godotengine/godot/issues/5734#issuecomment-2220778601 (hmans)
+	## Factor in if object already scaled Ex. for some .fbx imports
+	#scene_to_place.scale *= scene_preview.scale.snapped(Vector3(0.001, 0.001, 0.001)) # NOTE: This used to be required before and worked not sure what changed?
+	##object.scale = scene_preview.scale.round() # NOTE: Will sometimes create uniform scaling issue warning in tree ui, even though appears to be uniform scale?
+#
+	#scene_to_place.rotation = Vector3(scene_to_place.rotation.x, scene_preview.rotation.y, scene_preview.rotation.z)
+	##scene_to_place.remove_meta("_edit_lock_")
+
+
+	
+	# Re-apply transforms
+	#scene_to_place.global_transform = root_global_transform
+
+
+
+
+# VERSION 2
+## Get "tags" stored in cache and add them to the scene: Node3D supplied within the argument.
+# NOTE: Cache is used instead of the "tags" | "selected_scene_view_button.tags" stored with the button because of project scene limitations.
+func embed_shared_and_decrypted_global_tags_in_scene(scene: Node3D) -> Node3D:
+	if not selected_scene_view_button:
+		pass
+		# FIXME Why did I chose this function, it does not appear to update the selected_scene_view_button?
+		#get_visible_scene_view_buttons()
+		get_current_visible_buttons()
+	if current_visible_buttons:
+		if debug: print("scene children: ", scene.get_children())
+
+
+		var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(scene)
+		if first_mesh_node:
+			## NOTE: IMPORTANT first_mesh_node owner must be set to EditorInterface.get_edited_scene_root() for changes to be made to tags
+			## Get the nodes original owner so we can reset back to it later.
+			#var first_mesh_node_parent: Node3D = first_mesh_node.get_parent()
+			#var first_mesh_node_owner: Node3D = first_mesh_node.owner
+			#first_mesh_node.owner = null
+			#first_mesh_node.reparent(EditorInterface.get_edited_scene_root())
+			#first_mesh_node.owner = EditorInterface.get_edited_scene_root()
+			
+			
+
+			var selected_button_scene_full_path: String = selected_scene_view_button.scene_full_path
+			# The Cache should have been filled with the metadata from the user:// scene files so we can safely remove them here.
+			if scene_data_cache.scene_data.has(selected_button_scene_full_path):
+				if first_mesh_node.has_meta("extras"):
+					if debug: print("tags first_mesh_node metadata: ",first_mesh_node.get_meta("extras"))
+					first_mesh_node.remove_meta("extras")
+
+
+				# Refill with just the combined "tags" stored in cache.
+				var metadata: Dictionary = { }
+				metadata["tags"] = scene_data_cache.scene_data[selected_button_scene_full_path]["t"]
+				first_mesh_node.set_meta("extras", metadata)
+				
+
+				if debug: print("tags to be stored with preview or placed object: ", scene_data_cache.scene_data[selected_button_scene_full_path]["t"])
+
+	return scene
+
+## WORKS! But has a lot of errors FIXME
+## TEST Replace placed scene with new scene with metadata edits made this is a TEST would need cleanup if works
+			#EditorInterface.get_edited_scene_root().remove_child(scene)
+			#var new_scene_to_place = save_and_instantiate_scene(scene, save_path)
+			#EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
+			#await reparent_to_selected_node(new_scene_to_place, EditorInterface.get_edited_scene_root())
+			##reparent_to_selected_node(scene_to_place)
+			#new_scene_to_place.owner = EditorInterface.get_edited_scene_root()
+
+
+
+			### Change first_mesh_node back to original owner
+			#first_mesh_node.reparent(first_mesh_node_parent)
+			#first_mesh_node.owner = null
+			#first_mesh_node.owner = first_mesh_node_owner
+
+			
+
+
+		#var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(scene)
+		#if not first_mesh_node:
+			#if scene is MeshInstance3D:
+				#first_mesh_node = scene
+			#else:
+				#push_warning("A mesh node could not be found for this scene.")
+#
+		## NOTE: "current_visible_buttons[scene_number].scene_full_path" can also be used
+		#var selected_button_scene_full_path: String = selected_scene_view_button.scene_full_path
+		## The Cache should have been filled with the metadata from the user:// scene files so we can safely remove them here.
+		#if first_mesh_node and scene_data_cache.scene_data.has(selected_button_scene_full_path):
+			#if debug: print("first_mesh_node: ", first_mesh_node)
+			#if first_mesh_node.has_meta("extras"):
+				## Remove the current metadata.
+				##var metadata: Dictionary = first_mesh_node.get_meta("extras")
+				##if debug: print("first_mesh_node metadata: ",first_mesh_node.get_meta("extras"))
+				#
+				#first_mesh_node.remove_meta("extras")
+				#
+				##if debug: print("removing extras metadata")
+				##await get_tree().process_frame
+#
+			###if metadata.has("tags"):
+				 #### If sharing_disabled remove shared tags from tags added to scene_preview and placed scene objects
+				##if sharing_disabled and metadata.has("shared_tags"):
+					##for tag: String in metadata["tags"]:
+						##if metadata["shared_tags"].has(tag):
+							##metadata["tags"].erase(tag)
+###
+				### Remove Global and Shared Tags leaving only combined "tags" for scene_preview and placed scenes meta extras
+				##if metadata.has("global_tags"):
+					##metadata.erase("global_tags")
+				##if metadata.has("shared_tags"):
+					##metadata.erase("shared_tags")
+#
+				##if debug: print("first_mesh_node metadata: ",first_mesh_node.get_meta("extras"))
+#
+#
+#
+			## Refill with just the combined "tags" stored in cache.
+			#var metadata: Dictionary = {}
+			#metadata["tags"] = scene_data_cache.scene_data[selected_button_scene_full_path]["t"]
+			#first_mesh_node.set_meta("extras", metadata)
+			#
+#
+			#if debug: print("tags to be stored with preview or placed object: ", scene_data_cache.scene_data[selected_button_scene_full_path]["t"])
+
+
+
+
+
 
 ## Adds tags to the scene preview for placing and again added to the scene when it is placed in the environment for other objects to be snapped to it.
 # FIXME Does not appear to be decrypting global tags
 # FIXME If a tag is added after .tscn file created and placed scene pulls from the one in the res:// dir it will not have a tag?
-func embed_shared_and_decrypted_global_tags_in_scene(scene: Node3D) -> void:
+# FIXME Pulls tags directly from scenes mesh bypassing cache and tags stored in scene_view_button tags variable. NOTE: Result current session tags will not be applied
+# Would work if when tags applied tags saved to original .glb file and then file reimported. Can file be reimported without losing its order in the collection?
+# FIXME CAUTION Updated .glb file with tags will need to reimported to collection_lookup[collection_name][scene_full_path] memory for current session tags to be read and used for both preview and placed scenes.
+# May want to use cache avoids saving to and importing from disk each scene with tags added, helping with performance.
+func embed_shared_and_decrypted_global_tags_in_scene2(scene: Node3D) -> void:
 #func embed_decrypted_global_tags_in_scene(scene: Node3D) -> void:
 	if not selected_scene_view_button:
+		pass
 		# FIXME Why did I chose this function, it does not appear to update the selected_scene_view_button?
-		get_visible_scene_view_buttons()
+		#get_visible_scene_view_buttons()
+		get_current_visible_buttons()
 	if current_visible_buttons:
 		# FIXME Will need to be fix if on KEY_Q and right mouse click instance other then first in collection
 		# TODO Change to focused button probably better??
@@ -3728,6 +4243,7 @@ func embed_shared_and_decrypted_global_tags_in_scene(scene: Node3D) -> void:
 			else:
 				push_warning("A mesh node could not be found for this scene.")
 
+		# NOTE: This doesn't work because the scene which is pulled from user:// does not have "extras" until after saved to disk. 
 		if first_mesh_node and first_mesh_node.has_meta("extras"):
 			var metadata: Dictionary = first_mesh_node.get_meta("extras")
 
@@ -3741,6 +4257,7 @@ func embed_shared_and_decrypted_global_tags_in_scene(scene: Node3D) -> void:
 			#metadata.erase("shared_tags")
 			#metadata.erase("global_tags")
 			#metadata["tags"] = tags
+			if debug: print("selected_scene_view_button.tags: ", selected_scene_view_button.tags)
 			metadata["tags"] = selected_scene_view_button.tags
 
 
@@ -3790,26 +4307,45 @@ func make_mesh_material_unique(child: Node) -> void:
 
 
 ## Save the scene to the project dir save_path and create a scene_view_button. Return the newly created scene in project dir to place in viewport
-func save_and_instantiate_scene(new_scene_to_place: Node, save_path: String) -> Node:
+func save_and_instantiate_scene(new_scene_to_place: Node, save_path: String, scene_name_no_ext: String, root_global_transform: Transform3D, center_node_global_transform: Transform3D) -> Node:
 	var packed_scene = PackedScene.new()
 
-	# FIXED: Mesh was not owned by PhysicsBody3D parent node so was not packed. NOTE: (pack() function -> Packs the path node, and all owned sub-nodes)
-	for child: Node in new_scene_to_place.get_children():
-		child.owner = new_scene_to_place
+	# Reset scene parameters before saving. Name Lock and Transform.
+	new_scene_to_place.name = scene_name_no_ext
+	new_scene_to_place.remove_meta("_edit_lock_")
+	## Support for Terrain3D
+	#if terrain_3d_plugin_active:
+		#new_scene_to_place.add_to_group("follow_terrain_group", true)
+	if center_scene_preview:
+		new_scene_to_place.get_parent().global_transform = Transform3D.IDENTITY
+	new_scene_to_place.global_transform = Transform3D.IDENTITY
 
-	#packed_scene.pack(new_scene_to_place) # FIXME THIS IS MY ISSUE HERE pack() Any existing data will be cleared if not owned by Node being packed
+	# Change owner of all the children of new_scene_to_place to new_scene_to_place recursively.
+	# NOTE: This is required because any existing data will be cleared if not owned by Node being packed
+	node_set_owner_recursive(new_scene_to_place, new_scene_to_place)
+
 	if packed_scene.pack(new_scene_to_place) != OK:
 		printerr("The scene was not properly packed and resulted in an error")
-	if debug: print("After packing: ", new_scene_to_place.get_children())
 
 	if ResourceSaver.save(packed_scene, save_path) != OK:
 		printerr("The scene was not properly saved and resulted in an error")
+
+	# Restore scene parameters.
+	new_scene_to_place.name = "ScenePreview"
+	new_scene_to_place.set_meta("_edit_lock_", true)
+	if center_scene_preview:
+		new_scene_to_place.get_parent().global_transform = center_node_global_transform
+	new_scene_to_place.global_transform = root_global_transform
+
+
+
 
 
 	# Create scene view button
 	# TODO ADD FLAGS FOR BODY COLLISION AND LODS TO DISPLAY ICONS ON BUTTON
 	var new_scene_view: Button = null
-	var loaded_scene: PackedScene = load(save_path)
+	#var loaded_scene: PackedScene = load(save_path)
+	
 	#scene_viewer_panel_instance.create_scene_buttons(loaded_scene, save_path, scene_viewer_panel_instance.new_main_project_scenes_tab, new_scene_view, false)
 	scene_viewer_panel_instance.create_scene_buttons(save_path, scene_viewer_panel_instance.new_main_project_scenes_tab, new_scene_view, false)
 
@@ -3818,9 +4354,11 @@ func save_and_instantiate_scene(new_scene_to_place: Node, save_path: String) -> 
 	if not editor_filesystem.is_scanning():
 		editor_filesystem.scan()
 
+	var loaded_scene: PackedScene = load(save_path)
 	var loaded_scene_instance = loaded_scene.instantiate()
-	if debug: print("loaded_scene children: ", loaded_scene_instance.get_children())
-	#return loaded_scene.instantiate()
+
+	#loaded_scene_instance.global_transform = root_global_transform
+
 	return loaded_scene_instance
 
 
@@ -3875,33 +4413,61 @@ func save_and_instantiate_scene(new_scene_to_place: Node, save_path: String) -> 
 	## Remove the StaticBody3D generated by create_multiple_convex_collisions() NOTE: queue_free() not removing StaticBody3D
 	#mesh_node.get_child(0).free()
 
-
+# FIXME When cycling through collisions CollisionShape3D position is off, NOTE: Does not happen when cycing through to next object or when placing even though scene_preview shows different wrong position
+# placed object has the correct position.
 # ORIGINAL
+# NOTE: Primitive shaped collision have an origin at their center where complex are at Vector3.ZERO
 func primitive_collision(mesh_node: MeshInstance3D, new_scene_to_place: Node, shape_3d: Shape3D, expanded_mesh: ArrayMesh, mesh_instance_3d_node: MeshInstance3D) -> void:
 	var collision_shape_3d = CollisionShape3D.new()
-	
+	var physics_body_3d = StaticBody3D.new()
+
+
+	#collision_shape_3d.shape = shape_3d
+	#mesh_node.add_child(collision_shape_3d)
+	#collision_shape_3d.owner = new_scene_to_place
+	#collision_shape_3d.name = "CollisionShape3D"
+	#collision_shape_3d.rotation = mesh_node.rotation
+
+
 	collision_shape_3d.shape = shape_3d
-	#collision_shape_3d.name = new_scene_to_place.name + "_collision"
 	new_scene_to_place.add_child(collision_shape_3d)
-	collision_shape_3d.set_owner(new_scene_to_place)
+	collision_shape_3d.owner = new_scene_to_place
+	collision_shape_3d.name = "CollisionShape3D"
 	collision_shape_3d.rotation = mesh_node.rotation
 
+
+	#collision_shape_3d.shape = shape_3d
+	#mesh_node.add_child(physics_body_3d)
+	#physics_body_3d.owner = mesh_node
+	#physics_body_3d.name = physics_body_3d.get_parent().name + "_col"
+	#physics_body_3d.add_child(collision_shape_3d)
+	#collision_shape_3d.owner = physics_body_3d
+	#collision_shape_3d.name = "CollisionShape3D"
+	#collision_shape_3d.rotation = mesh_node.rotation
+
+
 	var mesh_aabb: AABB
-	
+
 	if expanded_mesh == null:
 		mesh_aabb = mesh_node.mesh.get_aabb()
 		collision_shape_3d.position = mesh_aabb.get_center()
+		if debug: print("expanded_mesh mesh_aabb.get_center(): ", mesh_aabb.get_center())
+		if debug: print("expanded_mesh mesh_aabb.get_center(): ", mesh_instance_3d_node.mesh.get_aabb().get_center())
 	else:
 		mesh_aabb = expanded_mesh.get_aabb()
 		collision_shape_3d.position = Vector3(mesh_aabb.get_center().x, mesh_aabb.get_center().z, - mesh_aabb.get_center().y)
-		# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
-		mesh_instance_3d_node.queue_free()
+		# Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
+		#if loaded_from_disk:
+			#mesh_instance_3d_node.queue_free()
+	primitive_collision_offset = collision_shape_3d.position
+
 
 
 	if shape_3d is SphereShape3D:
 		shape_3d.radius = mesh_aabb.get_longest_axis_size() / 2
 
 	if shape_3d is BoxShape3D:
+		if debug: print("mesh aabb size: ", mesh_aabb.size)
 		shape_3d.size = mesh_aabb.size
 
 	if shape_3d is CapsuleShape3D or shape_3d is CylinderShape3D:
@@ -3925,215 +4491,805 @@ func primitive_collision(mesh_node: MeshInstance3D, new_scene_to_place: Node, sh
 				shape_3d.radius = mesh_aabb.size.y / 2
 
 
+func create_collisions(new_scene_to_place: Node, mesh_node: MeshInstance3D, mesh_instance_3d_node: MeshInstance3D, shape_3d: Shape3D, expanded_mesh: ArrayMesh, scaled_mesh: bool) -> void:
+	# NOTE Section required by some .fbx files with 100x scale
+	# Ensure the mesh_node is valid and is of type ArrayMesh
+	#if debug: print("creating collisions")
+	if mesh_node and mesh_node.mesh is ArrayMesh:
+
+		if mesh_node.scale != Vector3.ONE:
+			scaled_mesh = true
+			
+			var original_mesh = mesh_node.mesh as ArrayMesh
+			
+			# Create a new ArrayMesh and MeshDataTool
+			#var expanded_mesh = ArrayMesh.new()
+			var mdt = MeshDataTool.new()
+			var surface_count = original_mesh.get_surface_count()
+			
+		# Iterate through each surface in the mesh
+			for surface_index in range(surface_count):
+				# Create MeshDataTool from the current surface
+				mdt.create_from_surface(original_mesh, surface_index)
+
+				var vertex_count = mdt.get_vertex_count()
+
+				# Expand the vertices for this surface
+				for i in range(vertex_count):
+					var vertex = mdt.get_vertex(i)
+					# Expand the vertex by the expansion factor
+					#vertex *= expansion_factor
+					vertex *= mesh_node.scale
+					mdt.set_vertex(i, vertex)
+
+				# If the expanded mesh is empty, commit the first surface, otherwise append the surface
+				if surface_index == 0:
+					expanded_mesh.clear_surfaces()
+					mdt.commit_to_surface(expanded_mesh, surface_index)
+				else:
+					mdt.commit_to_surface(expanded_mesh, surface_index)
 
 
+			mesh_instance_3d_node.set_mesh(expanded_mesh)
+		
+		else:
+			scaled_mesh = false
+			mesh_instance_3d_node = mesh_node
+
+		# NOTE: FIXME These collisions shapes get added directly to the scene_to_place
+		# Where the complex shapes are being added to the MeshInstance3D child/children
+		match current_collision_3d_state:
+			"SPHERESHAPE3D", "BOXSHAPE3D", "CAPSULESHAPE3D", "CYLINDERSHAPE3D":
+				#print("creating primitive_collision_shape")
+				collision_shape_type = "primitive"
+				if scaled_mesh:
+					primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
+				else:
+					expanded_mesh = null
+					primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
+				return
+
+			"SIMPLIFIED_CONVEX":
+				mesh_instance_3d_node.create_convex_collision(true, true)
+
+			"SINGLE_CONVEX":
+				mesh_instance_3d_node.create_convex_collision(false, false)
+
+			"MULTI_CONVEX":
+				var settings = MeshConvexDecompositionSettings.new()
+
+				# NOTE Default values with max_concavity = 0 and max_convex_hulls = 32 (gives same result as UI Create Collision Shape)
+				settings.convex_hull_approximation = true
+				settings.convex_hull_downsampling = 4
+				settings.max_concavity = 0
+				settings.max_convex_hulls = 32
+				settings.max_num_vertices_per_convex_hull = 32
+				settings.min_volume_per_convex_hull = 0.0001
+				settings.mode = MeshConvexDecompositionSettings.Mode.CONVEX_DECOMPOSITION_MODE_VOXEL
+				settings.normalize_mesh = false
+				settings.plane_downsampling = 4
+				settings.project_hull_vertices = true
+				settings.resolution = 10000
+				settings.revolution_axes_clipping_bias = 0.05
+				settings.symmetry_planes_clipping_bias = 0.05
+
+				# Apply the convex decomposition
+				mesh_instance_3d_node.create_multiple_convex_collisions(settings)
+
+			"TRIMESH":
+				#if not new_scene_to_place is StaticBody3D:
+					#push_warning("TRIMESH is intended to be used with StaticBody3D")
+					
+				mesh_instance_3d_node.create_trimesh_collision()
+
+		# Reset to zero if using complex shape for path_3d.gd MultiMesh
+		primitive_collision_offset = Vector3.ZERO
+		collision_shape_type = "complex"
+		if debug: print("creating complex_collision_shape")
+
+func reparent_mesh_node(mesh_node: Node3D, new_parent: Node3D) -> void:
+	# Ensure new_parent is in the scene tree
+	if not new_parent.is_inside_tree():
+		if debug: print("Error: new_parent is not in the scene tree.")
+		return
+	if not mesh_node.is_inside_tree():
+# Add the mesh_node to the scene tree if it's not already in
+		new_parent.add_child(mesh_node)
+		mesh_node.owner = new_parent
+	else:
+	#if mesh_node.is_inside_tree():
+		var global_xform = mesh_node.global_transform
+		mesh_node.owner = null
+		mesh_node.get_parent().remove_child(mesh_node)
+		new_parent.add_child(mesh_node)
+		mesh_node.owner = new_parent
+		mesh_node.global_transform = global_xform
+
+
+
+
+	#mesh_node.call_deferred("set_global_transform", global_xform)
+	##mesh_node.global_transform = global_xform
+#
+#func set_global_transform(mesh_node: MeshInstance3D, global_xform: Transform3D) -> void:
+	#mesh_node.global_transform = global_xform
 
 #@export var mesh_node: MeshInstance3D
 #@export var expansion_factor: float = 100.0  # The factor by which the mesh will be expanded
-
-
-#var expansion_factor: float = 100.0
+# NOTE: REFACTOR FOR MULTIMESH SCENES
 # FIXME Collision are being added to scenes that already have collisions if mesh and collision count == skip
-func apply_collision(new_scene_to_place: Node, mesh_node_instances: Array[Node], shape_3d: Shape3D, preview: bool) -> void:
+#func apply_collision(new_scene_to_place: Node, mesh_node_instances: Array[Node], shape_3d: Shape3D, preview: bool) -> void:
+func apply_collision(scene_preview: Node, mesh_node_instances: Array[Node], shape_3d: Shape3D, cycling_collisions: bool) -> void:
+
+	#if new_scene_to_place == scene_preview:
+		#if debug: print("duplicate and reparent to node")
 	# FIXME For scenes with more then 1 mesh and more then 1 child
 	var mesh_instance_3d_node = MeshInstance3D.new()
 	var expanded_mesh = ArrayMesh.new()
 	var scaled_mesh: bool = false
 
-	if mesh_node_instances.size() == 1 and new_scene_to_place.get_child_count() == 1:
-		for mesh_node: MeshInstance3D in mesh_node_instances:
 
-			# NOTE Section required by some .fbx files with 100x scale
-			# Ensure the mesh_node is valid and is of type ArrayMesh
-			if mesh_node and mesh_node.mesh is ArrayMesh:
-
-				if mesh_node.scale != Vector3.ONE:
-					scaled_mesh = true
-					
-					var original_mesh = mesh_node.mesh as ArrayMesh
-					
-					# Create a new ArrayMesh and MeshDataTool
-					#var expanded_mesh = ArrayMesh.new()
-					var mdt = MeshDataTool.new()
-					var surface_count = original_mesh.get_surface_count()
-					
-				# Iterate through each surface in the mesh
-					for surface_index in range(surface_count):
-						# Create MeshDataTool from the current surface
-						mdt.create_from_surface(original_mesh, surface_index)
-
-						var vertex_count = mdt.get_vertex_count()
-
-						# Expand the vertices for this surface
-						for i in range(vertex_count):
-							var vertex = mdt.get_vertex(i)
-							# Expand the vertex by the expansion factor
-							#vertex *= expansion_factor
-							vertex *= mesh_node.scale
-							mdt.set_vertex(i, vertex)
-
-						# If the expanded mesh is empty, commit the first surface, otherwise append the surface
-						if surface_index == 0:
-							expanded_mesh.clear_surfaces()
-							mdt.commit_to_surface(expanded_mesh, surface_index)
-						else:
-							mdt.commit_to_surface(expanded_mesh, surface_index)
-
-
-					mesh_instance_3d_node.set_mesh(expanded_mesh)
-				
-				else:
-					scaled_mesh = false
-					mesh_instance_3d_node = mesh_node
-
-
-				match current_collision_3d_state:
-					"SPHERESHAPE3D", "BOXSHAPE3D", "CAPSULESHAPE3D", "CYLINDERSHAPE3D":
-						if scaled_mesh:
-							primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
-						else:
-							expanded_mesh = null
-							primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
-						return
-
-					"SIMPLIFIED_CONVEX":
-						mesh_instance_3d_node.create_convex_collision(true, true)
-
-					"SINGLE_CONVEX":
-						mesh_instance_3d_node.create_convex_collision(false, false)
-
-					"MULTI_CONVEX": # FIXME "Multiple Convex" shape very small and giving ERROR: res://addons/scene_snap/scene_snap_plugin.gd:3722 - Trying to assign invalid previously freed instance.
-						var settings = MeshConvexDecompositionSettings.new()
-
-						# NOTE Default values with max_concavity = 0 and max_convex_hulls = 32 (gives same result as UI Create Collision Shape)
-						settings.convex_hull_approximation = true
-						settings.convex_hull_downsampling = 4
-						settings.max_concavity = 0
-						settings.max_convex_hulls = 32
-						settings.max_num_vertices_per_convex_hull = 32
-						settings.min_volume_per_convex_hull = 0.0001
-						settings.mode = MeshConvexDecompositionSettings.Mode.CONVEX_DECOMPOSITION_MODE_VOXEL
-						settings.normalize_mesh = false
-						settings.plane_downsampling = 4
-						settings.project_hull_vertices = true
-						settings.resolution = 10000
-						settings.revolution_axes_clipping_bias = 0.05
-						settings.symmetry_planes_clipping_bias = 0.05
-
-						# Apply the convex decomposition
-						mesh_instance_3d_node.create_multiple_convex_collisions(settings)
-
-					"TRIMESH":
-						#if not new_scene_to_place is StaticBody3D:
-							#push_warning("TRIMESH is intended to be used with StaticBody3D")
-							
-						mesh_instance_3d_node.create_trimesh_collision()
-
-# FIXME IF SOMETHING BREAKS WHEN CREATING SCENE_PREVIEW RE-ENABLE THIS
-# Error about mesh already ahve parent node 3d
-				#EditorInterface.get_edited_scene_root().add_child(mesh_instance_3d_node)
-
-# Built in functions create_convex and create_trimesh create StaticBody3D nodes and then add respective collision shapes to that
-				# FIXME Somewhere is creating an extra StaticBody3d NODE named MESH_col 
-				# Get the collision shape created by one of the built in functions above
-				if debug: print("mesh_instance_3d_node children: ", mesh_instance_3d_node.get_children())
-				# NOTE: Get all collision shapes generated above. Remove the CollisionShape3D and reparent them to the scene_preview mesh node
-				for child: CollisionShape3D in mesh_instance_3d_node.get_child(0).get_children():
-
-
-					if debug: print("child collision: ", child)
-
-
-					child.set_owner(null)
-					mesh_instance_3d_node.get_child(0).remove_child(child)
-
-					#if not preview: # FIXME THIS PREVENTS FROM MAKING ONE PASS OF THIS FUNC FOR BOTH PREVIEW AND PLACEMENT
-						#pass
-					# FIXME REMOVE WHEN PLACED REQUIRED BEFORE THEN. Remove the StaticBody3D generated by one of the built in functions above
-					# QUEUE_FREE WILL STILL ADD AS CHILD
-					# 
-					#mesh_instance_3d_node.get_child(0).free()
-
-					child.name = new_scene_to_place.name + "_collision"
-					# Add the collision shape back in as a child of the new scenes root node
-					EditorInterface.get_edited_scene_root().add_child(child)
-					
-					child.set_owner(EditorInterface.get_edited_scene_root())
-
-					child.reparent(mesh_node.get_parent())
-					child.set_owner(mesh_node.get_parent())
-
-					# Set collision shape's transform rotation and scale based on the original mesh
-					child.position = mesh_node.position
-					child.rotation_degrees = mesh_node.rotation_degrees
-					child.scale = mesh_node.scale
-
-					## Remove the StaticBody3D generated by one of the built in functions above
-					#mesh_instance_3d_node.get_child(0).queue_free()
-					#mesh_instance_3d_node.queue_free()
-				
-				# After looping through and getting all the CollisionShape3D remove StaticBody3D
-				# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
-				mesh_instance_3d_node.get_child(0).free()
-
-
-
-
-
+	##if mesh_node_instances.size() >= 1:# and new_scene_to_place.get_child_count() == 1:
+	## FIXME Scene_Preview will have this even though scene is muliple meshes because it is reduced before this point.
+	#if mesh_node_instances.size() == 1 and new_scene_to_place.get_child_count() == 1:
+		#for mesh_node: MeshInstance3D in mesh_node_instances:
 #
-				#if preview:
-					##EditorInterface.get_edited_scene_root().add_child(mesh_instance_3d_node)
-					#for child: CollisionShape3D in mesh_instance_3d_node.get_child(0).get_children():
+			#if debug: print("creating collisions mesh_node_instances.size() == 1")
+			#create_collisions(new_scene_to_place, mesh_node, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+
+
+ # combine collision since only one mesh when combine mesh do not need to specify just simple if combine collisions check
+	for mesh_node: MeshInstance3D in mesh_node_instances:
+		create_collisions(scene_preview, mesh_node, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+
+######## KEEP Forget why wanted to only grab the first collision maybe for combinedmesh3D?
+# Oh yes the engine when generaing the collision will create a staticbody parent which needs to be removed 
+		# FIXME Breaks Multi-Covex collisions
+		#if combine_meshes and mesh_node.name == "CombinedMesh3D":
+		var physics_body_3d = mesh_node.find_child(str(mesh_node.name + "_col"), true, false)
+		#var physics_body_3d = mesh_node.get_child(0)
+		if physics_body_3d:
+			var collision_node_instances: Array[Node] = physics_body_3d.find_children("*", "CollisionShape3D", true, false)
+			#var col_shape: CollisionShape3D = physics_body_3d.get_child(0)
+			if collision_node_instances:
+				for collision_shape_3d in collision_node_instances:
+					collision_shape_3d.reparent(scene_preview)
+				#col_shape.reparent(scene_preview)
+			physics_body_3d.free()
+
+######## KEEP
+
+	#if combine_meshes and new_scene_to_place.get_child(0).name == "CombinedMesh3D_col":
+		#var combined_mesh_3d_col: Node3D = new_scene_to_place.get_child(0)
+		#for child: Node3D in combined_mesh_3d_col.get_children():
+			#child.reparent(combined_mesh_3d_col.get_parent())
+		#combined_mesh_3d_col.free()
+
+
+
+
+		## Before reparenting remove any duplicate StaticBody3Ds generated by:
+		## "SIMPLIFIED_CONVEX" "SINGLE_CONVEX" "MULTI_CONVEX" and "TRIMESH" when cycling through collision shapes.
+		#var physics_body_3d = mesh_node.find_child(str(mesh_node.name + "_col"), true, false)
+		#if physics_body_3d:
+			#var col_shape: CollisionShape3D = physics_body_3d.get_child(0)
+#
+			## Make sure root mesh is and collision are direct children of scene root 
+			#if mesh_node.name == new_scene_to_place.name:
+				#mesh_node.reparent(new_scene_to_place)
+				#if col_shape:
+					#col_shape.reparent(new_scene_to_place)
+				#physics_body_3d.free()
+			#else: # Reparent PhysicsBody3D to MeshInstance3D parent and Mesh to PhysicsBody3D.
+				#physics_body_3d.reparent(mesh_node.get_parent())
+				#mesh_node.reparent(physics_body_3d)
+
+
+
+
+
+
+
+
+		##if debug: print("physics_body_3d.name: ", physics_body_3d.name)
+	##else: # Multiple mesh scenes
+		## FIXME NEEDS TO BE MOVED FATHER UP THE STACK TO BE USED BY NO-PHYSICSBODY3D AND NODE3D MODES.
+	#if combine_meshes: # NOTE: Selecting to combine_meshes will automatically combine collisions.
+		#var combined_mesh: MeshInstance3D = new_scene_to_place.find_child("CombinedMesh3D")
+		#if combined_mesh == null:
+			#combined_mesh = combine_scene_to_mesh_gltf(new_scene_to_place)
+#
+		## FIXME Really need to consider not dropping texture on import because of all the issues it causes like this.
+		### HACK overrides all surfaces with the same selected material # FIXME
+		#var first_material = scene_viewer_panel_instance.materials_3d_array[scene_viewer_panel_instance.current_material_index]
+		#for surface_index: int in combined_mesh.get_surface_override_material_count():
+			#combined_mesh.set_surface_override_material(surface_index, first_material)
+#
+		## Before creating collisions make sure that any from previous have been removed. More an issue when cycling collisions.
+		#
+		#if debug: print("creating collisions combine_meshes")
+		#create_collisions(new_scene_to_place, combined_mesh, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+#
+		## Reparent collision to new_scen_to_place
+		#if combined_mesh.get_child_count() >= 1:
+			#var collision_shape_3d: CollisionShape3D = combined_mesh.get_child(0).get_child(0)
+			#collision_shape_3d.owner = null
+			#combined_mesh.get_child(0).remove_child(collision_shape_3d)
+			## Remove the Physicsbody3D generated by the create_collision functions
+			#combined_mesh.get_child(0).free()
+			#new_scene_to_place.add_child(collision_shape_3d)
+			#collision_shape_3d.owner = new_scene_to_place
+#
+		## NOTE: In the case of collision shape cycling the combined_mesh already has a parent and needs to be reparented.
+		#var combined_mesh_parent: Node3D = combined_mesh.get_parent()
+		#if combined_mesh_parent != null:
+			#combined_mesh.owner = null
+			#combined_mesh_parent.remove_child(combined_mesh)
+#
+		#new_scene_to_place.add_child(combined_mesh)
+		#combined_mesh.owner = new_scene_to_place
+		#if debug: print("adding combined_mesh as child of new_scene_to_place: ", new_scene_to_place.get_children())
+#
+		## HACK 2: Will not remove all MeshInstance3D nodes just ones that are children of the first child
+		#var first_child: = new_scene_to_place.get_child(0)
+		#if first_child is MeshInstance3D and first_child.name != "CombinedMesh3D":
+			#new_scene_to_place.get_child(0).free()
+#
+	#else: # NOTE: Mesh child will be Physics body and child of that will be collision shape. all needs to get restructured
+		#for mesh_node: MeshInstance3D in mesh_node_instances:
+			#create_collisions(new_scene_to_place, mesh_node, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+#
+			## Before reparenting remove any duplicate StaticBody3Ds generated by:
+			## "SIMPLIFIED_CONVEX" "SINGLE_CONVEX" "MULTI_CONVEX" and "TRIMESH" when cycling through collision shapes.
+			#var physics_body_3d = mesh_node.find_child(str(mesh_node.name + "_col"), true, false)
+			#if physics_body_3d:
+				#var col_shape: CollisionShape3D = physics_body_3d.get_child(0)
+#
+				## Make sure root mesh is and collision are direct children of scene root 
+				#if mesh_node.name == new_scene_to_place.name:
+					#mesh_node.reparent(new_scene_to_place)
+					#if col_shape:
+						#if debug: print("owner col_shape: ", col_shape.owner)
+						#col_shape.reparent(new_scene_to_place)
+					#physics_body_3d.free()
+				#else: # Reparent PhysicsBody3D to MeshInstance3D parent and Mesh to PhysicsBody3D.
+					#physics_body_3d.reparent(mesh_node.get_parent())
+					#mesh_node.reparent(physics_body_3d)
+
+
+
+
+	#if cycling_collisions and static_body_3d_creating_collisions.has(current_collision_3d_state):
+		#var physics_body_nodes: Array[Node] = new_scene_to_place.find_children("*", "StaticBody3D", true, false)
+		#if debug: print("physics_body_3d.size: ", physics_body_nodes.size())
+#
+		#for static_body_3d in physics_body_nodes:
+			#var has_collision_shape = false
+			#for child in static_body_3d.get_children():
+				#if child is CollisionShape3D:
+					#has_collision_shape = true
+					#break
+			#
+			#if not has_collision_shape:
+				#if debug: print("static_body_3d.name: ", static_body_3d.name)
+				## If you want to reparent all children of StaticBody3D before removing it
+				#for child in static_body_3d.get_children():
+					#child.reparent(static_body_3d.get_parent())
+				#
+				#static_body_3d.queue_free()
+
+
+
+
+	###if cycling_collisions and static_body_3d_creating_collisions.has(current_collision_3d_state):
+	## Set flag to only run this when cycling through collisions of type "SIMPLIFIED_CONVEX" "SINGLE_CONVEX" "MULTI_CONVEX" and "TRIMESH".
+	#var physics_body_nodes: Array[Node] = new_scene_to_place.find_children("*", "PhysicsBody3D", true, false)
+	#if debug: print("physics_body_3d.size: ", physics_body_nodes.size())
+	#for physics_body_3d: PhysicsBody3D in physics_body_nodes:
+		#var physics_body_3d_child: = physics_body_3d.get_child(0)
+		#if not physics_body_3d_child is CollisionShape3D and physics_body_3d_child is StaticBody3D:
+			#if debug: print("physics_body_3d.name: ", physics_body_3d.name)
+			#
+			#physics_body_3d_child.reparent(physics_body_3d.get_parent())
+			#physics_body_3d.queue_free()
+		###physics_body_3d.free()
+
+
+
+
+
+
+		#var mesh_nodes: Array[Node] = new_scene_to_place.find_children("*", "MeshInstance3D", true, false)
+		#for mesh_node: MeshInstance3D in mesh_nodes:
+			#if mesh_node.name != "CombinedMesh":
+				#mesh_node.free()
+
+		#for mesh_node: MeshInstance3D in mesh_node_instances:
+			#if mesh_node.name != "CombinedMesh":
+				#mesh_node.free()
+#
+		##create_collisions(new_scene_to_place, combined_mesh, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+
+	#if combine_collisions:
+		#var edited_scene_root: Node = EditorInterface.get_edited_scene_root()
+		#var combined_mesh: MeshInstance3D = combine_scene_to_mesh_gltf(new_scene_to_place)
+		##edited_scene_root.add_child(combined_mesh)
+		##combined_mesh.owner = edited_scene_root
+		##combined_mesh.global_transform = Transform3D.IDENTITY
+#
+		#create_collisions(new_scene_to_place, combined_mesh, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+#
+		#var collision_shape_3d: CollisionShape3D = combined_mesh.get_child(0).get_child(0)
+		#collision_shape_3d.owner = null
+		#combined_mesh.get_child(0).remove_child(collision_shape_3d)
+		#new_scene_to_place.add_child(collision_shape_3d)
+		#collision_shape_3d.owner = new_scene_to_place
+		#
+		#if combine_meshes:
+			#new_scene_to_place.add_child(combined_mesh)
+			#combined_mesh.owner = new_scene_to_place
+			#combined_mesh.get_child(0).free()
+			##for mesh_node: MeshInstance3D in mesh_node_instances:
+				##mesh_node.free()
+#
+		#else:
+			#combined_mesh.free()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# WORKS
+	#else: # Multiple mesh scenes
+		#if combine_collisions:
+			#var edited_scene_root: Node = EditorInterface.get_edited_scene_root()
+			##var combined_mesh: MeshInstance3D = combine_meshes_manually(new_scene_to_place)
+			##var combined_mesh: MeshInstance3D = combine_meshes_strict(mesh_node_instances)
+			##var combined_mesh: MeshInstance3D = combine_meshes_smart(mesh_node_instances)
+			##var combined_mesh: MeshInstance3D = combine_meshes(mesh_node_instances)
+			##var combined_mesh: MeshInstance3D = combine_mesh_instances_keep_quality(mesh_node_instances)
+			## THIS ONE
+			#var combined_mesh: MeshInstance3D = combine_scene_to_mesh_gltf(new_scene_to_place)
+			##edited_scene_root.add_child(combined_mesh)
+			##combined_mesh.owner = edited_scene_root
+			##combined_mesh.global_transform = Transform3D.IDENTITY
+#
+			#create_collisions(new_scene_to_place, combined_mesh, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+#
+			#var collision_shape_3d: CollisionShape3D = combined_mesh.get_child(0).get_child(0)
+			#collision_shape_3d.owner = null
+			#combined_mesh.get_child(0).remove_child(collision_shape_3d)
+			#new_scene_to_place.add_child(collision_shape_3d)
+			#collision_shape_3d.owner = new_scene_to_place
+			#
+			#if combine_meshes:
+				#new_scene_to_place.add_child(combined_mesh)
+				#combined_mesh.owner = new_scene_to_place
+				#combined_mesh.get_child(0).free()
+				#for mesh_node: MeshInstance3D in mesh_node_instances:
+					#mesh_node.free()
+#
+			#else:
+				#combined_mesh.free()
+#
+		#else:
+			#for mesh_node: MeshInstance3D in mesh_node_instances:
+				#create_collisions(new_scene_to_place, mesh_node, mesh_instance_3d_node, shape_3d, expanded_mesh, scaled_mesh)
+
+
+
+
+
+
+
+			## NOTE Section required by some .fbx files with 100x scale
+			## Ensure the mesh_node is valid and is of type ArrayMesh
+			#if mesh_node and mesh_node.mesh is ArrayMesh:
+#
+				#if mesh_node.scale != Vector3.ONE:
+					#scaled_mesh = true
+					#
+					#var original_mesh = mesh_node.mesh as ArrayMesh
+					#
+					## Create a new ArrayMesh and MeshDataTool
+					##var expanded_mesh = ArrayMesh.new()
+					#var mdt = MeshDataTool.new()
+					#var surface_count = original_mesh.get_surface_count()
+					#
+				## Iterate through each surface in the mesh
+					#for surface_index in range(surface_count):
+						## Create MeshDataTool from the current surface
+						#mdt.create_from_surface(original_mesh, surface_index)
+#
+						#var vertex_count = mdt.get_vertex_count()
+#
+						## Expand the vertices for this surface
+						#for i in range(vertex_count):
+							#var vertex = mdt.get_vertex(i)
+							## Expand the vertex by the expansion factor
+							##vertex *= expansion_factor
+							#vertex *= mesh_node.scale
+							#mdt.set_vertex(i, vertex)
+#
+						## If the expanded mesh is empty, commit the first surface, otherwise append the surface
+						#if surface_index == 0:
+							#expanded_mesh.clear_surfaces()
+							#mdt.commit_to_surface(expanded_mesh, surface_index)
+						#else:
+							#mdt.commit_to_surface(expanded_mesh, surface_index)
 #
 #
-### TEST
-						##child.set_owner(null)
-						###child.get_parent().remove_child(child)
-						##mesh_instance_3d_node.get_child(0).remove_child(child)
-						##
-						###child.name = new_scene_to_place.name + "_collision"
-						##EditorInterface.get_edited_scene_root().add_child(child)
-						##
-						##child.set_owner(EditorInterface.get_edited_scene_root())
+					#mesh_instance_3d_node.set_mesh(expanded_mesh)
+				#
+				#else:
+					#scaled_mesh = false
+					#mesh_instance_3d_node = mesh_node
 #
 #
+				#match current_collision_3d_state:
+					#"SPHERESHAPE3D", "BOXSHAPE3D", "CAPSULESHAPE3D", "CYLINDERSHAPE3D":
+						#if scaled_mesh:
+							#primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
+						#else:
+							#expanded_mesh = null
+							#primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
+						#return
+#
+					#"SIMPLIFIED_CONVEX":
+						#mesh_instance_3d_node.create_convex_collision(true, true)
+#
+					#"SINGLE_CONVEX":
+						#mesh_instance_3d_node.create_convex_collision(false, false)
+#
+					#"MULTI_CONVEX": # FIXME "Multiple Convex" shape very small and giving ERROR: res://addons/scene_snap/scene_snap_plugin.gd:3722 - Trying to assign invalid previously freed instance.
+						#var settings = MeshConvexDecompositionSettings.new()
+#
+						## NOTE Default values with max_concavity = 0 and max_convex_hulls = 32 (gives same result as UI Create Collision Shape)
+						#settings.convex_hull_approximation = true
+						#settings.convex_hull_downsampling = 4
+						#settings.max_concavity = 0
+						#settings.max_convex_hulls = 32
+						#settings.max_num_vertices_per_convex_hull = 32
+						#settings.min_volume_per_convex_hull = 0.0001
+						#settings.mode = MeshConvexDecompositionSettings.Mode.CONVEX_DECOMPOSITION_MODE_VOXEL
+						#settings.normalize_mesh = false
+						#settings.plane_downsampling = 4
+						#settings.project_hull_vertices = true
+						#settings.resolution = 10000
+						#settings.revolution_axes_clipping_bias = 0.05
+						#settings.symmetry_planes_clipping_bias = 0.05
+#
+						## Apply the convex decomposition
+						#mesh_instance_3d_node.create_multiple_convex_collisions(settings)
+#
+					#"TRIMESH":
+						##if not new_scene_to_place is StaticBody3D:
+							##push_warning("TRIMESH is intended to be used with StaticBody3D")
+							#
+						#mesh_instance_3d_node.create_trimesh_collision()
+
+
+
+
+
+
+
+
+
+#				if debug: print("mesh_instance_3d_node name: ", mesh_instance_3d_node.name)
+				## NOTE: Above collision shapes and PhysicsBodies are generated as children of MeshInstance3D and need to be rearranged.
+				## Re-configure scene to proper structure PhysicsBody3d -> Mesh + CollisionShape
+				#if mesh_instance_3d_node.has_node(str(mesh_instance_3d_node.name + "_col")):
+					##var physics_body_3d = mesh_instance_3d_node.get_child(str(mesh_instance_3d_node.name + "_col"))
+					#var physics_body_3d = mesh_instance_3d_node.find_child(str(mesh_instance_3d_node.name + "_col"), true, false)
+					#if physics_body_3d:
+						#var edited_scene_root: Node = EditorInterface.get_edited_scene_root()
+						#var col_shape: CollisionShape3D = physics_body_3d.get_child(0)
+#
+## TEST remove col_shape to see if still errors
+						##col_shape.free()
+						##physics_body_3d.owner = null
+						##physics_body_3d.get_parent().remove_child(physics_body_3d)
+						##edited_scene_root.add_child(physics_body_3d)
+						##physics_body_3d.owner = edited_scene_root
+##
+						##col_shape.owner = null
+						##physics_body_3d.remove_child(col_shape)
+						##edited_scene_root.add_child(col_shape)
+						##col_shape.owner = edited_scene_root
 #
 #
-						#child.reparent(mesh_node.get_parent())
-						#child.set_owner(mesh_node.get_parent())
+						##edited_scene_root.add_child(physics_body_3d)
+						##physics_body_3d.owner = edited_scene_root
+						#
+						##if debug: print("physics_body_3d name: ", physics_body_3d.name)
+						#
+						##physics_body_3d.owner = null
+						#mesh_instance_3d_node.owner = null
+						##col_shape.owner = null
+##
+						## Make sure root mesh is and collision are direct children of scene root 
+						#if mesh_instance_3d_node.name == new_scene_to_place.name:
+							#pass
+							###mesh_instance_3d_node.owner = null
+							##mesh_instance_3d_node.reparent(new_scene_to_place)
+							##mesh_instance_3d_node.owner = new_scene_to_place
+							###physics_body_3d.get_child(0).owner = null
+							##if col_shape:
+								##col_shape.reparent(new_scene_to_place)
+								##col_shape.owner = new_scene_to_place
+							##physics_body_3d.free()
+						#else: # Reparent PhysicsBody3D to MeshInstance3D parent and Mesh to PhysicsBody3D.
+							#physics_body_3d.owner = null
+							##edited_scene_root.add_child(physics_body_3d)
+							##mesh_instance_3d_node.get_parent().remove_child(physics_body_3d)
+							##mesh_instance_3d_node.get_parent().add_child(physics_body_3d)
+							#physics_body_3d.reparent(mesh_instance_3d_node.get_parent())
+							#
+							#physics_body_3d.owner = mesh_instance_3d_node.get_parent()
+							##physics_body_3d.owner = edited_scene_root
 #
-						## Set collision shape's transform based on the original mesh
+							## Set collision shape's transform rotation and scale based on the original mesh
+							#physics_body_3d.position = mesh_node.position
+							#physics_body_3d.rotation_degrees = mesh_node.rotation_degrees
+							#physics_body_3d.scale = mesh_node.scale
+#
+							#mesh_instance_3d_node.reparent(physics_body_3d)
+							#mesh_instance_3d_node.owner = physics_body_3d
+
+
+
+
+
+
+
+
+
+
+
+
+
+						## Set collision shape's transform rotation and scale based on the original mesh
 						#child.position = mesh_node.position
 						#child.rotation_degrees = mesh_node.rotation_degrees
-						#
-						#mesh_instance_3d_node.queue_free()
-				#else:
-##					EditorInterface.get_edited_scene_root().add_child(mesh_instance_3d_node)
+						#child.scale = mesh_node.scale
+
+
+
+
+
+
+		#var collision_instances: Array[Node] = new_scene_to_place.find_children("*", "CollisionShape3D", true, false)
+		#for col_child: CollisionShape3D in collision_instances:
 #
-					#
-					#for child: CollisionShape3D in mesh_instance_3d_node.get_child(0).get_children():
-						##mesh_instance_3d_node.get_child(0).remove_child(child)
+			#var col_child_parent: = col_child.get_parent()
+			#col_child_parent.reparent(new_scene_to_place.get_child(0))
+			#var mesh_name_match: String = col_child_parent.name.substr(0, col_child_parent.name.length() - 4)
+			#if debug: print("col_child_parent.name.substr(4): ", mesh_name_match)
+			##new_scene_to_place.find_child(col_child_parent.name.substr(4))
+
+
+
+			#col_child.name = col_child_parent.name
+			#col_child.reparent(new_scene_to_place, true)
+			#
+			#col_child.global_transform = col_child_parent.global_transform
+			#col_child_parent.free()
+			##col_child.transform = col_child_parent.global_transform.affine_inverse() * mesh_instance.global_transform
+			#if debug: print("col_child: ", col_child)
+		
+				#for child in mesh_instance_3d_node.get_child(0).get_children():
+					#if debug: print("col child: ", child)
+				#for child: CollisionShape3D in mesh_instance_3d_node.get_child(0):
+					#child.name = mesh_instance_3d_node.name + str("_collision")
+## FIXME IF SOMETHING BREAKS WHEN CREATING SCENE_PREVIEW RE-ENABLE THIS
+## Error about mesh already has parent node 3d
+				##EditorInterface.get_edited_scene_root().add_child(mesh_instance_3d_node)
+#
+## Built in functions create_convex and create_trimesh create StaticBody3D nodes and then add respective collision shapes to that
+				## FIXME Somewhere is creating an extra StaticBody3d NODE named MESH_col 
+				## Get the collision shape created by one of the built in functions above
+				#if debug: print("mesh_instance_3d_node children: ", mesh_instance_3d_node.get_children())
+				#if debug: print("mesh_instance_3d_node.name: ", mesh_instance_3d_node.name)
+				## NOTE: Get all collision shapes generated above. Remove the CollisionShape3D and reparent them to the scene_preview mesh node
+				#for child in mesh_instance_3d_node.get_child(0).get_children():
+					#if child is CollisionShape3D:
+#
+#
+						#if debug: print("child collision: ", child)
+#
+#
 						#child.set_owner(null)
-						##child.get_parent().remove_child(child)
 						#mesh_instance_3d_node.get_child(0).remove_child(child)
-						#
-						##child.name = new_scene_to_place.name + "_collision"
+#
+						##if not preview: # FIXME THIS PREVENTS FROM MAKING ONE PASS OF THIS FUNC FOR BOTH PREVIEW AND PLACEMENT
+							##pass
+						## FIXME REMOVE WHEN PLACED REQUIRED BEFORE THEN. Remove the StaticBody3D generated by one of the built in functions above
+						## QUEUE_FREE WILL STILL ADD AS CHILD
+						## 
+						##mesh_instance_3d_node.get_child(0).free()
+#
+						#child.name = new_scene_to_place.name + "_collision"
+						## Add the collision shape back in as a child of the new scenes root node
 						#EditorInterface.get_edited_scene_root().add_child(child)
 						#
 						#child.set_owner(EditorInterface.get_edited_scene_root())
 #
-#
 						#child.reparent(mesh_node.get_parent())
 						#child.set_owner(mesh_node.get_parent())
 #
-						## Set collision shape's transform based on the original mesh
+						## Set collision shape's transform rotation and scale based on the original mesh
 						#child.position = mesh_node.position
 						#child.rotation_degrees = mesh_node.rotation_degrees
+						#child.scale = mesh_node.scale
 #
-						#mesh_instance_3d_node.queue_free()
-				##return
-#
+						### Remove the StaticBody3D generated by one of the built in functions above
+						##mesh_instance_3d_node.get_child(0).queue_free()
+						##mesh_instance_3d_node.queue_free()
+				#
+				## After looping through and getting all the CollisionShape3D remove StaticBody3D
+				## Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
+				#mesh_instance_3d_node.get_child(0).free()
 
+
+
+
+
+
+# ORIGINAL FOR SINGLE MESH CHILD
+#var expansion_factor: float = 100.0
+## FIXME Collision are being added to scenes that already have collisions if mesh and collision count == skip
+#func apply_collision(new_scene_to_place: Node, mesh_node_instances: Array[Node], shape_3d: Shape3D, preview: bool) -> void:
+	## FIXME For scenes with more then 1 mesh and more then 1 child
+	#var mesh_instance_3d_node = MeshInstance3D.new()
+	#var expanded_mesh = ArrayMesh.new()
+	#var scaled_mesh: bool = false
+#
+	#if mesh_node_instances.size() == 1 and new_scene_to_place.get_child_count() == 1:
+		#for mesh_node: MeshInstance3D in mesh_node_instances:
+#
+			## NOTE Section required by some .fbx files with 100x scale
+			## Ensure the mesh_node is valid and is of type ArrayMesh
+			#if mesh_node and mesh_node.mesh is ArrayMesh:
+#
+				#if mesh_node.scale != Vector3.ONE:
+					#scaled_mesh = true
+					#
+					#var original_mesh = mesh_node.mesh as ArrayMesh
+					#
+					## Create a new ArrayMesh and MeshDataTool
+					##var expanded_mesh = ArrayMesh.new()
+					#var mdt = MeshDataTool.new()
+					#var surface_count = original_mesh.get_surface_count()
+					#
+				## Iterate through each surface in the mesh
+					#for surface_index in range(surface_count):
+						## Create MeshDataTool from the current surface
+						#mdt.create_from_surface(original_mesh, surface_index)
+#
+						#var vertex_count = mdt.get_vertex_count()
+#
+						## Expand the vertices for this surface
+						#for i in range(vertex_count):
+							#var vertex = mdt.get_vertex(i)
+							## Expand the vertex by the expansion factor
+							##vertex *= expansion_factor
+							#vertex *= mesh_node.scale
+							#mdt.set_vertex(i, vertex)
+#
+						## If the expanded mesh is empty, commit the first surface, otherwise append the surface
+						#if surface_index == 0:
+							#expanded_mesh.clear_surfaces()
+							#mdt.commit_to_surface(expanded_mesh, surface_index)
+						#else:
+							#mdt.commit_to_surface(expanded_mesh, surface_index)
+#
+#
+					#mesh_instance_3d_node.set_mesh(expanded_mesh)
+				#
+				#else:
+					#scaled_mesh = false
+					#mesh_instance_3d_node = mesh_node
+#
+#
+				#match current_collision_3d_state:
+					#"SPHERESHAPE3D", "BOXSHAPE3D", "CAPSULESHAPE3D", "CYLINDERSHAPE3D":
+						#if scaled_mesh:
+							#primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
+						#else:
+							#expanded_mesh = null
+							#primitive_collision(mesh_node, new_scene_to_place ,shape_3d, expanded_mesh, mesh_instance_3d_node)
+						#return
+#
+					#"SIMPLIFIED_CONVEX":
+						#mesh_instance_3d_node.create_convex_collision(true, true)
+#
+					#"SINGLE_CONVEX":
+						#mesh_instance_3d_node.create_convex_collision(false, false)
+#
+					#"MULTI_CONVEX": # FIXME "Multiple Convex" shape very small and giving ERROR: res://addons/scene_snap/scene_snap_plugin.gd:3722 - Trying to assign invalid previously freed instance.
+						#var settings = MeshConvexDecompositionSettings.new()
+#
+						## NOTE Default values with max_concavity = 0 and max_convex_hulls = 32 (gives same result as UI Create Collision Shape)
+						#settings.convex_hull_approximation = true
+						#settings.convex_hull_downsampling = 4
+						#settings.max_concavity = 0
+						#settings.max_convex_hulls = 32
+						#settings.max_num_vertices_per_convex_hull = 32
+						#settings.min_volume_per_convex_hull = 0.0001
+						#settings.mode = MeshConvexDecompositionSettings.Mode.CONVEX_DECOMPOSITION_MODE_VOXEL
+						#settings.normalize_mesh = false
+						#settings.plane_downsampling = 4
+						#settings.project_hull_vertices = true
+						#settings.resolution = 10000
+						#settings.revolution_axes_clipping_bias = 0.05
+						#settings.symmetry_planes_clipping_bias = 0.05
+#
+						## Apply the convex decomposition
+						#mesh_instance_3d_node.create_multiple_convex_collisions(settings)
+#
+					#"TRIMESH":
+						##if not new_scene_to_place is StaticBody3D:
+							##push_warning("TRIMESH is intended to be used with StaticBody3D")
+							#
+						#mesh_instance_3d_node.create_trimesh_collision()
+#
+## FIXME IF SOMETHING BREAKS WHEN CREATING SCENE_PREVIEW RE-ENABLE THIS
+## Error about mesh already has parent node 3d
+				##EditorInterface.get_edited_scene_root().add_child(mesh_instance_3d_node)
+#
+## Built in functions create_convex and create_trimesh create StaticBody3D nodes and then add respective collision shapes to that
+				## FIXME Somewhere is creating an extra StaticBody3d NODE named MESH_col 
+				## Get the collision shape created by one of the built in functions above
+				#if debug: print("mesh_instance_3d_node children: ", mesh_instance_3d_node.get_children())
+				#if debug: print("mesh_instance_3d_node.name: ", mesh_instance_3d_node.name)
+				## NOTE: Get all collision shapes generated above. Remove the CollisionShape3D and reparent them to the scene_preview mesh node
+				#for child: CollisionShape3D in mesh_instance_3d_node.get_child(0).get_children():
+#
+#
+					#if debug: print("child collision: ", child)
+#
+#
+					#child.set_owner(null)
+					#mesh_instance_3d_node.get_child(0).remove_child(child)
+#
+					##if not preview: # FIXME THIS PREVENTS FROM MAKING ONE PASS OF THIS FUNC FOR BOTH PREVIEW AND PLACEMENT
+						##pass
+					## FIXME REMOVE WHEN PLACED REQUIRED BEFORE THEN. Remove the StaticBody3D generated by one of the built in functions above
+					## QUEUE_FREE WILL STILL ADD AS CHILD
+					## 
+					##mesh_instance_3d_node.get_child(0).free()
+#
+					#child.name = new_scene_to_place.name + "_collision"
+					## Add the collision shape back in as a child of the new scenes root node
+					#EditorInterface.get_edited_scene_root().add_child(child)
+					#
+					#child.set_owner(EditorInterface.get_edited_scene_root())
+#
+					#child.reparent(mesh_node.get_parent())
+					#child.set_owner(mesh_node.get_parent())
+#
+					## Set collision shape's transform rotation and scale based on the original mesh
+					#child.position = mesh_node.position
+					#child.rotation_degrees = mesh_node.rotation_degrees
+					#child.scale = mesh_node.scale
+#
+					### Remove the StaticBody3D generated by one of the built in functions above
+					##mesh_instance_3d_node.get_child(0).queue_free()
+					##mesh_instance_3d_node.queue_free()
+				#
+				## After looping through and getting all the CollisionShape3D remove StaticBody3D
+				## Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
+				#mesh_instance_3d_node.get_child(0).free()
 
 
 
@@ -4176,7 +5332,7 @@ func apply_collision(new_scene_to_place: Node, mesh_node_instances: Array[Node],
 #
 #
 # WARNING DO NOT DELETE ###################################################################################################################################################
-							## NOTE Do check if the animation in the AnimationPlayer has any tracks
+							## NOTE Do check if the animation in the AnimationPlayer has any tracks if not remove it.
 							#var track_count: int = 0
 							#for animation_player_node in animation_player_node_instances:
 								#var animation_list: PackedStringArray = animation_player_node.get_animation_list()
@@ -4254,191 +5410,141 @@ func get_transformed_aabb(mesh_node: MeshInstance3D) -> AABB:
 	return transformed_aabb
 
 
-
-func match_collision_state(new_scene_to_place: Node, scene_name: String, save_path: String, loaded_from_project_dir: bool) -> void:
-	#if debug: print("new_scene_to_place: ", new_scene_to_place)
-	# NOTE DO ALL EDITS TO BASE SCENE BEFORE PLACING INTO SCENE EXAMchange_collision_shape_3dPLE: COLLISIONS - CONVERTING TO RIGIDBODY - ADDING LODS - 
+# REFACTORED
+func match_collision_state(scene_preview: Node, mesh_node_instances: Array[Node], scene_name: String, save_path: String, loaded_from_project_dir: bool, cycling_collisions: bool) -> void:
 	# TODO OPTIONS FOR ADDING EACH OF THE DIFFERENT COLLISION MESH FLAGS HERE
+	var shape_3d: Shape3D = null
 
-	# FIXME TODO CAUTION FOR SIMEPLE NODE WITH NO COLLISION GOES TO ELSE. MAY NEED TO BE FINXED 
-	if new_scene_to_place and enable_collisions:
-		if debug: print("followed this path")
-		#var scene_with_no_collision: Node3D = null
-		#var tscn_static_body: StaticBody3D = null
-		var shape_3d: Shape3D = null
-		
-		# FIXME how many checks for finding the mesh children? #1
-		var mesh_node_instances: Array[Node] = new_scene_to_place.find_children("*", "MeshInstance3D", true, false)
-		if debug: print("mesh_node_instances: ", mesh_node_instances)
-		#var collision_node_instances: Array[Node] = new_scene_to_place.find_children("*", "CollisionShape3D", true, false)
-		match current_collision_3d_state:
-			#"NO_COLLISION":
-				## FIXME Warning about not having collision on PhysicsBody3D
-				#if save_path == "none": # Gate to stop scene_preview from continuing
-					#return
-				#await get_tree().process_frame
-				#for collision_node: Node in collision_node_instances:
-					#collision_node.free()
-				#await get_tree().process_frame
-				#place_scene(new_scene_to_place, scene_preview, scene_name)
-				#return
-			# NOTE If adding collision shape must also convert root node to PhysicsBody
-			"SPHERESHAPE3D":
-				shape_3d = SphereShape3D.new()
-			"BOXSHAPE3D":
-				shape_3d = BoxShape3D.new()
-			"CAPSULESHAPE3D":
-				shape_3d = CapsuleShape3D.new()
-			"CYLINDERSHAPE3D":
-				shape_3d = CylinderShape3D.new()
-			"SIMPLIFIED_CONVEX", "SINGLE_CONVEX", "MULTI_CONVEX", "TRIMESH":
-				shape_3d = null
+	# TODO FIXME If file already has collision bodies what should we do? remove them and replace with the user selected ones? Would want to do farther up the stack to include no_body no_col.
+	# NOTE: CollisionBody3D require a PhysicsBody3D that support them.
+	match current_collision_3d_state:
+		"SPHERESHAPE3D":
+			shape_3d = SphereShape3D.new()
+		"BOXSHAPE3D":
+			shape_3d = BoxShape3D.new()
+		"CAPSULESHAPE3D":
+			shape_3d = CapsuleShape3D.new()
+		"CYLINDERSHAPE3D":
+			shape_3d = CylinderShape3D.new()
+		"SIMPLIFIED_CONVEX", "SINGLE_CONVEX", "MULTI_CONVEX", "TRIMESH":
+			shape_3d = null
+
+	apply_collision(scene_preview, mesh_node_instances, shape_3d, cycling_collisions)
 
 
-		
-		if save_path == "none": # For Scene_Preview
-			apply_collision(new_scene_to_place, mesh_node_instances, shape_3d, true)
-			return # Scene preview gets returned here, FIXME reuse
-		else: # For Scenes being placed after click # FIXME need to only do once to remove redundant processing
-			apply_collision(new_scene_to_place, mesh_node_instances, shape_3d, false)
 
-		##if save_path == "none": # Gate to stop scene_preview from continuing
-			##return
-		## FIXME Here we need to inject the scene preview into newly created scene
+
+# ORIGINAL
+#func match_collision_state(scene_preview: Node, mesh_node_instances: Array[Node], scene_name: String, save_path: String, loaded_from_project_dir: bool, cycling_collisions: bool) -> void:
+	## NOTE DO ALL EDITS TO BASE SCENE BEFORE PLACING INTO SCENE EXAMPLE: COLLISIONS - CONVERTING TO RIGIDBODY - ADDING LODS - 
+	## TODO OPTIONS FOR ADDING EACH OF THE DIFFERENT COLLISION MESH FLAGS HERE
+#
+	## FIXME TODO CAUTION FOR SIMPLE NODE WITH NO COLLISION GOES TO ELSE. MAY NEED TO BE FIXED 
+	#if scene_preview and enable_collisions:
+		#
+		##var scene_with_no_collision: Node3D = null
+		##var tscn_static_body: StaticBody3D = null
+		#var shape_3d: Shape3D = null
+#
+#
+		## TODO FIXME If file already has collision bodies what should we do? remove them and replace with the user selected ones? Would want to do farther up the stack to include no_body no_col.
+		## FIXME One large collision for all mesh in scene or single individual collision for each mesh instance? Probably individual. 
+		##var collision_node_instances: Array[Node] = scene_preview.find_children("*", "CollisionShape3D", true, false)
+		## NOTE: CollisionBody3D require a PhysicsBody3D that support them.
+		#match current_collision_3d_state:
+			#"SPHERESHAPE3D":
+				#shape_3d = SphereShape3D.new()
+			#"BOXSHAPE3D":
+				#shape_3d = BoxShape3D.new()
+			#"CAPSULESHAPE3D":
+				#shape_3d = CapsuleShape3D.new()
+			#"CYLINDERSHAPE3D":
+				#shape_3d = CylinderShape3D.new()
+			#"SIMPLIFIED_CONVEX", "SINGLE_CONVEX", "MULTI_CONVEX", "TRIMESH":
+				#shape_3d = null
+#
+#
+#
+#
+#
+		##if debug: print("this is being run for the placed object: ", new_scene_to_place)
+		###call_deferred("embed_shared_and_decrypted_global_tags_in_scene", object)
+		### NOTE: Embeding of tags must be done before saving the scene to disk here
+		##new_scene_to_place = embed_shared_and_decrypted_global_tags_in_scene(new_scene_to_place)
+##
+		##if scene_viewer_panel_instance.cycle_material_favorites:
+			##scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_viewer_panel_instance.current_scene_path)
+		##else:
+			##scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_viewer_panel_instance.current_scene_path, true)
+##
+		##if not loaded_from_project_dir:
+			##new_scene_to_place = save_and_instantiate_scene(new_scene_to_place, save_path)
+#
+#
+#
+#
+#
+#
+		#apply_collision(scene_preview, mesh_node_instances, shape_3d, cycling_collisions)
+		#if save_path == "none": # For Scene_Preview
+			#return # Scene preview gets returned here
+#
+#
+		##if save_path == "none": # For Scene_Preview
+			###apply_collision(new_scene_to_place, mesh_node_instances, shape_3d, true)
+			##apply_collision(new_scene_to_place, mesh_node_instances, shape_3d, cycling_collisions)
+			##return # Scene preview gets returned here, FIXME reuse
+		##else: # For Scenes being placed after click # FIXME need to only do once to remove redundant processing
+			##apply_collision(new_scene_to_place, mesh_node_instances, shape_3d, cycling_collisions)
+			###place_scene(new_scene_to_place, scene_preview, scene_name)
+			###return
+#
+#
+	#else:
+		#if debug: print("NO followed this path")
+		#if save_path == "none": # Gate to stop scene_preview from continuing
+			#return
+		##await get_tree().process_frame
+		##for collision_node: Node in collision_node_instances:
+			##collision_node.free()
+		##await get_tree().process_frame
 		## Create .tscn from the scene and save it into collection/project folder
-		#if not loaded_from_project_dir:
-			## FIXME MESH IS LOST HERE.
-			#if debug: print("new_scene_to_place chidlren1: ", new_scene_to_place.get_children())
-			#new_scene_to_place = save_and_instantiate_scene(new_scene_to_place, save_path)
-			#if debug: print("new_scene_to_place chidlren2: ", new_scene_to_place.get_children())
 #
-		#place_scene(new_scene_to_place, scene_preview, scene_name)
-
-	else:
-		if debug: print("NO followed this path")
-		if save_path == "none": # Gate to stop scene_preview from continuing
-			return
-		#await get_tree().process_frame
-		#for collision_node: Node in collision_node_instances:
-			#collision_node.free()
-		#await get_tree().process_frame
-		# Create .tscn from the scene and save it into collection/project folder
-	if not loaded_from_project_dir:
-		#if debug: print("this here ran")
-		
-		new_scene_to_place = save_and_instantiate_scene(new_scene_to_place, save_path)
-	place_scene(new_scene_to_place, scene_preview, scene_name)
+	#if debug: print("this is being run for the placed object: ", scene_preview)
+	##call_deferred("embed_shared_and_decrypted_global_tags_in_scene", object)
+	## NOTE: Embeding of tags must be done before saving the scene to disk here
+	#scene_preview = embed_shared_and_decrypted_global_tags_in_scene(scene_preview)
+#
+	#if scene_viewer_panel_instance.cycle_material_favorites:
+		#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path)
+	#else:
+		#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, true)
+#
+	#if not loaded_from_project_dir:
+		#scene_preview = save_and_instantiate_scene(scene_preview, save_path)
+#
+	#place_scene(scene_preview, scene_preview, scene_name)
 
 
-#func get_scene_name_physics_body_extender(new_scene_to_place: Node) -> String:
-	#if new_scene_to_place:
-		#var name_extender: String
-		#if new_scene_to_place is Node2D:
-			#var physics_body_2d: PhysicsBody2D
-			#match current_body_2d_type:
-				#"STATICBODY2D":
-					#name_extender = "no"
-				#"RIGIDBODY2D":
-					#name_extender = "no"
-				#"CHARACTERBODY2D":
-					#name_extender = "no"
-		#if new_scene_to_place is Node3D:
-			#var physics_body_3d: PhysicsBody3D
-			#match current_body_3d_type:
-				#"STATICBODY3D":
-					#name_extender = "no"
-				#"RIGIDBODY3D":
-					#name_extender = "no"
-				#"CHARACTERBODY3D":
-					#name_extender = "no"
-	#return name_extender
-#
-#func get_scene_name_collision_type_extender(new_scene_to_place: Node) -> String:
-	#if new_scene_to_place:
-		#var name_extender: String
-#
-		#if new_scene_to_place is Node2D:
-			#match current_collision_2d_state:
-				#"NO_COLLISION":
-					#name_extender = "no"
-				#"CIRCLESHAPE2D":
-					#name_extender = "no"
-				#"RECTANGLESHAPE2D":
-					#name_extender = "no"
-				#"CAPSULESHAPE2D":
-					#name_extender = "no"
-#
-		#if new_scene_to_place is Node3D:
-			#match current_collision_3d_state:
-				#"NO_COLLISION": 
-					#name_extender = "no"
-				#"SPHERESHAPE3D":
-					#name_extender = "no"
-				#"BOXSHAPE3D":
-					#name_extender = "no"
-				#"CAPSULESHAPE3D":
-					#name_extender = "no"
-				#"CYLINDERSHAPE3D":
-					#name_extender = "no"
-				#"SIMPLIFIED_CONVEX":
-					#name_extender = "no"
-				#"SINGLE_CONVEX":
-					#name_extender = "no"
-				#"MULTI_CONVEX":
-					#name_extender = "no"
-				#"TRIMESH":
-					#name_extender = "no"
-	#return name_extender
-
-
-#var node_to_place_under: Node = null
-#
-#func reparent_to_selected_node(scene: Node) -> void:
-	#if pinned_node != null:
-		#node_to_place_under = pinned_node
-		#if debug: print("node_to_place_under: ", node_to_place_under)
-	#if node_to_place_under != null:
-		#scene.reparent(node_to_place_under)
-		#return
-#
-#
-	#for selected_node: Node in EditorInterface.get_selection().get_selected_nodes():
-		#if selected_node.name != "ScenePreview":
-			#node_to_place_under = selected_node
-			#scene.reparent(selected_node)
-			#if debug: print("parented to selected_node")
-		#else:
-			##if node_to_place_under != null:
-				##scene_preview.reparent(node_to_place_under)
-				##if debug: print("node_to_place_under was null")
-			##else:
-			#scene.reparent(EditorInterface.get_edited_scene_root())
-			##scene.set_owner(EditorInterface.get_edited_scene_root())
-			#if debug: print("node_to_place_under was null")
 
 
 
 # TODO Check if combined still works
 # TODO Make recursive
-func reparent_to_selected_node(scene: Node) -> void:
-	#scene.set_owner(null)
-
+func reparent_to_selected_node(scene: Node, new_owner: Node) -> void:
 	if node_pinning_enabled and pinned_node != null:
-		#node_set_owner_recursive(scene, pinned_node)
 		scene.reparent(pinned_node)
-		#scene.set_owner(pinned_node)
-
 	else:
-		#node_set_owner_recursive(scene, EditorInterface.get_edited_scene_root())
 		scene.reparent(EditorInterface.get_edited_scene_root())
-	#scene.set_owner(EditorInterface.get_edited_scene_root())
-	#node_set_owner_recursive(scene, EditorInterface.get_edited_scene_root())
-#
-#func node_set_owner_recursive(scene: Node, new_owner: Node) -> void:
-	#for node in scene.get_children():
-		#node_set_owner_recursive(node, new_owner)
-		##node.owner = EditorInterface.get_edited_scene_root()
-		#node.owner = new_owner
+
+	if not create_as_scene:
+		node_set_owner_recursive(scene, new_owner)
+
+# NOTE: This is required because any existing data will be cleared if not owned by Node being packed
+func node_set_owner_recursive(scene: Node, new_owner: Node) -> void:
+	for node in scene.get_children():
+		node_set_owner_recursive(node, new_owner)
+		node.owner = new_owner
 
 
 
@@ -5235,84 +6341,84 @@ func reparent_to_selected_node(scene: Node) -> void:
 # ----- MESH COMBINING HELPER FUNCTION -----
 #
 
-# Takes an array of MeshInstance3D nodes and merges them into a single new MeshInstance3D.
-# It correctly handles transforms and preserves materials from the first mesh found.
-func combine_meshes(mesh_instances: Array[Node], new_mesh_name: String = "CombinedMesh") -> MeshInstance3D:
-	if mesh_instances.is_empty():
-		return null
-
-	var all_surface_arrays: Array = []
-	var first_material: Material = null
-
-	# 1. Loop through each MeshInstance3D to extract and transform its geometry.
-	for node in mesh_instances:
-		if not (node is MeshInstance3D and node.is_visible_in_tree()):
-			continue
-		
-		var mesh_inst: MeshInstance3D = node
-		var source_mesh: Mesh = mesh_inst.mesh
-		if not source_mesh:
-			continue
-			
-		var node_transform: Transform3D = mesh_inst.global_transform
-
-		# 2. Loop through each surface within the mesh.
-		for i in range(source_mesh.get_surface_count()):
-			# Get the raw vertex data for this surface.
-			var surface_arrays: Array = source_mesh.surface_get_arrays(i)
-			if surface_arrays.is_empty():
-				continue
-
-			# --- THIS IS THE CRITICAL STEP ---
-			# Transform the vertices and normals from local to global space.
-			var vertices: PackedVector3Array = surface_arrays[Mesh.ARRAY_VERTEX]
-			for j in range(vertices.size()):
-				vertices[j] = node_transform * vertices[j]
-			
-			if surface_arrays[Mesh.ARRAY_NORMAL]:
-				var normals: PackedVector3Array = surface_arrays[Mesh.ARRAY_NORMAL]
-				for j in range(normals.size()):
-					# Normals are directions, so we only apply rotation (the basis).
-					normals[j] = node_transform.basis * normals[j]
-
-			# Add the transformed data to our collection.
-			all_surface_arrays.append(surface_arrays)
-			
-			# Store the material from the very first surface we find.
-			if first_material == null:
-				first_material = source_mesh.surface_get_material(i)
-
-	if all_surface_arrays.is_empty():
-		return null
-
-	# 3. Use SurfaceTool to safely merge everything into one surface.
-	# SurfaceTool is more robust than manually managing arrays and indices.
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	
-	for surface_data in all_surface_arrays:
-		# Temporarily create a mesh to let SurfaceTool read its data.
-		# This correctly handles indexed and non-indexed geometry.
-		var temp_mesh := ArrayMesh.new()
-		temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface_data)
-		st.append_from(temp_mesh, 0, Transform3D.IDENTITY)
-	
-	# Generate normals and tangents if they are missing, for good lighting.
-	st.generate_normals()
-	st.generate_tangents()
-
-	# 4. Create the final combined mesh and the node to hold it.
-	var combined_mesh: ArrayMesh = st.commit()
-	
-	var combined_mesh_instance := MeshInstance3D.new()
-	combined_mesh_instance.mesh = combined_mesh
-	combined_mesh_instance.name = new_mesh_name
-	
-	# Apply the material from the first mesh to the new combined mesh.
-	if first_material:
-		combined_mesh_instance.set_surface_override_material(0, first_material)
-	
-	return combined_mesh_instance
+## Takes an array of MeshInstance3D nodes and merges them into a single new MeshInstance3D.
+## It correctly handles transforms and preserves materials from the first mesh found.
+#func combine_meshes(mesh_instances: Array[Node], new_mesh_name: String = "CombinedMesh") -> MeshInstance3D:
+	#if mesh_instances.is_empty():
+		#return null
+#
+	#var all_surface_arrays: Array = []
+	#var first_material: Material = null
+#
+	## 1. Loop through each MeshInstance3D to extract and transform its geometry.
+	#for node in mesh_instances:
+		#if not (node is MeshInstance3D and node.is_visible_in_tree()):
+			#continue
+		#
+		#var mesh_inst: MeshInstance3D = node
+		#var source_mesh: Mesh = mesh_inst.mesh
+		#if not source_mesh:
+			#continue
+			#
+		#var node_transform: Transform3D = mesh_inst.global_transform
+#
+		## 2. Loop through each surface within the mesh.
+		#for i in range(source_mesh.get_surface_count()):
+			## Get the raw vertex data for this surface.
+			#var surface_arrays: Array = source_mesh.surface_get_arrays(i)
+			#if surface_arrays.is_empty():
+				#continue
+#
+			## --- THIS IS THE CRITICAL STEP ---
+			## Transform the vertices and normals from local to global space.
+			#var vertices: PackedVector3Array = surface_arrays[Mesh.ARRAY_VERTEX]
+			#for j in range(vertices.size()):
+				#vertices[j] = node_transform * vertices[j]
+			#
+			#if surface_arrays[Mesh.ARRAY_NORMAL]:
+				#var normals: PackedVector3Array = surface_arrays[Mesh.ARRAY_NORMAL]
+				#for j in range(normals.size()):
+					## Normals are directions, so we only apply rotation (the basis).
+					#normals[j] = node_transform.basis * normals[j]
+#
+			## Add the transformed data to our collection.
+			#all_surface_arrays.append(surface_arrays)
+			#
+			## Store the material from the very first surface we find.
+			#if first_material == null:
+				#first_material = source_mesh.surface_get_material(i)
+#
+	#if all_surface_arrays.is_empty():
+		#return null
+#
+	## 3. Use SurfaceTool to safely merge everything into one surface.
+	## SurfaceTool is more robust than manually managing arrays and indices.
+	#var st := SurfaceTool.new()
+	#st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	#
+	#for surface_data in all_surface_arrays:
+		## Temporarily create a mesh to let SurfaceTool read its data.
+		## This correctly handles indexed and non-indexed geometry.
+		#var temp_mesh := ArrayMesh.new()
+		#temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface_data)
+		#st.append_from(temp_mesh, 0, Transform3D.IDENTITY)
+	#
+	## Generate normals and tangents if they are missing, for good lighting.
+	#st.generate_normals()
+	#st.generate_tangents()
+#
+	## 4. Create the final combined mesh and the node to hold it.
+	#var combined_mesh: ArrayMesh = st.commit()
+	#
+	#var combined_mesh_instance := MeshInstance3D.new()
+	#combined_mesh_instance.mesh = combined_mesh
+	#combined_mesh_instance.name = new_mesh_name
+	#
+	## Apply the material from the first mesh to the new combined mesh.
+	#if first_material:
+		#combined_mesh_instance.set_surface_override_material(0, first_material)
+	#
+	#return combined_mesh_instance
 
 
 #########################################
@@ -5320,10 +6426,11 @@ func combine_meshes(mesh_instances: Array[Node], new_mesh_name: String = "Combin
 #CODE REFERENCE: https://github.com/Magodra/SceneToMeshConverter/blob/main/addons/scenetomeshconverter/plugin_button.gd (Magodra) MIT
 
 #var node :Node3D
-#var undo_redo : EditorUndoRedoManager
+
 
 ## Perform the conversion of the scene to a mesh instance.
-func convert_node_to_meshinstance(node: Node3D, root: Node) -> MeshInstance3D:
+#func convert_node_to_meshinstance(node: Node3D, root: Node) -> MeshInstance3D:
+func convert_node_to_meshinstance(node: Node3D) -> MeshInstance3D:
 	var mesh_instance = MeshInstance3D.new()
 	var mesh = ArrayMesh.new()
 	
@@ -5450,12 +6557,13 @@ func add_mesh(mesh : ArrayMesh, gltf_state : GLTFState, mesh_idx : int, xform : 
 #########################################
 # MODIFIED VERSION
 # =========================================================================
-# NEW MESH COMBINING LOGIC (ADAPTED FROM YOUR PROVIDED SCRIPT)
+# NEW MESH COMBINING LOGIC (ADAPTED FROM SCENE TO MESH CONVERTER PLUGIN)
+# CODE REFERENCE: https://github.com/Magodra/SceneToMeshConverter/blob/main/addons/scenetomeshconverter/plugin_button.gd (Magodra) MIT
 # =========================================================================
 
 # Main function to call. It takes a root node and flattens all its visual
 # children into a single MeshInstance3D using the GLTF pipeline.
-func combine_scene_to_mesh_gltf(root_node: Node, new_mesh_name: String = "CombinedMesh") -> MeshInstance3D:
+func combine_scene_to_mesh_gltf(root_node: Node, new_mesh_name: String = "CombinedMesh3D") -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
 	var mesh := ArrayMesh.new()
 	mesh_instance.mesh = mesh
@@ -5476,7 +6584,6 @@ func combine_scene_to_mesh_gltf(root_node: Node, new_mesh_name: String = "Combin
 
 
 # Helper 1: Recursively locates and extracts meshes from the GLTF data.
-# (This is the `extract_meshes` function from your script)
 func _extract_meshes_gltf(mesh: ArrayMesh, gltf_state: GLTFState, node_idxes: PackedInt32Array, parent_xform: Transform3D):
 	for idx in range(node_idxes.size()):
 		var node_idx = node_idxes[idx]
@@ -5495,7 +6602,6 @@ func _extract_meshes_gltf(mesh: ArrayMesh, gltf_state: GLTFState, node_idxes: Pa
 
 # Helper 2: Adds a single mesh surface from GLTF to our target ArrayMesh,
 # applying the final transform and handling face flipping.
-# (This is the `add_mesh` function from your script)
 func _add_mesh_gltf(mesh: ArrayMesh, gltf_state: GLTFState, mesh_idx: int, xform: Transform3D):
 	var gltf_mesh = gltf_state.get_meshes()[mesh_idx]
 	
@@ -5535,6 +6641,8 @@ func _add_mesh_gltf(mesh: ArrayMesh, gltf_state: GLTFState, mesh_idx: int, xform
 			arrays
 		)
 		mesh.surface_set_material(add_idx, gltf_mesh.mesh.get_surface_material(idx))
+		# HACK Because we have the material set from the UI
+		#mesh.surface_set_material(add_idx, gltf_mesh.mesh.get_surface_override_material(0))
 		mesh.surface_set_name(add_idx, gltf_mesh.mesh.get_surface_name(idx))
 #########################################
 
@@ -5608,952 +6716,728 @@ func combine_meshes_manually(root_node_to_search: Node, new_mesh_name: String = 
 	return combined_mesh_instance
 #########################################
 
+########################################
+func combine_meshes_smart(mesh_node_instances: Array, new_mesh_name: String = "CombinedMesh") -> MeshInstance3D:
+	if mesh_node_instances.is_empty():
+		push_warning("No mesh instances provided.")
+		return null
 
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
+	var surface_materials := []
+	var surface_names := []
+	var vertex_count := 0
 
+	for mesh_inst in mesh_node_instances:
+		if not (mesh_inst is MeshInstance3D and mesh_inst.mesh):
+			continue
 
-#region CREATE SCENE PREVIEW REFACTORED
-# TODO REFACTOR SCENEPREVIEW CODE WITH SCENE TO PLACE CODE INTO ONE 
- # FIXME  CLEANUP FOLLOW FOCUS NOT WORKING FIX 
-#@warning_ignore("node_configuration_warning")
-# TODO REFACTOR CREATE NEW SCENE ADD GLB AS INSTANCE OF IT, ADD COLLISIONS DIRECTLY TO THE NEW SCENE
-# NEW SCENE -> NODE3D
-# GLB INSTANCE -----> GLB
-# COLLISION --------> COLLISIONSHAPE3D
-# CONSIDER SCENE_PREVIEW BEING ONLY MESHINSTANCE3D??? NOT NODE3D IN REFACTOR
-# ?? Create mesh library for the previews rather then instancing the scene for performance, but then more memory taken up.
-# but it can be saved to disk and referenced from disk. LOD versions?? compressed textures?? Maybe little benefit for complexity?
-# Button hover will still need to load in scene, and when placed, but when cycling through mesh will be speed up.
-# FIXME TODO CERATE SCENE PREVIEW WITH NODE PARENT FOR SNAPPING OFFSET FUNCTIONALITY
+		var mesh: Mesh = mesh_inst.mesh
+		var transform: Transform3D = mesh_inst.global_transform if mesh_inst.is_inside_tree() else mesh_inst.transform
+		#var transform: Transform3D = mesh_inst.global_transform
 
-# NOTE: 
-# 1. - When creating scene preview. If the scene_full_path of the focused button is either .GLTF or .GLB use scene_lookup to get the scene, otherwise load from the project FIXME does not account for file types other then glb and gltf
-# 2. - When left mouse click to place scene. If the scene exists in the project filesystem use that, if not save the user:// scene to the res:// dir and use the created scene. -> NOTE: When placing scene we are always using the scene from project collection folder.
+		for surface_idx in range(mesh.get_surface_count()):
+			var arrays := mesh.surface_get_arrays(surface_idx)
+			if arrays.is_empty():
+				continue
 
-# FIXME Scene being placed is removed from lookup
-# CAUTION TODO MAY NEED TO COMPLETELY REFACTOR TO USING ENTIRE SCENE THROUGH new_scene_to_place = await scene_viewer_panel_instance.load_scene_instance(scene_path)
-# TO MAKE SURE TO CARRY OVER ALL SCENE ELEMENTS, RATHER THEN SCENE_PREVIEW WHICH IS WHAT I THINK I WAS DOING WHICH ONLY GRABS THE MESH.
-func create_scene_preview():
-	#if debug: print("current_collision_3d_state: ", current_collision_3d_state)
-	if initialize_scene_preview:
-		get_visible_scene_view_buttons()
+			# Duplicate arrays so we can safely modify
+			arrays = arrays.duplicate(true)
 
-	# This section deals with the loading of the scene and naming it according to the selected parameters
-# -----------------------> Scene Instance and Placement Section
-	if not scene_preview == null:# and not scene_preview_mesh == null:
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			for i in range(verts.size()):
+				verts[i] = transform * verts[i]
 
-		var scene_path: String = scene_viewer_panel_instance.current_scene_path
-		var scene_name_no_ext: String = scene_viewer_panel_instance.get_scene_name(scene_path, true)
-		var new_scene_to_place: Node
-		var loaded_from_project_dir: bool = false
-		var collection_name: String
-		var scene_file_path_split: PackedStringArray = full_path_split(scene_path)
+			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			if normals and normals.size() > 0:
+				for i in range(normals.size()):
+					normals[i] = (transform.basis * normals[i]).normalized()
+
+			# Flip face winding if the scale is negative
+			if transform.basis.determinant() < 0:
+				var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+				if indices and indices.size() > 0:
+					for i in range(0, indices.size(), 3):
+						var temp = indices[i + 1]
+						indices[i + 1] = indices[i + 2]
+						indices[i + 2] = temp
+
+			var temp_mesh := ArrayMesh.new()
+			temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			st.append_from(temp_mesh, 0, Transform3D.IDENTITY)
+
+			surface_materials.append(mesh.surface_get_material(surface_idx))
+			surface_names.append(mesh.surface_get_name(surface_idx))
+			vertex_count += verts.size()
+
+	if vertex_count == 0:
+		push_warning("No vertices found to combine.")
+		return null
+
+	# Finalize mesh
+	st.generate_normals()
+	st.generate_tangents()
+	var combined_mesh := st.commit()
+	if not combined_mesh:
+		push_error("Failed to commit combined mesh.")
+		return null
+
+	# Assign materials and names to each surface
+	for i in range(combined_mesh.get_surface_count()):
+		if i < surface_materials.size():
+			combined_mesh.surface_set_material(i, surface_materials[i])
+		if i < surface_names.size() and surface_names[i] != "":
+			combined_mesh.surface_set_name(i, surface_names[i])
+
+	var combined_instance := MeshInstance3D.new()
+	combined_instance.name = new_mesh_name
+	combined_instance.mesh = combined_mesh
+	return combined_instance
+########################################
+
+func combine_meshes_strict(mesh_node_instances: Array, new_mesh_name: String = "CombinedMesh") -> MeshInstance3D:
+	if mesh_node_instances.is_empty():
+		push_warning("No mesh instances provided.")
+		return null
+
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	var surface_materials := []
+	var surface_names := []
+	var vertex_count := 0
+
+	for mesh_inst in mesh_node_instances:
+		if not (mesh_inst is MeshInstance3D and mesh_inst.mesh):
+			continue
+
+		if not mesh_inst.is_inside_tree():
+			push_warning("Skipping mesh instance '%s' because it is not inside the scene tree." % mesh_inst.name)
+			continue
+
+		var mesh: Mesh = mesh_inst.mesh
+		var transform: Transform3D = mesh_inst.global_transform
+
+		for surface_idx in range(mesh.get_surface_count()):
+			var arrays := mesh.surface_get_arrays(surface_idx)
+			if arrays.is_empty():
+				continue
+
+			arrays = arrays.duplicate(true)
+
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			for i in range(verts.size()):
+				verts[i] = transform * verts[i]
+
+			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			if normals and normals.size() > 0:
+				for i in range(normals.size()):
+					normals[i] = (transform.basis * normals[i]).normalized()
+
+			if transform.basis.determinant() < 0:
+				var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+				if indices and indices.size() > 0:
+					for i in range(0, indices.size(), 3):
+						var temp = indices[i + 1]
+						indices[i + 1] = indices[i + 2]
+						indices[i + 2] = temp
+
+			var temp_mesh := ArrayMesh.new()
+			temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			st.append_from(temp_mesh, 0, Transform3D.IDENTITY)
+
+			surface_materials.append(mesh.surface_get_material(surface_idx))
+			surface_names.append(mesh.surface_get_name(surface_idx))
+			vertex_count += verts.size()
+
+	if vertex_count == 0:
+		push_warning("No vertices found to combine.")
+		return null
+
+	st.generate_normals()
+	st.generate_tangents()
+	var combined_mesh := st.commit()
+	if not combined_mesh:
+		push_error("Failed to commit combined mesh.")
+		return null
+
+	for i in range(combined_mesh.get_surface_count()):
+		if i < surface_materials.size():
+			combined_mesh.surface_set_material(i, surface_materials[i])
+		if i < surface_names.size() and surface_names[i] != "":
+			combined_mesh.surface_set_name(i, surface_names[i])
+
+	var combined_instance := MeshInstance3D.new()
+	combined_instance.name = new_mesh_name
+	combined_instance.mesh = combined_mesh
+	return combined_instance
+########################################
+
+#func combine_mesh_instances_keep_quality(mesh_instances: Array, new_mesh_name: String = "CombinedMesh") -> MeshInstance3D:
+	#if mesh_instances.empty():
+		#push_warning("No mesh instances provided")
+		#return null
 #
-		## First do check if save scene to project path exists and if yes instance that and skip below
-		## instance scene from user:// -> Edit -> save scene to project path
-		if res_dir: # FIXME TODO updating folder name when collection name changes
-			if scene_path.begins_with("res://"):
-				#new_scene_to_place = load(scene_path).instantiate()
-				#loaded_from_project_dir = true
-				
-				# NOTE May need to adjust for scn later
-				if scene_path.get_extension() != "tscn":
-					if debug: print("creating collection project")
-					collection_name = "project"
-
-			else: # NOTE Will need to change if decide to support more then .tscn for files in the user:// dir
-				# NOTE If not using --tags will end in .tscn so needs to be removed
-				collection_name = scene_file_path_split[4].to_snake_case()
-
-
-
-			# Create Directories if not already. Scenes with no textures or shared textures will not create directory previously
-			create_folders("res://", "collections".path_join(collection_name))
-
-			var body_type_map: Dictionary[String, String] = {
-				"NO_PHYSICSBODY3D": "no_body",
-				"NODE3D": "node",
-				"STATICBODY3D": "static",
-				"RIGIDBODY3D": "rigid",
-				"CHARACTERBODY3D": "character"
-			}
-
-			var collision_type_map: Dictionary[String, String] = {
-				#"NO_COLLISION": "no_col",
-				"SPHERESHAPE3D": "sphere",
-				"BOXSHAPE3D": "box",
-				"CAPSULESHAPE3D": "capsule",
-				"CYLINDERSHAPE3D": "cylinder",
-				"SIMPLIFIED_CONVEX": "simplified",
-				"SINGLE_CONVEX": "single",
-				"MULTI_CONVEX": "multi",
-				"TRIMESH": "trimesh"
-			}
-
-			# Use the name mapping to create the scene name
-			var body_3d = body_type_map.get(current_body_3d_type, "")
-			var col_3d = collision_type_map.get(current_collision_3d_state, "")
-			#var no_body: bool = false
-
-			# FIXME for multiple mesh children
-			if body_3d == "no_body":
-				col_3d = "no_col"
-
-				# TODO FIXME Must be passed down through stack of functions??
-				# FIXME Must be fixed for all scene types
-				# FIXME KEEP WITH SCENE_PREVIEW THAT IS ALREADY LOADED OR LOAD IN NEW DATA?
-				# TODO Would need to be updated to add the ability to toggle scene linking either
-				# copy .glb file to disk and add to scene or create .scn from buffer with no link.
-				# NOTE: reusing scene_preview with no collision so these check maybe not needed
-				if scene_preview.get_child_count() == 1 and scene_preview.get_child(0) is MeshInstance3D:
-					
-					# FIXME 
-					for child: MeshInstance3D in scene_preview.get_children():
-
-
-# TEMP TEST
-						# Construct the save path
-						if body_3d != "" and col_3d != "":
-							save_path = project_scenes_path.path_join(
-								collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
-							)
-# TEMP TEST
-						## Construct the save path
-						#if body_3d != "" and col_3d != "":
-							#save_path = project_scenes_path.path_join(
-								#collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".glb")
-							#)
-
-
-
-						if create_as_scene: # This happens when clicking the mouse
-
-							if res_dir.file_exists(save_path): # Load from the res:// dir if it has been created
-								if debug: print("loading from res://")
-								new_scene_to_place = load(save_path).instantiate()
-
-							else: # Load from the user:// dir and save to res:// dir and then load and use the scene created in the res:// collection folder
-								if debug: print("instancing new scene now")
-								# Copy .glb file in and make a child of the no no yes no I don't know just fix
-								# Scene_preview loaded into buffer so copy from user:// disk to res:// collection location keep textures embeded
-# TEMP TEST copy .glb in directly outside of being embeded
-								#copy_file(res_dir, scene_path, save_path)
-
-								# Open, name, close, instantiate
-								#EditorInterface.open_scene_from_path("res://collections/test/SM_Arc_FirTree_a.glb", true)
-								
-								#EditorInterface.open_scene_from_path(scene_path, true)
-# TEMP disabled
-								## Set Surface materials from scene_preview before saving
-								##TEST set default
-								if debug: print("creating default material1")
-								#scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path, -1, null)
-								
-								scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path)
-								new_scene_to_place = save_and_instantiate_scene(child, save_path)
-
-
-								
-
-						else:
-
-							new_scene_to_place = child.duplicate()
-
-
-
-
-						EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
-						new_scene_to_place.set_owner(EditorInterface.get_edited_scene_root())
-						
-
-						
-						
-						await reparent_to_selected_node(new_scene_to_place)
-
-
-
-
-
-
-						set_object_position_and_add_mesh_tris(new_scene_to_place, child.name)
-
-						return
-
-
-##############################
-
-
-				# Lets grab all the mesh children and make them a child of a single node and keep their positions
-				# so create new node3D and reparent all children to that Node3D
-
-				else: # This is the block for multiple meshes
-
-					## Construct the save path
-					#if body_3d != "" and col_3d != "":
-						#save_path = project_scenes_path.path_join(
-							#collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
-						#)
+	#var combined_mesh := ArrayMesh.new()
+	#var surface_data_list := []
+	#var surface_materials := []
+	#var surface_names := []
 #
-					#if debug: print("Scene has multiple meshes. Combining them using the robust GLTF pipeline...")
-					#var node_3d: Node3D = Node3D.new()
-					#node_3d.name = scene_name_no_ext
-					#EditorInterface.get_edited_scene_root().add_child(node_3d)
-					#node_3d.owner = EditorInterface.get_edited_scene_root()
-					#
-					#scene_preview.reparent(node_3d, false)
-					#scene_preview.owner = EditorInterface.get_edited_scene_root()
+	#var max_surfaces = 0
+	#for mi in mesh_instances:
+		#if mi.mesh:
+			#max_surfaces = max(max_surfaces, mi.mesh.get_surface_count())
 #
-					#var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
-					#for mesh_node: MeshInstance3D in mesh_node_instances:
-						#mesh_node.reparent(node_3d, false)
-						#mesh_node.owner = EditorInterface.get_edited_scene_root()
-					
-					
-						##mesh_node.owner = null # NOTE: done by save_and_instantiate_scene
-						##node_3d.add_child(mesh_node)
-						##mesh_node.owner = node_3d
-##
-					#if create_as_scene: # This happens when clicking the mouse
-						#pass
-						##if res_dir.file_exists(save_path): # Load from the res:// dir if it has been created
-							##if debug: print("loading from res://")
-							##new_scene_to_place = load(save_path).instantiate()
-						##else: # Load from the user:// dir and save to res:// dir and then load and use the scene created in the res:// collection folder
-							##
-							##scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path)
-							##new_scene_to_place = save_and_instantiate_scene(node_3d, save_path)
-##
+	#for _ in range(max_surfaces):
+		#var empty_arrays := []
+		#for i in range(Mesh.ARRAY_MAX):
+			#empty_arrays.append(null)
+		#surface_data_list.append(empty_arrays)
+#
+	#for mi in mesh_instances:
+		#if not (mi is MeshInstance3D) or mi.mesh == null:
+			#continue
+		#if not mi.is_inside_tree():
+			#push_warning("MeshInstance %s not in scene tree, skipping" % mi.name)
+			#continue
+#
+		#var xform = mi.global_transform
+		#var mesh = mi.mesh
+#
+		#for surface_idx in range(mesh.get_surface_count()):
+			#if surface_idx >= max_surfaces:
+				#continue
+#
+			#var arrays = mesh.surface_get_arrays(surface_idx)
+			#if arrays.empty() or arrays[Mesh.ARRAY_VERTEX] == null or arrays[Mesh.ARRAY_VERTEX].size() == 0:
+				#continue  # skip invalid surface
+#
+			## Duplicate arrays to avoid modifying original
+			#arrays = arrays.duplicate(true)
+#
+			## Transform vertices
+			#var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			#for i in range(verts.size()):
+				#verts[i] = xform * verts[i]
+#
+			## Transform normals if exist
+			#if arrays[Mesh.ARRAY_NORMAL] and arrays[Mesh.ARRAY_NORMAL].size() > 0:
+				#var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+				#for i in range(normals.size()):
+					#normals[i] = (xform.basis * normals[i]).normalized()
+#
+			## Flip indices if negative scale
+			#if xform.basis.determinant() < 0:
+				#var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+				#if indices and indices.size() > 0:
+					#for i in range(0, indices.size(), 3):
+						#var tmp = indices[i + 1]
+						#indices[i + 1] = indices[i + 2]
+						#indices[i + 2] = tmp
+#
+			## Get destination arrays
+			#var dst_arrays = surface_data_list[surface_idx]
+#
+			## Current vertex count to offset indices
+			#var vertex_offset = 0
+			#if dst_arrays[Mesh.ARRAY_VERTEX] and dst_arrays[Mesh.ARRAY_VERTEX].size() > 0:
+				#vertex_offset = dst_arrays[Mesh.ARRAY_VERTEX].size()
+#
+			## Append arrays carefully with validation
+			#for i in range(Mesh.ARRAY_MAX):
+				#if arrays[i] == null:
+					#continue
+#
+				#if dst_arrays[i] == null:
+					#dst_arrays[i] = arrays[i].duplicate()
+				#else:
+					#if i == Mesh.ARRAY_INDEX:
+						## Adjust indices by vertex_offset
+						#var idx_arr: PackedInt32Array = arrays[i]
+						#var offset_idx_arr = PackedInt32Array()
+						#for idx_val in idx_arr:
+							#offset_idx_arr.append(idx_val + vertex_offset)
+						#dst_arrays[i].append_array(offset_idx_arr)
+					#elif i == Mesh.ARRAY_BONES:
+						## Ensure bones array is PackedInt32Array before appending
+						#if arrays[i] is PackedInt32Array:
+							#dst_arrays[i].append_array(arrays[i])
+						#else:
+							#push_warning("Skipping invalid bones array type on surface %d" % surface_idx)
+					#elif i == Mesh.ARRAY_WEIGHTS:
+						## Ensure weights array is PackedFloat32Array before appending
+						#if arrays[i] is PackedFloat32Array:
+							#dst_arrays[i].append_array(arrays[i])
+						#else:
+							#push_warning("Skipping invalid weights array type on surface %d" % surface_idx)
 					#else:
-						#new_scene_to_place = node_3d.duplicate()
-##
-					##EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
-					##new_scene_to_place.set_owner(EditorInterface.get_edited_scene_root())
-					##set_object_position_and_add_mesh_tris(new_scene_to_place, node_3d.name)
+						#dst_arrays[i].append_array(arrays[i])
+#
+			## Store material and name if first time
+			#if surface_idx >= surface_materials.size():
+				#surface_materials.append(mesh.surface_get_material(surface_idx))
+				#surface_names.append(mesh.surface_get_name(surface_idx))
+#
+	## Now create surfaces from merged arrays
+	#for surface_idx in range(max_surfaces):
+		#var arr = surface_data_list[surface_idx]
+		#if arr.empty() or arr[Mesh.ARRAY_VERTEX] == null or arr[Mesh.ARRAY_VERTEX].size() == 0:
+			#continue  # skip empty
+#
+		## Add surface safely
+		#var err = combined_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+		#if err != OK:
+			#push_warning("Failed to add surface %d to combined mesh" % surface_idx)
+			#continue
+#
+		## Set material & name
+		#if surface_idx < surface_materials.size() and surface_materials[surface_idx]:
+			#combined_mesh.surface_set_material(surface_idx, surface_materials[surface_idx])
+		#if surface_idx < surface_names.size() and surface_names[surface_idx] != "":
+			#combined_mesh.surface_set_name(surface_idx, surface_names[surface_idx])
+#
+	#var combined_instance = MeshInstance3D.new()
+	#combined_instance.name = new_mesh_name
+	#combined_instance.mesh = combined_mesh
+	#return combined_instance
+########################################
 
 
-					new_scene_to_place = await scene_viewer_panel_instance.load_scene_instance(scene_path)
+## Match the scene_preview to the hold settings in the GUI
+# FIXME Lock to set parameter when rotating or scaling
+# NOTE: Will undo scaling done by the Editor scale and rotation UI buttons FIXME
+# FIXME When set to Hold only scale holds rotation also and hold only rotation also hold scale
+# CAUTION NEEDS SOME FIXING AND FIGURE OUT WHEN TO USE?
+func match_scene_hold_state(scene: Node3D) -> Node3D:
+	if current_hold_3d_state:
+		match current_hold_3d_state:
+			"NOHOLD":
+				if debug: print("Set to NOHOLD")
+				scene.scale = Vector3.ONE
+				scene.rotation = Vector3.ZERO
+			"HOLDSCALE3D":
+				scene.scale = last_scene_preview_scale
+				scene.rotation = Vector3.ZERO
+				#scene.scale = scene_preview_scale
+				if debug: print("Set to HOLDSCALE3D")
+			"HOLDROTATION3D":
+				#scene.rotation = scene_preview_rotation
+				scene.rotation.y = last_scene_preview_rotation.y
+				scene.scale = Vector3.ONE
+				if debug: print("Set to HOLDROTATION3D")
+			"HOLDSCALEROTATION3D":
+				scene.scale = last_scene_preview_scale
+				#scene.scale = scene_preview_scale
+				#scene.rotation = scene_preview_rotation
+				scene.rotation.y = last_scene_preview_rotation.y
+				if debug: print("Set to HOLDSCALEROTATION3D")
+	return scene
 
-					EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
-					new_scene_to_place.set_owner(EditorInterface.get_edited_scene_root())
-					
 
-					
-					
-					await reparent_to_selected_node(new_scene_to_place)
+#var root_global_transform: Transform3D
+
+func create_new_scene_to_place(scene_root: Node, scene_name_no_ext: String, collection_name: String) -> void:
+	var save_path: String = get_scene_save_path(collection_name, scene_name_no_ext)
+	var current_scene_root: Node = EditorInterface.get_edited_scene_root()
+	var scene_to_place: Node
+
+	## Remove meta lock before saving to res://
+	#scene_root.remove_meta("_edit_lock_")
+	## Rename scene_root from ScenePreview to scene_name.
+	#scene_root.name = scene_name_no_ext
+	#
+	# Store transforms -> remove transforms -> save -> re-apply transforms -> place scene.
+	#root_global_transform = scene_root.global_transform
+	#scene_root.global_transform = Transform3D.IDENTITY
+
+	#var root_global_transform: Transform3D 
+	#if center_scene_preview:
+		#root_global_transform = scene_root.get_parent().global_transform
+	#else:
+		#root_global_transform = scene_root.global_transform
+
+	var root_global_transform: Transform3D = scene_root.global_transform
+
+	var center_node_global_transform: Transform3D 
+	if center_scene_preview:
+		center_node_global_transform = scene_root.get_parent().global_transform
 
 
 
+	if create_as_scene:
+		# Create Directories if not already. Scenes with no textures or shared textures will not create directory previously
+		create_folders("res://", "collections".path_join(collection_name))
+
+		if res_dir.file_exists(save_path): # Load from the res:// dir if it has been created
+			if debug: print("loading from res://")
+			scene_to_place = load(save_path).instantiate()
+
+		else: # Load from the user:// dir and save to res:// dir and then load and use the scene created in the res:// collection folder
+			if debug: print("instancing new scene now")
+			#scene_root.get_parent().remove_child(scene_root)
+			#scene_root.hide()
+			scene_to_place = save_and_instantiate_scene(scene_root, save_path, scene_name_no_ext, root_global_transform, center_node_global_transform)
+			#scene_to_place.show()
+			#scene_to_place.name = "ScenePreview"
+
+		#scene_to_place = scene_to_place.duplicate()
+
+	else:
+		scene_to_place = scene_root.duplicate()
 
 
+	#scene_to_place.name = "ScenePreview"
+	# Re-apply transforms
+	#scene_to_place.global_transform = root_global_transform
 
-					set_object_position_and_add_mesh_tris(new_scene_to_place, new_scene_to_place.name)
+	# Add to array for undo_redo function
+	if not placed_scenes.has(scene_to_place):
+		placed_scenes.append(scene_to_place)
 
-					return
-					
+	#scene_to_place.owner = null
+	#scene_to_place.reparent(current_scene_root)
+	
+	
+	current_scene_root.add_child(scene_to_place)
+	scene_to_place.set_owner(current_scene_root)
+	scene_to_place.name = scene_name_no_ext
+	reparent_to_selected_node(scene_to_place, current_scene_root)
+	scene_to_place.global_transform = root_global_transform
+	# Support for Terrain3D and TerraBrush
+	if (terrain_3d_plugin_active and terrain) or (terra_brush_plugin_active and terra_brush):
+		scene_to_place.add_to_group("follow_terrain_group", true)
+	
+	
+	#set_scene_to_place_position(scene_to_place, current_scene_root)
 
 
+func remove_empty_animation_player(scene_preview: Node) -> void:
+	# WARNING THIS SECTION MAY BE MORE APPROPRIATE IN IMPORT SECTION? BEFORE BUTTON CREATED AND CAN ADD ANIMATION BUTTON TO SCENE_VIEW BUTTON. NOTE HAD THIS WORKING BEFORE.
+	# NOTE: Remove empty animation player nodes. CHECK "WARNING DO NOT DELETE" for additional useful functionality
+	# NOTE: Sometimes there are animations in the animation list, but their tracks are empty, so doing simple check of empty animation_list does not work.
+	var animation_player_node_instances: Array[Node] = scene_preview.find_children("*", "AnimationPlayer", true, false)
+	var track_count: int = 0
+	for animation_player_node: Node in animation_player_node_instances:
+		var animation_list: PackedStringArray = animation_player_node.get_animation_list()
+		if animation_list.is_empty(): # First do simple check
+			animation_player_node.free()
+			if debug: print("removing animation player node")
+
+		else: # Do deeper check
+			# NOTE Do check if the animation in the AnimationPlayer has any tracks if not remove it.
+			var first_animation: Animation = animation_player_node.get_animation(animation_list[0])
+			track_count = first_animation.get_track_count()
+			if debug: print("track_count: ", track_count)
+			# NOTE Remove AnimationPlayers with first animation having no tracks (Synty seem to have this node on .fbx imports)
+			if track_count == 0:
+				animation_player_node.free()
+				if debug: print("removing animation player node")
 
 
+# TODO Add in material parameter, to save same scene different materials. will need to adapt for LOD or other things need to keep compact.
+# FIXME Shorten to something like a simple code 
+# TODO May also need to be update to include center parameter?
+func get_scene_save_path(collection_name: String, scene_name_no_ext: String) -> String:
+	var save_path: String = ""
+	var body_type_map: Dictionary[String, String] = {
+		"NO_PHYSICSBODY3D": "no_body",
+		"NODE3D": "node",
+		"STATICBODY3D": "static",
+		"RIGIDBODY3D": "rigid",
+		"CHARACTERBODY3D": "character"
+	}
+
+	var collision_type_map: Dictionary[String, String] = {
+		#"NO_COLLISION": "no_col",
+		"SPHERESHAPE3D": "sphere",
+		"BOXSHAPE3D": "box",
+		"CAPSULESHAPE3D": "capsule",
+		"CYLINDERSHAPE3D": "cylinder",
+		"SIMPLIFIED_CONVEX": "simplified",
+		"SINGLE_CONVEX": "single",
+		"MULTI_CONVEX": "multi",
+		"TRIMESH": "trimesh"
+	}
+
+	# Use the name mapping to create the scene name
+	var body_3d = body_type_map.get(current_body_3d_type, "")
+	var col_3d = collision_type_map.get(current_collision_3d_state, "")
+
+	# Construct the save path
+	if body_3d != "" and col_3d != "":
+		save_path = project_scenes_path.path_join(
+			collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
+		)
+
+	return save_path
 
 
+func get_physics_body_3d(scene_preview: Node3D, collection_name: String, scene_name_no_ext: String) -> Node3D:
+#func get_physics_body_3d(scene_preview: Node3D, collection_name: String, scene_name_no_ext: String) -> void:
+	#print("current_index: ", current_body_3d_type)
+	#var scene_path: String = scene_viewer_panel_instance.current_scene_path
+	#var scene_name_no_ext: String = scene_viewer_panel_instance.get_scene_name(scene_path, true)
+	if scene_preview is Node3D:
 
+		var physics_body_3d: Node3D = null
+		#match scene_viewer_panel_instance.current_type_3d:
+		match current_body_3d_type:
+			"NO_PHYSICSBODY3D":
+				enable_collisions = false
+				# FIXME: current_body_3d_type == "NO_PHYSICSBODY3D" Needs to keep parent node to maintain center offset. but needs to be removed later when placing and offset applied to mesh directly.
+				#if center_scene_preview:
+					#scene_preview = scene_preview.get_child(0)
 
-					#
-					## 1. Call the single, definitive function.
-					## It takes the root node of the scene to be combined.
-					#var combined_mesh_node: MeshInstance3D =  combine_meshes_manually(scene_preview, scene_name_no_ext)
-					#
-					#if combined_mesh_node == null:
-						#printerr("Failed to combine meshes for scene: ", scene_name_no_ext)
+				return scene_preview
+				#return
+				
+				##enable_collisions = false # NOTE: This is not used because everything returned
+				##if debug: print("Running no physics body section and then returning")
+#
+				#var original_scene_preview: Node
+				#if center_scene_preview:
+					## Transform needs to passed to child
+					#original_scene_preview = scene_preview.get_child(0)
+				#else:
+					#original_scene_preview = scene_preview
+#
+				#if original_scene_preview.get_child_count() == 1 and original_scene_preview.get_child(0) is MeshInstance3D:
+					#for child: MeshInstance3D in original_scene_preview.get_children():
+						#create_new_scene_to_place(child, scene_name_no_ext, collection_name)
 						#return
 #
-#
-#
-#
-				##else: # This is the block for multiple meshes
-					##if debug: print("Scene has multiple meshes. Combining them manually...")
-					##
-					### 1. Call the robust helper, passing it the root of the scene to search.
-					##var combined_mesh_node: MeshInstance3D = combine_meshes_manually(scene_preview, scene_name_no_ext)
-					##
-					##if combined_mesh_node == null:
-						### The error message from inside the function is more specific now.
-						##printerr("Failed to combine meshes for scene: ", scene_name_no_ext)
-						##return
-#
-	## ... The rest of your saving/placing code remains EXACTLY the same ...
-#
-#
-#
-#
-#
-				##else: # This is the block for multiple meshes
-					##if debug: print("Scene has multiple meshes. Combining them using the GLTF pipeline...")
-					##
-					### 1. Call our new helper to do all the hard work!
-					### We pass it the root of the scene we want to flatten (`scene_preview`).
-					### This returns a single MeshInstance3D node, ready to be used.
-					##var combined_mesh_node: MeshInstance3D = combine_scene_to_mesh_gltf(scene_preview, scene_name_no_ext)
-					##
-					##if combined_mesh_node == null or combined_mesh_node.mesh.get_surface_count() == 0:
-						##printerr("Failed to combine meshes for scene: ", scene_name_no_ext)
-						##return
-#
-					## 2. From here on, your code is IDENTICAL to the single-mesh case,
-					##    but we use `combined_mesh_node`.
-					#
-					## Construct the save path
-					#if body_3d != "" and col_3d != "":
-						#save_path = project_scenes_path.path_join(
-							#collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
-						#)
-					#
-					##var new_scene_to_place: Node
-#
-					#if create_as_scene: # This happens when clicking the mouse
-						#if res_dir.file_exists(save_path):
-							#if debug: print("loading from res://")
-							#new_scene_to_place = load(save_path).instantiate()
-						#else:
-							#if debug: print("instancing and saving new combined scene now")
-							## We save our new, single, combined mesh node into a scene.
-							#new_scene_to_place = save_and_instantiate_scene(combined_mesh_node, save_path)
-					#else:
-						## We just duplicate the new, single, combined mesh node.
-						#new_scene_to_place = combined_mesh_node.duplicate()
-#
-					#EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
-					#new_scene_to_place.set_owner(EditorInterface.get_edited_scene_root())
-					#
-					#await reparent_to_selected_node(new_scene_to_place)
-					#
-					#set_object_position_and_add_mesh_tris(new_scene_to_place, combined_mesh_node.name)
-
-					return
-
-
-
-
 				#else: # This is the block for multiple meshes
-					#if debug: print("Scene has multiple meshes. Combining them into one...")
-					#
-					## 1. Find all the mesh instances in the scene.
-					#var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
-					#
-					## 2. Call our new helper to do all the hard work!
-					## This returns a single MeshInstance3D node, ready to be used.
-					##var combined_mesh_node: MeshInstance3D = combine_meshes(mesh_node_instances, scene_name_no_ext)
-					#
-					#var node_test = scene_preview.get_child(0).get_child(0)
-					#
-					#var combined_mesh_node: MeshInstance3D = convert_node_to_meshinstance(node_test, EditorInterface.get_edited_scene_root())
-					#
-					#if combined_mesh_node == null:
-						#printerr("Failed to combine meshes for scene: ", scene_name_no_ext)
-						#return
-#
-					## 3. From here on, your code is IDENTICAL to the single-mesh case,
-					##    but we use `combined_mesh_node` instead of `child`.
-					#
-					## Construct the save path
-					#if body_3d != "" and col_3d != "":
-						#save_path = project_scenes_path.path_join(
-							#collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
-						#)
-					#
-					##var new_scene_to_place: Node
-#
-					#if create_as_scene: # This happens when clicking the mouse
-						#if res_dir.file_exists(save_path):
-							#if debug: print("loading from res://")
-							#new_scene_to_place = load(save_path).instantiate()
-						#else:
-							#if debug: print("instancing and saving new combined scene now")
-							## NOTE: You might want to set materials on `combined_mesh_node` here if needed.
-							## Your `set_surface_materials` function can now operate on this single node.
-							#
-							## We save our new, single, combined mesh node into a scene.
-							#new_scene_to_place = save_and_instantiate_scene(combined_mesh_node, save_path)
-					#else:
-						## We just duplicate the new, single, combined mesh node.
-						#new_scene_to_place = combined_mesh_node.duplicate()
-#
-					#EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
-					#new_scene_to_place.set_owner(EditorInterface.get_edited_scene_root())
-					#
-					#await reparent_to_selected_node(new_scene_to_place)
-					#
-					#set_object_position_and_add_mesh_tris(new_scene_to_place, combined_mesh_node.name)
-#
+					#create_new_scene_to_place(original_scene_preview, scene_name_no_ext, collection_name)
 					#return
-##############################
+
+			"NODE3D":
+				enable_collisions = false
+				physics_body_3d = Node3D.new()
+			"STATICBODY3D":
+				physics_body_3d = StaticBody3D.new()
+			"RIGIDBODY3D":
+				physics_body_3d = RigidBody3D.new()
+			"CHARACTERBODY3D":
+				physics_body_3d = CharacterBody3D.new()
+
+		if physics_body_3d is StaticBody3D or physics_body_3d is RigidBody3D or physics_body_3d is CharacterBody3D:
+			enable_collisions = true
+
+		if physics_body_3d != null:
+			scene_preview.replace_by(physics_body_3d)
+			scene_preview = physics_body_3d
+
+		scene_preview.name = scene_name_no_ext
+
+	return scene_preview
 
 
-#
-#
-				#else: # remove body and collisions make mesh the scene root and place
-					#if debug: print("scene_preview.get_child_count() is greater than 1 could not preceed: ", scene_preview.get_child_count())
-					##if debug: print("scene_preview.get_children(): ", scene_preview.get_children()) # FIXME For multiple mesh scene this is Node3D not MeshInstance3D
-					##for child in scene_preview.get_children():
-						##if debug: print("child: ", child)
-					#var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
-					##for child: MeshInstance3D in mesh_node_instances:
-#
-				## Create a MeshInstance3D for each level with the prepared mesh data
-					#var mesh = ArrayMesh.new()
-					#mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_node_instances)
-			  #
-			  		### Apply the shared atlas texture to a StandardMaterial3D
-					##var material = StandardMaterial3D.new()
-					##material.albedo_texture = atlas_texture
-			  #
-			  		## Create and configure the mesh instance for the level
-					#var mesh_instance = MeshInstance3D.new()
-					#mesh_instance.mesh = mesh
-					##mesh.surface_set_material(0, material)
-#
-#
-#
-						##if debug: print("child: ", child)
-#
-## TEST THIS WILL BE INTERESTING 
-## TEMP TEST
-					## Construct the save path
-					#if body_3d != "" and col_3d != "":
-						#save_path = project_scenes_path.path_join(
-							#collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
-						#)
-## TEMP TEST
-					### Construct the save path
-					##if body_3d != "" and col_3d != "":
-						##save_path = project_scenes_path.path_join(
-							##collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".glb")
-						##)
-#
-#
-#
-					#if create_as_scene: # This happens when clicking the mouse
-#
-						#if res_dir.file_exists(save_path): # Load from the res:// dir if it has been created
-							#if debug: print("loading from res://")
-							#new_scene_to_place = load(save_path).instantiate()
-#
-						#else: # Load from the user:// dir and save to res:// dir and then load and use the scene created in the res:// collection folder
-							#if debug: print("instancing new scene now")
-							## Copy .glb file in and make a child of the no no yes no I don't know just fix
-							## Scene_preview loaded into buffer so copy from user:// disk to res:// collection location keep textures embeded
-## TEMP TEST copy .glb in directly outside of being embeded
-							##copy_file(res_dir, scene_path, save_path)
-#
-							## Open, name, close, instantiate
-							##EditorInterface.open_scene_from_path("res://collections/test/SM_Arc_FirTree_a.glb", true)
-							#
-							##EditorInterface.open_scene_from_path(scene_path, true)
-## TEMP disabled
-							### Set Surface materials from scene_preview before saving
-							###TEST set default
-							#if debug: print("creating default material1")
-							##scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path, -1, null)
-							#scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path)
-#
-#
-							#new_scene_to_place = save_and_instantiate_scene(mesh_instance, save_path)
-#
-					#else:
-#
-						#new_scene_to_place = mesh_instance.duplicate()
-#
-#
-#
-#
-					#EditorInterface.get_edited_scene_root().add_child(new_scene_to_place)
-					#new_scene_to_place.set_owner(EditorInterface.get_edited_scene_root())
-					#
-#
-					#
-					#
-					#await reparent_to_selected_node(new_scene_to_place)
-#
-#
-#
-#
-#
-#
-					#set_object_position_and_add_mesh_tris(new_scene_to_place, mesh_instance.name)
-#
-					#return
-# TEST THIS WILL BE INTERESTING 
+func do_combine_meshes(scene_preview: Node3D) -> Node3D:
+	var combined_mesh: MeshInstance3D = scene_preview.find_child("CombinedMesh3D")
+	if combined_mesh == null:
+		combined_mesh = combine_scene_to_mesh_gltf(scene_preview)
+
+	# FIXME Really need to consider not dropping texture on import because of all the issues it causes like this.
+	## HACK overrides all surfaces with the same selected material # FIXME
+	var first_material = scene_viewer_panel_instance.materials_3d_array[scene_viewer_panel_instance.current_material_index]
+	for surface_index: int in combined_mesh.get_surface_override_material_count():
+		combined_mesh.set_surface_override_material(surface_index, first_material)
+
+	scene_preview.add_child(combined_mesh)
+	combined_mesh.owner = scene_preview
+
+	# HACK 2: Will not remove all MeshInstance3D nodes just ones that are children of the first child
+	var first_child: = scene_preview.get_child(0)
+	if first_child is MeshInstance3D and first_child.name != "CombinedMesh3D":
+		scene_preview.get_child(0).free()
+
+	return scene_preview
 
 
+## Set the materials selected by the user in the Scene Viewer Panel to the Mesh surface override material. 
+func apply_selected_materials() -> void:
+	if scene_viewer_panel_instance.cycle_material_favorites:
+		scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path)
+	else:
+		scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, true)
 
 
+## Set all scenes to have an origin at center bottom of AABB to standardize snapping.
+func center_scene(scene_preview: Node3D, current_scene_root: Node) -> Node3D:
+	var center_helper_node: Node3D = SCENE_PREVIEW_CENTER_HELPER.instantiate()
+	current_scene_root.add_child(center_helper_node)
+
+	scene_preview.reparent(center_helper_node)
+	scene_preview.set_owner(center_helper_node)
+	center_helper_node.center_scene_preview(scene_preview)
+
+	return center_helper_node
 
 
-# TEMP TEST
-			# Construct the save path
-			if body_3d != "" and col_3d != "":
-				save_path = project_scenes_path.path_join(
-					collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".tscn")
-				)
-# TEMP TEST
-			## Construct the save path
-			#if body_3d != "" and col_3d != "":
-				#save_path = project_scenes_path.path_join(
-					#collection_name.path_join(scene_name_no_ext + "_" + body_3d + "_" + col_3d + ".glb")
-				#)
+#region create_scene_preview_refactored_combined
+# Cycling between scenes feels slower with get_physics_body_3d() and do_combine_meshes() in scene_preview, but may be worth tradeoff of simplicity of code.
+# FIXME For scene generated and within "collections" skip some parts.
+# FIXME Pressing the change body or change collision shape buttons reverse scene_preview to first object in collection
+# FIXME CombinedMesh3D has issues with only having the one surface and therefore the same material being applied to all surfaces? FIX would be to set the surface materials before combining when placed.
+# FIXME Cycling collisions or button causes two instances # NOTE: Also just pressing the button does the same??
+# scene_preview children: [Mesh:<MeshInstance3D#44351325644009>]
+# creating complex_collision_shape
+# scene_preview children: [Mesh:<MeshInstance3D#44352349054218>]
+# creating complex_collision_shape
+# Probably being called from two places to create or two signals?
+func create_scene_preview():
+	var current_scene_root: Node = EditorInterface.get_edited_scene_root()
+	if not current_scene_root:
+		return
+
+	var collection_name: String
+	var scene_path: String = scene_viewer_panel_instance.current_scene_path
+
+	var scene_name_no_ext: String = scene_viewer_panel_instance.get_scene_name(scene_path, true)
+	var scene_file_path_split: PackedStringArray = full_path_split(scene_path)
+
+	if scene_path.begins_with("res://"):
+
+		if scene_path.get_extension() != "tscn":
+			collection_name = "project"
+
+	else: # NOTE Will need to change if decide to support more then .tscn for files in the user:// dir
+		# Get the collection name from the scene's file path
+		if scene_file_path_split:
+			collection_name = scene_file_path_split[4].to_snake_case()
+
+	if initialize_scene_preview:
+		update_current_collection_buttons()
+		get_current_visible_buttons()
+		await get_tree().process_frame
 
 
 
-			#if debug: print("this is the save path: ", save_path)
-			# TODO Here I need to copy the .glb file into the res:// directory and create inherited scenes from it.
-			# NOTE Currently works but creates a new .tscn file that does not inherit from original
-			if res_dir.file_exists(save_path):
-			#if res_dir.file_exists(get_save_path()):
-				#if debug: print("the file exists loading it")
-				loaded_from_project_dir = true
-				# FIXME THE REASON THAT SCENEPREVIEW DOES NOT SEE THE SCENE THAT WILL BE PLACED IS BECAUSE OF THIS SWITCH HERE
-				# IT IS ALWAYS GETTING THE PREVIEW FROM THE load(scene_path).instantiate() NOT FOR WHAT IS IN THE RES:// SAVE PATH
-				new_scene_to_place = load(save_path).instantiate()
-				#new_scene_to_place = load(get_save_path(scene_path, scene_name, scene_name_split)).instantiate()
+	# NOTE: This section never runs when cycling scene_preview only when left clicking to place it.
+	# NOTE: If scene_preview has been placed, and has not changed, only this upper section of code will be executed.
+	if not scene_preview == null:
 
-			else:
-				new_scene_to_place = scene_viewer_panel_instance.load_scene_instance(scene_path)
-				#mutex.lock()
-				##var scene_lookup_duplicate: Dictionary[String, Node] = scene_viewer_panel_instance.scene_lookup.duplicate()
-				##new_scene_to_place = scene_lookup_duplicate[scene_path]
-				##new_scene_to_place = scene_viewer_panel_instance.scene_lookup[scene_path].duplicate()
-				##if debug: print("scene_viewer_panel_instance.collection_lookup: ", scene_viewer_panel_instance.collection_lookup)
-				#new_scene_to_place = scene_viewer_panel_instance.collection_lookup[collection_name][scene_path].duplicate()
-				##var new_scene: Node = scene_viewer_panel_instance.scene_lookup[scene_path]
-				##new_scene_to_place = new_scene.duplicate()
-				#mutex.unlock()
+		var scene_to_place: Node3D 
+		if center_scene_preview:
+			scene_to_place = scene_preview.get_child(0)#.duplicate()
+		else:
+			scene_to_place = scene_preview
 
+		## Change out scenes root node for selected PhysicsBody3D type
+		#scene_to_place = get_physics_body_3d(scene_to_place, collection_name, scene_name_no_ext)
 
-				###TEST set default
-				if debug: print("creating default material2")
-				scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path)
-				#scene_viewer_panel_instance.set_surface_materials(new_scene_to_place, scene_path, -1, null)
+		# Create and apply collisions if they were not done in the scene_preview
+		if not scene_preview_collisions and current_body_3d_type != "NO_PHYSICSBODY3D" and current_body_3d_type != "NODE3D":
+				match_collision_state(scene_to_place, mesh_node_instances, scene_to_place.name, "none", false, false)
+		
+		create_new_scene_to_place(scene_to_place, scene_name_no_ext, collection_name)
 
-				#if debug: print("new_scene_to_place children1: ", new_scene_to_place.get_children())
+		# Hide collisions if user hide collisions selected.
+		if not scene_preview_collisions:
+			var collision_node_instances: Array[Node] = scene_preview.find_children("*", "CollisionShape3D", true, false)
+			for collision_node: CollisionShape3D in collision_node_instances:
+				collision_node.hide()
 
-				#var mesh_node_instances: Array[Node] = new_scene_to_place.find_children("*", "MeshInstance3D", true, false)
-				#for mesh_instance in mesh_node_instances:
-					#if debug: print("Original mesh resource: ", mesh_instance.mesh.resource_path)
-				## Load from scene_lookup TODO FIX BROKEN fallback for non scene_lookup
-				#mutex.lock()
-				##var scene_lookup_duplicate: Dictionary[String, Node] = scene_viewer_panel_instance.scene_lookup.duplicate()
-				##new_scene_to_place = scene_lookup_duplicate[scene_path]
-				#new_scene_to_place = scene_viewer_panel_instance.scene_lookup[scene_path].duplicate()
-				##var new_scene: Node = scene_viewer_panel_instance.scene_lookup[scene_path]
-				##new_scene_to_place = new_scene.duplicate()
-				#mutex.unlock()
-				##await get_tree().process_frame
-#
-#
-				#var mesh_nodes_instances: Array[Node] = new_scene_to_place.find_children("*", "MeshInstance3D", true, false)
-				#for mesh_instance in mesh_nodes_instances:
-					#if debug: print("Duplicate mesh resource: ", mesh_instance.mesh.resource_path)
-
-
-
-				
-				# TEST copy .glb in directly outside of being embeded
-				# May need to change default import settings for scenes to not extract textures
-# TEST copy .glb in directly outside of being embeded
-				#copy_file(res_dir, scene_path, save_path)
-# TEMP disabled
-				# FIXME BROKEN
-				#new_scene_to_place = await scene_viewer_panel_instance.load_scene_instance(scene_path)
-
-				loaded_from_project_dir = false
-
-
-#region Not Currently Used Keep For 2D
-
-		## NOTE First match body type
-		#if new_scene_to_place is Node2D:
-			#var physics_body_2d: PhysicsBody2D
-			#match current_body_2d_type:
-				#"STATICBODY2D":
-					#physics_body_2d = StaticBody2D.new()
-					#physics_body_2d.name = new_scene_to_place.name
-					#new_scene_to_place.replace_by(physics_body_2d)
-				#"RIGIDBODY2D":
-					#physics_body_2d = RigidBody2D.new()
-					##EditorInterface.get_edited_scene_root().add_child(physics_body_2d)
-					##physics_body_2d.owner = EditorInterface.get_edited_scene_root()
-					#physics_body_2d.name = new_scene_to_place.name
-					#new_scene_to_place.replace_by(physics_body_2d)
-				#"CHARACTERBODY2D":
-					#physics_body_2d = CharacterBody2D.new()
-					#physics_body_2d.name = new_scene_to_place.name
-					#new_scene_to_place.replace_by(physics_body_2d)
-#
-			#new_scene_to_place.queue_free()
-			#if debug: print("matching3")
-			#match_collision_state(physics_body_2d, scene_name_no_ext, save_path, false)
-#endregion
-
-		if new_scene_to_place is Node3D:
-			
-
-			#var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(new_scene_to_place)
-			#if first_mesh_node.has_meta("extras"):
-				#var metadata: Dictionary = first_mesh_node.get_meta("extras")
-				#metadata["global_tags"] = selected_scene_view_button.global_tags
-				#first_mesh_node.set_meta("extras", metadata)
-				#if debug: print("first_mesh_node.get_meta('extras'): ", first_mesh_node.get_meta("extras"))
-
-
-			#if debug: print("current_body_3d_type: ", current_body_3d_type)
-			var physics_body_3d: Node3D = null
-			if debug: print("this is the body type2: ", current_body_3d_type)
-			match current_body_3d_type:
-				"NO_PHYSICSBODY3D":
-					enable_collisions = false
-					if debug: print("THIS FIRED")
-					new_scene_to_place.name = scene_name_no_ext
-					#match_collision_state(new_scene_to_place, scene_name, save_path, true)
-					return
-
-				"NODE3D":
-					enable_collisions = false
-					#if not scene_preview_collisions:
-						
-					if not loaded_from_project_dir:
-						physics_body_3d = Node3D.new()
-				"STATICBODY3D":
-					enable_collisions = true
-					if not loaded_from_project_dir:
-						physics_body_3d = StaticBody3D.new()
-
-				"RIGIDBODY3D":
-					enable_collisions = true
-					if not loaded_from_project_dir:
-						physics_body_3d = RigidBody3D.new()
-
-				"CHARACTERBODY3D":
-					enable_collisions = true
-					if not loaded_from_project_dir:
-						physics_body_3d = CharacterBody3D.new()
-
-			if physics_body_3d != null:
-				# NOTE: Here we will want to add the ability to toggle scene linking either
-				# copy .glb file to disk and add to scene or create .scn from buffer with no link.
-				#if debug: print("scene_path: ", scene_path)
-				# NOTE: .glb file will be copied into the project and will be embedded within the .scn /tscn scene
-				if scene_link_enabled:
-					#var project_collection_base_path: String = scene_viewer_panel_instance.get_project_path(scene_path)
-					#var model_path: String = 
-					#var model_path: String = scene_viewer_panel_instance.get_project_path(scene_path, "models")
-					#if debug: print("model copy path: ", model_path.path_join(scene_path.split("/")[-1]))
-					#copy_file(user_dir, scene_path, model_path.path_join(scene_path.split("/")[-1]))
-					#copy_file(user_dir, scene_path, project_collection_import_path.path_join(scene_path.split("/")[-1]))
-					var model_path: String = scene_viewer_panel_instance.get_collection_path(scene_path, false)
-					copy_file(user_dir, scene_path, model_path)
-					await get_tree().process_frame
-					await get_tree().create_timer(5).timeout
-					# TODO Add wait here for 
-					var model = load(model_path)
-					var model_instance = model.instantiate()
-					physics_body_3d.add_child(model_instance)
-
-				else:
-
-					new_scene_to_place.replace_by(physics_body_3d)
-					new_scene_to_place.free()
-				physics_body_3d.name = scene_name_no_ext
-
-
-
-
-			if loaded_from_project_dir:
-				#if debug: print("new_scene_to_place: ", new_scene_to_place)
-				if debug: print("matching2")
-				match_collision_state(new_scene_to_place, scene_name_no_ext, save_path, true)
-			else:
-				# FIXME MAYBE HOLD new_scene_to_place AND PLACE THAT?
-# CAUTION FIXME new_scene_to_place was being removed for single instance loading. Keep as part of fallback when scene not in scene_lookup or low VRAM setting
-				#new_scene_to_place.queue_free()
-				if debug: print("matching1")
-
-				###TEST set default
-				#if debug: print("creating default material2")
-				#
-				#var current_selected_material: Resource = scene_viewer_panel_instance.materials_3d_array[scene_viewer_panel_instance.current_material_index]
-				#scene_viewer_panel_instance.set_surface_materials(physics_body_3d, scene_path, scene_viewer_panel_instance.current_selected_surface_index, current_selected_material)
-
-				match_collision_state(physics_body_3d, scene_name_no_ext, save_path, false)
-				#match_collision_state(new_scene_to_place, scene_name_no_ext, save_path, false)
-
-	# Reset save path 
-	save_path = ""
-
-# -----------------------> Scene_Preview Section
-	# FIXME if scene preview skip remove ScenePreview
-	# FIXME create new scene view based on focues not index 0
+	# NOTE: Code below this point is only run to load inital scene_preview per scene. For example when cycling scenes.
+	# NOTE: Once a scene is placed this section will not be executed.
 	if scene_preview == null:
 		var scene_name: String
-		
-		
-		# TODO CLEANUP AND PUT INTO SEPARATE FUNCTION
-		# If there are no scene buttons when Q_KEY and mouse button right clicked reset again
 		if initialize_scene_preview:
 			if current_visible_buttons.is_empty():
-				#push_warning("No visible scenes available, or Scene Viewer Panel not open. Please select a scene or open a collection of scenes within the Scene Viewer. \
-				#\n TIP: Undock Scene Viewer Panel to enable Scene Quick Scroll (SHIFT+Scroll Wheel) even when Scene Viewer is not visible.")
-				# Reset initialize_scene_preview flag with time for function to finish
 				await get_tree().create_timer(.1).timeout
 				initialize_scene_preview = true
 				return
-			else:
-				# TODO ADD IF FILTER ENALBED:
-				scene_number = get_focused_button_scene_number()
 
-
-				scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
-				#scene_preview = scene_viewer_panel_instance.load_scene_instance(scene_viewer_panel_instance.current_scene_path)
-				scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
-
-		else: # NOTE: Will work without this second setting of current_scene_path. Is it keeping a reference of it?
-			# FIXME If filtered need to update current scenes and scene_number NOTE: cycling works just not filter and click on scene button
-			#selected_scene_view_button = scenes[scene_number]
-			
-
-			# TODO ADD IF FILTER ENALBED:
-			scene_number = get_focused_button_scene_number()
-
-
-			# PROBLEM When filtering scene_number on button is not updated to order in current_visible_buttons array
-			#if debug: print("current_visible_buttons: ", current_visible_buttons)
-
-			scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
-			#scene_preview = scene_viewer_panel_instance.load_scene_instance(scene_viewer_panel_instance.current_scene_path)
-			scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
+		scene_number = get_focused_button_scene_number()
+		scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
+		scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
 
 		scene_name = scene_viewer_panel_instance.get_scene_name(scene_viewer_panel_instance.current_scene_path, true)
 
+		remove_empty_animation_player(scene_preview)
 
-		if debug: print("scene_preview: ", scene_preview)
-		embed_shared_and_decrypted_global_tags_in_scene(scene_preview)
-		#embed_decrypted_global_tags_in_scene(scene_preview)
-
-		EditorInterface.get_edited_scene_root().add_child(scene_preview)
+		current_scene_root.add_child(scene_preview)
 
 		if scene_preview.is_inside_tree():
+			# NOTE: Prevent expanding of Path3D drag_line node in tree.
+			settings.set_setting("docks/scene_tree/auto_expand_to_selected", false)
 
-			# Set the materials
-			# FIXME passing additional parameters seems to really slow scene_preview cycling?
-			# Why does this change material when cycling? Because this is not what is setting the material.
-			if scene_viewer_panel_instance.cycle_material_favorites:
-				scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path)
-			else:
-				scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, true)
-			#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, -1, null, false, false)
-			#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, -1, null)
-			# Update material button
+			# Change out scenes root node for selected PhysicsBody3D type
+			# FIXME When quickly cycling through PhyscisBodies will spawn scenes or throw errors.
+			#await get_tree().process_frame # Time for user selected physics_body_3d to update when cycling between them.
+			## NOTE: Must be deferred because user selected physics_body_3d needs to to update when cycling between them.
+			#call_deferred("get_physics_body_3d", scene_preview, collection_name, scene_name_no_ext)
+			scene_preview = get_physics_body_3d(scene_preview, collection_name, scene_name_no_ext)
 
-#region Currently not used kept for 2D
+			# Only combine meshes if scene has more then one to combine.
+			mesh_node_instances = scene_preview.find_children("*", "MeshInstance3D", true, false)
+			
+			#NOTE: When to set active and when not? CAUTION: Results in all surfaces having the same material, with no separation of meshes to fix!
+			# EXAMPLE: Synty Explorer pack 4X4 vehicle glass Albedo has color applied but no Texture, applying a texture messes up way it should look.
+			# TODO Make optional toggle and add to bottom right corner of scene tab replacing match scale rotation button.
+			#if combine_meshes and mesh_node_instances.size() > 1:
+				#scene_preview = do_combine_meshes(scene_preview)
+				## Update mesh_node_instances with single CombinedMesh3D mesh instance
+				#mesh_node_instances = scene_preview.find_children("*", "MeshInstance3D", true, false)
 
-			#if scene_preview is Node2D:
-				#scene_viewer_panel_instance.change_body_type_3d_button.hide()
-				#scene_viewer_panel_instance.change_body_type_2d_button.show()
-				#
-				#scene_viewer_panel_instance.change_collision_shape_3d_button.hide()
-				#scene_viewer_panel_instance.change_collision_shape_2d_button.show()
-				#
-				#if debug: print("scene is 2d")
-			#if scene_preview is Node3D:
-				#scene_viewer_panel_instance.change_body_type_2d_button.hide()
-				#scene_viewer_panel_instance.change_body_type_3d_button.show()
-				#
-				#scene_viewer_panel_instance.change_collision_shape_2d_button.hide()
-				#scene_viewer_panel_instance.change_collision_shape_3d_button.show()
+			# Add in tags after combine_meshes process
+			scene_preview = embed_shared_and_decrypted_global_tags_in_scene(scene_preview)
+
+			apply_selected_materials()
+
+			if scene_preview_collisions:# and current_body_3d_type != "NO_PHYSICSBODY3D" and current_body_3d_type != "NODE3D":
+				if scene_preview is Node3D:
+					match_collision_state(scene_preview, mesh_node_instances, scene_preview.name, "none", false, false)
+
+			if center_scene_preview:
+				scene_preview = center_scene(scene_preview, current_scene_root)
+
+
+			#print("scene_preview children: ", scene_preview.get_children())
+
+			# FIXME TODO Relook at the logic here and what engine is doing and proper ownership?
+			# Makes it so that the ScenePreview node shows in tree
+			scene_preview.owner = null
+			reparent_to_selected_node(scene_preview, current_scene_root)
+			scene_preview.set_owner(current_scene_root)
+
+#region ##################################### KEEP
+			##################################### KEEP
+			# NOTE: This is required because any existing data will be cleared if not owned by Node being packed
+			#Makes it so that complex collision shapes show on ScenePreview.
+			#node_set_owner_recursive(scene_preview, scene_preview)
+			##################################### KEEP
 #endregion
 
-
-
-
-
-			## HACK
-			#scene_viewer_panel_instance.cycle_material(-1)
-			#scene_viewer_panel_instance.cycle_material(1)
-
-
-
-			## Show backface FIXME TODO maybe just get the first meshinstance3d
-			## FIXME Not all main textures are the material 0 so looping through all can this be improved?
-			#var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
-			#for mesh_node: MeshInstance3D in mesh_node_instances:
-				#for mesh_material_index: int in mesh_node.mesh.get_surface_count():
-					#var active_material: StandardMaterial3D = mesh_node.get_active_material(mesh_material_index)
-					#active_material.cull_mode = 2 #CULL_DISABLED
-				#
-				##var active_material: StandardMaterial3D = mesh_node.get_active_material(0)
-				##mesh_node.get_active_material(0).cull_mode = 2 #CULL_DISABLED
-				##active_material.cull_mode = 2 #CULL_DISABLED
-				##if debug: print("mesh material culling: ", mesh_node.get_active_material(0).get_cull_mode())
-					## Update the material_button in scene_viewer.tscn with the current previews material
-					## FIXME UPDATES THE MATERIAL ON ALL INSTANCED OBJECTS IN SCENE NOTE ACTUALLY NOT RELATED TO THIS SO SOMEWHERE ELSE
-					## FIXME Will update to the last active material in loop
-					#scene_viewer_panel_instance.update_material_button_mesh_instance_3d(0, active_material)
-
-
-			# TODO Strip out changing of body type not needed 
-			if scene_preview_collisions:
-				# TEST START
-				if scene_preview is Node3D:
-					
-
-					
-######################### ORIGINAL WORKS
-					#var physics_body_3d: Node3D = null
-					#match current_body_3d_type:
-						#"NO_PHYSICSBODY3D":
-							## make meshinstance3d the root of the scene 
-							#pass
-						#"NODE3D":
-							#physics_body_3d = Node3D.new()
-						#"STATICBODY3D":
-							#physics_body_3d = StaticBody3D.new()
-						#"RIGIDBODY3D":
-							#physics_body_3d = RigidBody3D.new()
-						#"CHARACTERBODY3D":
-							#physics_body_3d = CharacterBody3D.new()
-#
-					#if physics_body_3d != null:
-						#scene_preview.replace_by(physics_body_3d)
-						#physics_body_3d.name = scene_name
-						#scene_preview = physics_body_3d
-######################## ORIGINAL WORKS
-
-
-
-					#var physics_body_3d: Node3D = null
-					#match "STATICBODY3D":
-						#"STATICBODY3D":
-							#physics_body_3d = StaticBody3D.new()
-#
-					#if physics_body_3d != null:
-						#scene_preview.replace_by(physics_body_3d)
-						#physics_body_3d.name = scene_name
-						#scene_preview = physics_body_3d
-#
-#
-					##if debug: print("VIEWPORT 3D GIZMOS: ", EditorInterface.get_editor_viewport_3d(0).get_gizmos())
-					#var save_path = "none"
-					##scene_preview.queue_free()
-					##await match_collision_state(physics_body_3d, scene_name, save_path, false)
-					#await match_collision_state(scene_preview, scene_name, save_path, false)
-######################## ALSO WORKS
-
-					# TODO FIXME Collisions generated here are not reused when placing scene will speed up placement
-					if debug: print("matching collision state now")
-					var save_path = "none"
-					if debug: print("matching6")
-					await match_collision_state(scene_preview, scene_preview.name, save_path, false)
-
-
-
-			## Strip scene_preview down to its first Meshinstance3D child
-			#scene_preview = scene_viewer_panel_instance.get_scenes_first_mesh_node(scene_preview)
-
-			# TODO check if .owner and .set_owner can be part of reparent func
-			# Add scene_preview under pinned node
-			scene_preview.owner = null
-			await reparent_to_selected_node(scene_preview)
-
-			scene_preview.set_owner(EditorInterface.get_edited_scene_root())
-
-
-
-			#if debug: print("scene_preview.name: ", scene_preview.name)
-
-
-			#if existing_preview:
-				#existing_preview.name = "ScenePreview2"
-				#scene_preview.name = existing_preview.name
-			#else:
-			#await get_tree().process_frame
-			#scene_preview.name = "ScenePreview"
-
-
-
-
-
-
-			
-			
+			# TEST for more visible collision shapes
+			node_set_owner_recursive(scene_preview, current_scene_root)
+			# Keep folded
+			scene_preview.set_display_folded(true)
 			
 
-#####################KEEP NOTE: Originally had only mesh due to snapping and collision issues may need to go revert to that?
-# but complete redid who in process with excluding scene_preview.
+			#call_deferred("get_physics_body_3d", scene_preview, collection_name, scene_name_no_ext)
+
+
+			# Lock the scene_preview to prevent unwanted rotation and scaling issues
+			# REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+			scene_preview.set_meta("_edit_lock_", true)
+
 			# Apply transparency to ScenePreview
 			#scene_preview_mesh.set_transparency(0.4)
-#####################KEEP
 
-			## Change selection to the "ScenePreview"
-			#call_deferred("keep_scene_preview_focus", scene_preview)
+			# NOTE: Put the preview at the last previews position when in quick cycle
+			# Otherwise spawns at Vector3.ZERO point in 3d viewport
 
-## TEMP DISABLED
-			# Put the preview at the last previews position when in quick cycle
-			# NOTE: Otherwise spawns at Vector3.ZERO point in 3d viewport
-			#scene_preview.global_transform.origin = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
+			#var editor_camera3d: Camera3D = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+			#var mouse_pos = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
+			#preview_offset = editor_camera3d.project_position(mouse_pos, 3)
+			#scene_preview.global_transform.origin = preview_offset
+
 			scene_preview.global_transform.origin = last_scene_preview_pos
 
-
-
 			# NOTE: Check for scale and rotation matching and apply here on preview since placed objects gets its scale and rotation from it
-			if current_hold_3d_state:
-				match current_hold_3d_state:
-					"NOHOLD":
-						if debug: print("Set to NOHOLD")
-					"HOLDSCALE3D":
-						scene_preview.scale = last_scene_preview_scale
-						if debug: print("Set to HOLDSCALE3D")
-					"HOLDROTATION3D":
-						scene_preview.rotation.y = last_scene_preview_rotation.y
-						if debug: print("Set to HOLDROTATION3D")
-					"HOLDSCALEROTATION3D":
-						scene_preview.scale = last_scene_preview_scale
-						scene_preview.rotation.y = last_scene_preview_rotation.y
-						if debug: print("Set to HOLDSCALEROTATION3D")
-
-
-
-
-
-
-			#var editor_camera3d: Camera3D = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
-			#var mouse_pos = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
-#
-			## Obtain the ray origin and direction from the camera through the mouse position
-			#var ray_origin = editor_camera3d.project_ray_origin(mouse_pos)
-			#var ray_direction = editor_camera3d.project_ray_normal(mouse_pos)
-#
-			## Calculate the intersection with the Y = 0 plane
-			#var plane_y = 0.0#10.0
-			#var distance = (plane_y - ray_origin.y) / ray_direction.y
-			##if debug: print("distance: ", distance)
-			## Compute the position on the Y = 0 plane
-			#var snap_position = ray_origin + ray_direction * distance
-			#scene_preview.global_transform.origin = snap_position
-
-## FIXME NOTE: Doesn't work to snap to floor, but does work to keep scene_preview from spaneing at Vector3.ZERO in 3d viewport?
-			## Get distance to floor snapping
-			#var editor_camera3d: Camera3D = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
-			#var mouse_pos = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
-			#var distance = (0 - editor_camera3d.project_ray_origin(mouse_pos).y) / editor_camera3d.project_ray_normal(mouse_pos).y
-			#if scene_viewer_panel_instance.current_scene_path != last_scene_path:
-				#scene_preview.global_transform.basis = Basis.IDENTITY
-				## Reset object_rotated flag for new scene
-				#object_rotated = false
-##
-##
-##
-			#if snap_down:
-				#scene_preview.global_transform.origin = editor_camera3d.project_position(mouse_pos, distance)
-#???????????????????????????????????????????????????????
+			scene_preview = match_scene_hold_state(scene_preview)
 			scene_preview_mesh = scene_preview
 
 			# NOTE Still will flicker to ScenePreview2" briefly, but otherwise works. FIXME Not sure possible
@@ -6563,29 +7447,821 @@ func create_scene_preview():
 				call_deferred("keep_scene_preview_focus", scene_preview)
 
 			await get_tree().process_frame # Delay required for engine to do auto rename 
-			## NOTE: Second check and rename required because sometimes rename above does not work.
-			if scene_preview.name != "ScenePreview":
-				scene_preview.name = "ScenePreview"
+			# NOTE: Second check and rename required because sometimes rename above does not work.
+			if scene_preview:
+				if scene_preview.name != "ScenePreview":
+					scene_preview.name = "ScenePreview"
+
+
 
 
 
 		else:
-			#scene_preview_3d_active = false
-			# Only requird if loading scene dynamically from disk when placing not from memory and dictionary lookup
+			# Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
 			scene_preview.queue_free()
-			#scene_preview = null
-
 
 	initialize_scene_preview = false
 	last_scene_path = scene_viewer_panel_instance.current_scene_path
 #endregion
 
+
+#func deferred_change_phyics_body_3d(scene_preview: Node, collection_name: String, scene_name_no_ext: String) -> void:
+	#scene_preview = get_physics_body_3d(scene_preview, collection_name, scene_name_no_ext)
+
+
+
+##region create_scene_preview_slim
+#
+#func create_scene_preview_slim():
+	#var save_path: String = ""
+	#if initialize_scene_preview:
+		#get_visible_scene_view_buttons()
+#
+	## NOTE: This section never runs when cycling scene_preview only when left clicking to place it.
+	#if not scene_preview == null:# and not scene_preview_mesh == null:
+#
+		## Lock the scene_preview to prevent unwanted rotation and scaling issues.
+		## REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+		#scene_preview.set_meta("_edit_lock_", true)
+#
+		#var scene_path: String = scene_viewer_panel_instance.current_scene_path
+		#var scene_name_no_ext: String = scene_viewer_panel_instance.get_scene_name(scene_path, true)
+		#var new_scene_to_place: Node
+		#var loaded_from_project_dir: bool = false
+		#var collection_name: String
+		#var scene_file_path_split: PackedStringArray = full_path_split(scene_path)
+##
+		### First do check if save scene to project path exists and if yes instance that and skip below
+		### instance scene from user:// -> Edit -> save scene to project path
+		#if res_dir: # FIXME TODO updating folder name when collection name changes
+			#if scene_path.begins_with("res://"):
+#
+				## NOTE May need to adjust for scn later
+				#if scene_path.get_extension() != "tscn":
+					#if debug: print("creating collection project")
+					#collection_name = "project"
+#
+			#else: # NOTE Will need to change if decide to support more then .tscn for files in the user:// dir
+				## NOTE If not using --tags will end in .tscn so needs to be removed
+				#collection_name = scene_file_path_split[4].to_snake_case()
+#
+			## Create Directories if not already. Scenes with no textures or shared textures will not create directory previously
+			#create_folders("res://", "collections".path_join(collection_name))
+			#save_path = get_scene_save_path(collection_name, scene_name_no_ext)
+#
+			#if res_dir.file_exists(save_path):
+				#if debug: print("scene loaded from project collections path: ", save_path)
+				#loaded_from_project_dir = true
+				#new_scene_to_place = load(save_path).instantiate()
+#
+			#else:
+				#new_scene_to_place = scene_viewer_panel_instance.load_scene_instance(scene_path)
+				#loaded_from_project_dir = false
+#
+			#remove_empty_animation_player(new_scene_to_place)
+#
+		## NOTE: This only runs when placing scene not when creating scene_preview
+		#if new_scene_to_place is Node3D:
+			#var physics_body_3d: Node3D = null
+			#if debug: print("this is the body type2: ", current_body_3d_type)
+			#match current_body_3d_type:
+				#"NO_PHYSICSBODY3D":
+					#enable_collisions = false # NOTE: This is not used because everything returned
+					#if debug: print("Running no physics body section and then returning")
+#
+					#var original_scene_preview: Node
+					#if center_scene_preview:
+						## Transform needs to passed to child
+						#original_scene_preview = scene_preview.get_child(0)
+					#else:
+						#original_scene_preview = scene_preview
+#
+					#if original_scene_preview.get_child_count() == 1 and original_scene_preview.get_child(0) is MeshInstance3D:
+						#for child: MeshInstance3D in original_scene_preview.get_children():
+							#create_new_scene_to_place(child, scene_name_no_ext, save_path)
+							#return
+#
+					#else: # This is the block for multiple meshes
+						#create_new_scene_to_place(original_scene_preview, scene_name_no_ext, save_path)
+						#return
+#
+				#"NODE3D":
+					#enable_collisions = false
+					#if not loaded_from_project_dir:
+						#physics_body_3d = Node3D.new()
+#
+				#"STATICBODY3D":
+					#enable_collisions = true
+					#if not loaded_from_project_dir:
+						#physics_body_3d = StaticBody3D.new()
+#
+				#"RIGIDBODY3D":
+					#enable_collisions = true
+					#if not loaded_from_project_dir:
+						#physics_body_3d = RigidBody3D.new()
+#
+				#"CHARACTERBODY3D":
+					#enable_collisions = true
+					#if not loaded_from_project_dir:
+						#physics_body_3d = CharacterBody3D.new()
+#
+			#if physics_body_3d != null:
+				#if scene_link_enabled: # TEST Currently disabled
+					#var model_path: String = scene_viewer_panel_instance.get_collection_path(scene_path, false)
+					#copy_file(user_dir, scene_path, model_path)
+					#await get_tree().process_frame
+					#await get_tree().create_timer(5).timeout
+					## TODO Add wait here for 
+					#var model = load(model_path)
+					#var model_instance = model.instantiate()
+					#physics_body_3d.add_child(model_instance)
+#
+				#else:
+					#if debug: print("replacing new_scene_to_place with physics_body_3d")
+					#new_scene_to_place.replace_by(physics_body_3d)
+					#new_scene_to_place.free()
+				#physics_body_3d.name = scene_name_no_ext # NOTE: CODEDUP1
+#
+			#if loaded_from_project_dir:
+				#match_collision_state(new_scene_to_place, mesh_node_instances, scene_name_no_ext, save_path, true, false)
+			#else:
+				#match_collision_state(physics_body_3d, mesh_node_instances, scene_name_no_ext, save_path, false, false)
+#
+	## Reset save path 
+	#save_path = ""
+#
+## NOTE: CODE BELOW THIS POINT IS ONLY RUN TO LOAD INITIAL SCENE_PREVIEW PER SCENE.
+	#if scene_preview == null:
+		#var scene_name: String
+#
+		#if initialize_scene_preview:
+			#if current_visible_buttons.is_empty():
+				#await get_tree().create_timer(.1).timeout
+				#initialize_scene_preview = true
+				#return
+			#else:
+				## TODO ADD IF FILTER ENABLED:
+				## NOTE: Required because selected scene button loses focus when collision button pressed.
+				#if collision_button_pressed and current_selected_scene_number != -1:
+					#collision_button_pressed = false
+					#scene_number = current_selected_scene_number
+				#else:
+					#scene_number = get_focused_button_scene_number()
+#
+				#scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
+				#scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
+#
+		#else:
+			## TODO ADD IF FILTER ENABLED:
+			#if collision_button_pressed and current_selected_scene_number != -1:
+				#collision_button_pressed = false
+				#scene_number = current_selected_scene_number
+			#else:
+				#scene_number = get_focused_button_scene_number()
+#
+			#scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
+			#scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
+#
+		#scene_name = scene_viewer_panel_instance.get_scene_name(scene_viewer_panel_instance.current_scene_path, true)
+		#remove_empty_animation_player(scene_preview)
+		#embed_shared_and_decrypted_global_tags_in_scene(scene_preview)
+#
+		#var current_scene_root: Node = EditorInterface.get_edited_scene_root()
+		#current_scene_root.add_child(scene_preview)
+#
+		#if scene_preview.is_inside_tree():
+#
+			## Set the materials
+			#if scene_viewer_panel_instance.cycle_material_favorites:
+				#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path)
+			#else:
+				#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, true)
+#
+			#if scene_preview_collisions:
+#
+				#if scene_preview is Node3D:
+					#await match_collision_state(scene_preview, scene_preview.name, "none", false, false)
+#
+			#scene_preview.owner = null
+#
+			#if center_scene_preview: # Set all scenes to have an origin at center bottom of AABB to standardize snapping.
+				#center_helper_node = SCENE_PREVIEW_CENTER_HELPER.instantiate()
+				#current_scene_root.add_child(center_helper_node)
+#
+				#scene_preview.reparent(center_helper_node)
+				#scene_preview.set_owner(center_helper_node)
+				#center_helper_node.center_scene_preview(scene_preview)
+				#scene_preview = center_helper_node
+#
+			#await reparent_to_selected_node(scene_preview, current_scene_root)
+			#scene_preview.set_owner(current_scene_root)
+#
+			## Lock the scene_preview to prevent unwanted rotation and scaling issues
+			## REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+			#scene_preview.set_meta("_edit_lock_", true)
+#
+			## Apply transparency to ScenePreview
+			##scene_preview_mesh.set_transparency(0.4)
+#
+			## NOTE: Put the preview at the last previews position when in quick cycle
+			## Otherwise spawns at Vector3.ZERO point in 3d viewport
+			#scene_preview.global_transform.origin = last_scene_preview_pos
+#
+			## NOTE: Check for scale and rotation matching and apply here on preview since placed objects gets its scale and rotation from it
+			#scene_preview = match_scene_hold_state(scene_preview)
+			#scene_preview_mesh = scene_preview
+#
+			## NOTE Still will flicker to ScenePreview2" briefly, but otherwise works. FIXME Not sure possible
+			#await get_tree().process_frame
+			#if scene_preview: # Make sure still exists after waiting (used for when switching main collection tabs when scene_preview active to avoid errors)
+				#scene_preview.name = "ScenePreview"
+				#call_deferred("keep_scene_preview_focus", scene_preview)
+#
+			#await get_tree().process_frame # Delay required for engine to do auto rename 
+			### NOTE: Second check and rename required because sometimes rename above does not work.
+			#if scene_preview.name != "ScenePreview":
+				#scene_preview.name = "ScenePreview"
+#
+			#var nodes: Array[Node] = []
+			#get_all_children(nodes, scene_preview, null, [Node])
+			#if debug: print("scene_preview child count: ", nodes.size())
+			#for node: Node in nodes:
+				#if debug: print("scene_preview child name: ", node.name)
+#
+		#else:
+			## Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
+			#scene_preview.queue_free()
+#
+#
+	#initialize_scene_preview = false
+	#last_scene_path = scene_viewer_panel_instance.current_scene_path
+##endregion
+
+##region CREATE SCENE PREVIEW REFACTORED
+## TODO REFACTOR SCENEPREVIEW CODE WITH SCENE TO PLACE CODE INTO ONE 
+ ## FIXME  CLEANUP FOLLOW FOCUS NOT WORKING FIX 
+##@warning_ignore("node_configuration_warning")
+## TODO REFACTOR CREATE NEW SCENE ADD GLB AS INSTANCE OF IT, ADD COLLISIONS DIRECTLY TO THE NEW SCENE
+## NEW SCENE -> NODE3D
+## GLB INSTANCE -----> GLB
+## COLLISION --------> COLLISIONSHAPE3D
+## CONSIDER SCENE_PREVIEW BEING ONLY MESHINSTANCE3D??? NOT NODE3D IN REFACTOR
+## ?? Create mesh library for the previews rather then instancing the scene for performance, but then more memory taken up.
+## but it can be saved to disk and referenced from disk. LOD versions?? compressed textures?? Maybe little benefit for complexity?
+## Button hover will still need to load in scene, and when placed, but when cycling through mesh will be speed up.
+## FIXME TODO CERATE SCENE PREVIEW WITH NODE PARENT FOR SNAPPING OFFSET FUNCTIONALITY
+#
+## NOTE: 
+## 1. - When creating scene preview. If the scene_full_path of the focused button is either .GLTF or .GLB use scene_lookup to get the scene, otherwise load from the project FIXME does not account for file types other then glb and gltf
+## 2. - When left mouse click to place scene. If the scene exists in the project filesystem use that, if not save the user:// scene to the res:// dir and use the created scene. -> NOTE: When placing scene we are always using the scene from project collection folder.
+#
+## FIXME Scene being placed is removed from lookup
+## CAUTION TODO MAY NEED TO COMPLETELY REFACTOR TO USING ENTIRE SCENE THROUGH new_scene_to_place = await scene_viewer_panel_instance.load_scene_instance(scene_path)
+## TO MAKE SURE TO CARRY OVER ALL SCENE ELEMENTS, RATHER THEN SCENE_PREVIEW WHICH IS WHAT I THINK I WAS DOING WHICH ONLY GRABS THE MESH.
+## TODO CLEANUP EMPTY ANIMATION PLAYERS THOUGHT I DID THIS SOMEWHERE I did it is save under the DO NOT DELETE Tag
+## TODO FIXME SCENE CLEANUP OF COLLISIONS AND EMPTY ANIMATION PLAYERS MUST HAPPEN EARLY ON IN THIS FUNCTION. CAUTION WITH COLLISION CLEANUP? NOT SURE REMOVING ALL IS BEST IDEA? TEST WELL.
+## NOTE: I create new_scene_to_place rather then scene_preview duplicate which adds a lot of complexity? offers the ability to have a very light scene_preview, but maybe should switch to having full
+## preview and then duplicate when placed to avoid differences from scene_preview and placed version??? is there anything preventing or reason not to refactor?
+## Orginal intention was to keep the scene_preview light so could cycle through quickly, but with showing collision shapes on the scene_preview most of the heavy stuff is already done, we are just repeating the heavy
+## stuff when we place the scene, along with added complexity of repeated code and differences between the two.
+#func create_scene_preview_original_separate():
+	#
+	#var save_path: String = ""
+	##if debug: print("current_collision_3d_state: ", current_collision_3d_state)
+	#if initialize_scene_preview:
+		#get_visible_scene_view_buttons()
+#
+	## NOTE: This section never runs when cycling scene_preview only when left clicking to place it.
+	#if not scene_preview == null:# and not scene_preview_mesh == null:
+#
+#
+#
+		## Lock the scene_preview to prevent unwanted rotation and scaling issues.
+		## REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+		#scene_preview.set_meta("_edit_lock_", true)
+		#if debug: print("locking scene_preview")
+		#
+		##scene_preview = match_scene_hold_state(scene_preview)
+#
+		#var scene_path: String = scene_viewer_panel_instance.current_scene_path
+		#var scene_name_no_ext: String = scene_viewer_panel_instance.get_scene_name(scene_path, true)
+		#var new_scene_to_place: Node
+		#var loaded_from_project_dir: bool = false
+		#var collection_name: String
+		#var scene_file_path_split: PackedStringArray = full_path_split(scene_path)
+##
+		### First do check if save scene to project path exists and if yes instance that and skip below
+		### instance scene from user:// -> Edit -> save scene to project path
+		#if res_dir: # FIXME TODO updating folder name when collection name changes
+			#if scene_path.begins_with("res://"):
+				##new_scene_to_place = load(scene_path).instantiate()
+				##loaded_from_project_dir = true
+				#
+				## NOTE May need to adjust for scn later
+				#if scene_path.get_extension() != "tscn":
+					#if debug: print("creating collection project")
+					#collection_name = "project"
+#
+			#else: # NOTE Will need to change if decide to support more then .tscn for files in the user:// dir
+				## NOTE If not using --tags will end in .tscn so needs to be removed
+				#collection_name = scene_file_path_split[4].to_snake_case()
+#
+#
+			## Create Directories if not already. Scenes with no textures or shared textures will not create directory previously
+			#create_folders("res://", "collections".path_join(collection_name))
+#
+			#save_path = get_scene_save_path(collection_name, scene_name_no_ext)
+#
+#
+			#if res_dir.file_exists(save_path):
+				#if debug: print("scene loaded from project collections path: ", save_path)
+				#loaded_from_project_dir = true
+				#new_scene_to_place = load(save_path).instantiate()
+#
+			#else:
+				#new_scene_to_place = scene_viewer_panel_instance.load_scene_instance(scene_path)
+				#loaded_from_project_dir = false
+#
+#
+			#remove_empty_animation_player(new_scene_to_place)
+#
+#
+##region Not Currently Used Keep For 2D
+#
+		### NOTE First match body type
+		##if new_scene_to_place is Node2D:
+			##var physics_body_2d: PhysicsBody2D
+			##match current_body_2d_type:
+				##"STATICBODY2D":
+					##physics_body_2d = StaticBody2D.new()
+					##physics_body_2d.name = new_scene_to_place.name
+					##new_scene_to_place.replace_by(physics_body_2d)
+				##"RIGIDBODY2D":
+					##physics_body_2d = RigidBody2D.new()
+					###EditorInterface.get_edited_scene_root().add_child(physics_body_2d)
+					###physics_body_2d.owner = EditorInterface.get_edited_scene_root()
+					##physics_body_2d.name = new_scene_to_place.name
+					##new_scene_to_place.replace_by(physics_body_2d)
+				##"CHARACTERBODY2D":
+					##physics_body_2d = CharacterBody2D.new()
+					##physics_body_2d.name = new_scene_to_place.name
+					##new_scene_to_place.replace_by(physics_body_2d)
+##
+			##new_scene_to_place.queue_free()
+			##if debug: print("matching3")
+			##match_collision_state(physics_body_2d, scene_name_no_ext, save_path, false)
+##endregion
+#
+		## NOTE: This only runs when placing scene not when creating scene_preview
+		#if new_scene_to_place is Node3D:
+			#var physics_body_3d: Node3D = null
+			#if debug: print("this is the body type2: ", current_body_3d_type)
+			#match current_body_3d_type:
+				#"NO_PHYSICSBODY3D":
+					#enable_collisions = false # NOTE: This is not used because everything returned
+					#if debug: print("Running no physics body section and then returning")
+#
+					#var original_scene_preview: Node
+					#if center_scene_preview:
+						## Transform needs to passed to child
+						#original_scene_preview = scene_preview.get_child(0)
+					#else:
+						#original_scene_preview = scene_preview
+#
+					#if original_scene_preview.get_child_count() == 1 and original_scene_preview.get_child(0) is MeshInstance3D:
+						#for child: MeshInstance3D in original_scene_preview.get_children():
+							#create_new_scene_to_place(child, scene_name_no_ext, save_path)
+							#return
+#
+					#else: # This is the block for multiple meshes
+						#create_new_scene_to_place(original_scene_preview, scene_name_no_ext, save_path)
+						#return
+#
+				#"NODE3D":
+					#enable_collisions = false
+					#if not loaded_from_project_dir:
+						#physics_body_3d = Node3D.new()
+#
+				#"STATICBODY3D":
+					#enable_collisions = true
+					#if not loaded_from_project_dir:
+						#physics_body_3d = StaticBody3D.new()
+#
+				#"RIGIDBODY3D":
+					#enable_collisions = true
+					#if not loaded_from_project_dir:
+						#physics_body_3d = RigidBody3D.new()
+#
+				#"CHARACTERBODY3D":
+					#enable_collisions = true
+					#if not loaded_from_project_dir:
+						#physics_body_3d = CharacterBody3D.new()
+#
+			#if physics_body_3d != null:
+				## NOTE: Options: 1. Use DirectoryWatcher 2. Copy in .glb
+				## NOTE: Here we will want to add the ability to toggle scene linking either
+				## copy .glb file to disk and add to scene or create .scn from buffer with no link.
+				## NOTE: .glb file will be copied into the project and will be embedded within the .scn /tscn scene
+				#if scene_link_enabled: # TEST Currently disabled
+					##var project_collection_base_path: String = scene_viewer_panel_instance.get_project_path(scene_path)
+					##var model_path: String = 
+					##var model_path: String = scene_viewer_panel_instance.get_project_path(scene_path, "models")
+					##if debug: print("model copy path: ", model_path.path_join(scene_path.split("/")[-1]))
+					##copy_file(user_dir, scene_path, model_path.path_join(scene_path.split("/")[-1]))
+					##copy_file(user_dir, scene_path, project_collection_import_path.path_join(scene_path.split("/")[-1]))
+					#var model_path: String = scene_viewer_panel_instance.get_collection_path(scene_path, false)
+					#copy_file(user_dir, scene_path, model_path)
+					#await get_tree().process_frame
+					#await get_tree().create_timer(5).timeout
+					## TODO Add wait here for 
+					#var model = load(model_path)
+					#var model_instance = model.instantiate()
+					#physics_body_3d.add_child(model_instance)
+#
+				#else:
+					#if debug: print("replacing new_scene_to_place with physics_body_3d")
+					#new_scene_to_place.replace_by(physics_body_3d)
+					#new_scene_to_place.free()
+				#physics_body_3d.name = scene_name_no_ext # NOTE: CODEDUP1
+#
+			##var current_scene_root: Node = EditorInterface.get_edited_scene_root()
+			#
+#
+			#if loaded_from_project_dir:
+				#if debug: print("matching loaded_from_project_dir: ", new_scene_to_place.get_children())
+				##current_scene_root.add_child(new_scene_to_place)
+				##new_scene_to_place.owner = current_scene_root
+				#match_collision_state(new_scene_to_place, scene_name_no_ext, save_path, true, false)
+			#else:
+				#if debug: print("matching physics_body_3d: ", physics_body_3d.get_children())
+				##current_scene_root.add_child(physics_body_3d)
+				##physics_body_3d.owner = current_scene_root
+				#match_collision_state(physics_body_3d, scene_name_no_ext, save_path, false, false)
+#
+#
+	## Reset save path 
+	#save_path = ""
+#
+## NOTE IMPORTANT CODE BELOW THIS POINT IS ONLY RUN TO LOAD INITIAL SCENE_PREVIEW PER SCENE.
+## -----------------------> Scene_Preview Section
+	## FIXME if scene preview skip remove ScenePreview
+	## FIXME create new scene view based on focues not index 0
+	#if scene_preview == null:
+		#var scene_name: String
+		#
+		#
+		## TODO CLEANUP AND PUT INTO SEPARATE FUNCTION
+		## If there are no scene buttons when Q_KEY and mouse button right clicked reset again
+		#if initialize_scene_preview:
+			#if current_visible_buttons.is_empty():
+				##push_warning("No visible scenes available, or Scene Viewer Panel not open. Please select a scene or open a collection of scenes within the Scene Viewer. \
+				##\n TIP: Undock Scene Viewer Panel to enable Scene Quick Scroll (SHIFT+Scroll Wheel) even when Scene Viewer is not visible.")
+				## Reset initialize_scene_preview flag with time for function to finish
+				#await get_tree().create_timer(.1).timeout
+				#initialize_scene_preview = true
+				#return
+			#else:
+				## TODO ADD IF FILTER ENABLED:
+				## NOTE: Required because selected scene button loses focus when collision button pressed.
+				#if collision_button_pressed and current_selected_scene_number != -1:
+					#collision_button_pressed = false
+					#scene_number = current_selected_scene_number
+				#else:
+					#scene_number = get_focused_button_scene_number()
+#
+#
+				#scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
+				##scene_preview = scene_viewer_panel_instance.load_scene_instance(scene_viewer_panel_instance.current_scene_path)
+				#scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
+#
+		#else: # NOTE: Will work without this second setting of current_scene_path. Is it keeping a reference of it?
+			## FIXME If filtered need to update current scenes and scene_number NOTE: cycling works just not filter and click on scene button
+			##selected_scene_view_button = scenes[scene_number]
+			#
+#
+			## TODO ADD IF FILTER ENABLED:
+			#if collision_button_pressed and current_selected_scene_number != -1:
+				#collision_button_pressed = false
+				#scene_number = current_selected_scene_number
+			#else:
+				#scene_number = get_focused_button_scene_number()
+#
+#
+			## PROBLEM When filtering scene_number on button is not updated to order in current_visible_buttons array
+			##if debug: print("current_visible_buttons: ", current_visible_buttons)
+#
+			#scene_viewer_panel_instance.current_scene_path = current_visible_buttons[scene_number].scene_full_path
+			##scene_preview = scene_viewer_panel_instance.load_scene_instance(scene_viewer_panel_instance.current_scene_path)
+			#scene_preview = scene_viewer_panel_instance.load_scene_instance(current_visible_buttons[scene_number].scene_full_path)
+#
+		#scene_name = scene_viewer_panel_instance.get_scene_name(scene_viewer_panel_instance.current_scene_path, true)
+#
+		#remove_empty_animation_player(scene_preview)
+#
+		## NOTE: This doesn't work because the scene which is pulled from user:// does not have "extras" until after saved to disk. 
+		#embed_shared_and_decrypted_global_tags_in_scene(scene_preview)
+		##embed_decrypted_global_tags_in_scene(scene_preview)
+#
+#
+		#var current_scene_root: Node = EditorInterface.get_edited_scene_root()
+		#current_scene_root.add_child(scene_preview)
+#
+		#if scene_preview.is_inside_tree():
+			### Lock the scene_preview to prevent unwanted rotation and scaling issues
+			### REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+			##scene_preview.set_meta("_edit_lock_", true)
+			#
+#
+			## Set the materials
+			## FIXME passing additional parameters seems to really slow scene_preview cycling?
+			## Why does this change material when cycling? Because this is not what is setting the material.
+			#if scene_viewer_panel_instance.cycle_material_favorites:
+				#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path)
+			#else:
+				#scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, true)
+			##scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, -1, null, false, false)
+			##scene_viewer_panel_instance.set_surface_materials(scene_preview, scene_viewer_panel_instance.current_scene_path, -1, null)
+			## Update material button
+#
+##region Currently not used kept for 2D
+#
+			##if scene_preview is Node2D:
+				##scene_viewer_panel_instance.change_body_type_3d_button.hide()
+				##scene_viewer_panel_instance.change_body_type_2d_button.show()
+				##
+				##scene_viewer_panel_instance.change_collision_shape_3d_button.hide()
+				##scene_viewer_panel_instance.change_collision_shape_2d_button.show()
+				##
+				##if debug: print("scene is 2d")
+			##if scene_preview is Node3D:
+				##scene_viewer_panel_instance.change_body_type_2d_button.hide()
+				##scene_viewer_panel_instance.change_body_type_3d_button.show()
+				##
+				##scene_viewer_panel_instance.change_collision_shape_2d_button.hide()
+				##scene_viewer_panel_instance.change_collision_shape_3d_button.show()
+##endregion
+#
+#
+#
+#
+#
+			### HACK
+			##scene_viewer_panel_instance.cycle_material(-1)
+			##scene_viewer_panel_instance.cycle_material(1)
+#
+#
+#
+			### Show backface FIXME TODO maybe just get the first meshinstance3d
+			### FIXME Not all main textures are the material 0 so looping through all can this be improved?
+			##var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
+			##for mesh_node: MeshInstance3D in mesh_node_instances:
+				##for mesh_material_index: int in mesh_node.mesh.get_surface_count():
+					##var active_material: StandardMaterial3D = mesh_node.get_active_material(mesh_material_index)
+					##active_material.cull_mode = 2 #CULL_DISABLED
+				##
+				###var active_material: StandardMaterial3D = mesh_node.get_active_material(0)
+				###mesh_node.get_active_material(0).cull_mode = 2 #CULL_DISABLED
+				###active_material.cull_mode = 2 #CULL_DISABLED
+				###if debug: print("mesh material culling: ", mesh_node.get_active_material(0).get_cull_mode())
+					### Update the material_button in scene_viewer.tscn with the current previews material
+					### FIXME UPDATES THE MATERIAL ON ALL INSTANCED OBJECTS IN SCENE NOTE ACTUALLY NOT RELATED TO THIS SO SOMEWHERE ELSE
+					### FIXME Will update to the last active material in loop
+					##scene_viewer_panel_instance.update_material_button_mesh_instance_3d(0, active_material)
+#
+#
+			## TODO Strip out changing of body type not needed 
+			#if scene_preview_collisions:
+				## TEST START
+				#if scene_preview is Node3D:
+					#
+#
+					#
+########################## ORIGINAL WORKS
+					##var physics_body_3d: Node3D = null
+					##match current_body_3d_type:
+						##"NO_PHYSICSBODY3D":
+							### make meshinstance3d the root of the scene 
+							##pass
+						##"NODE3D":
+							##physics_body_3d = Node3D.new()
+						##"STATICBODY3D":
+							##physics_body_3d = StaticBody3D.new()
+						##"RIGIDBODY3D":
+							##physics_body_3d = RigidBody3D.new()
+						##"CHARACTERBODY3D":
+							##physics_body_3d = CharacterBody3D.new()
+##
+					##if physics_body_3d != null:
+						##scene_preview.replace_by(physics_body_3d)
+						##physics_body_3d.name = scene_name
+						##scene_preview = physics_body_3d
+######################### ORIGINAL WORKS
+#
+#
+#
+					##var physics_body_3d: Node3D = null
+					##match "STATICBODY3D":
+						##"STATICBODY3D":
+							##physics_body_3d = StaticBody3D.new()
+##
+					##if physics_body_3d != null:
+						##scene_preview.replace_by(physics_body_3d)
+						##physics_body_3d.name = scene_name
+						##scene_preview = physics_body_3d
+##
+##
+					###if debug: print("VIEWPORT 3D GIZMOS: ", EditorInterface.get_editor_viewport_3d(0).get_gizmos())
+					##var save_path = "none"
+					###scene_preview.queue_free()
+					###await match_collision_state(physics_body_3d, scene_name, save_path, false)
+					##await match_collision_state(scene_preview, scene_name, save_path, false)
+######################### ALSO WORKS
+#
+					## TODO FIXME Collisions generated here are not reused when placing scene will speed up placement
+					##if debug: print("matching collision state now")
+					##var save_path = "none"
+					#if debug: print("matching create_scene_preview: ", scene_preview.get_children())
+					##await match_collision_state(scene_preview, scene_preview.name, save_path, false)
+					#await match_collision_state(scene_preview, scene_preview.name, "none", false, false)
+#
+#
+#
+			### Strip scene_preview down to its first Meshinstance3D child
+			##scene_preview = scene_viewer_panel_instance.get_scenes_first_mesh_node(scene_preview)
+#
+			#scene_preview.owner = null
+#
+			#if center_scene_preview: # Set all scenes to have an origin at center bottom of AABB to standardize snapping.
+				##pass
+				## Instance helper, add as child, and set owner to current scene.
+				#center_helper_node = SCENE_PREVIEW_CENTER_HELPER.instantiate()
+				#current_scene_root.add_child(center_helper_node)
+				##center_helper_node.owner = current_scene_root
+#
+				#scene_preview.reparent(center_helper_node)
+				#scene_preview.set_owner(center_helper_node)
+				#center_helper_node.center_scene_preview(scene_preview)
+				#scene_preview = center_helper_node
+			##else:
+#
+			#await reparent_to_selected_node(scene_preview, current_scene_root)
+			#scene_preview.set_owner(current_scene_root)
+#
+			## Lock the scene_preview to prevent unwanted rotation and scaling issues
+			## REFERENCE: https://github.com/godotengine/godot-proposals/issues/3046
+			#scene_preview.set_meta("_edit_lock_", true)
+#
+#
+#
+				#
+#
+			##var nodes: Array[Node] = []
+			##get_all_children(nodes, scene_preview, selected, [Node])
+			##if debug: print("scene_preview child count: ", nodes.size())
+			##for node: Node in nodes:
+				##if debug: print("scene_preview child name: ", node.name)
+#
+#
+#
+#
+#
+			##if debug: print("scene_preview.name: ", scene_preview.name)
+#
+#
+			##if existing_preview:
+				##existing_preview.name = "ScenePreview2"
+				##scene_preview.name = existing_preview.name
+			##else:
+			##await get_tree().process_frame
+			##scene_preview.name = "ScenePreview"
+#
+#
+#
+#
+#
+#
+			#
+			#
+			#
+#
+######################KEEP NOTE: Originally had only mesh due to snapping and collision issues may need to go revert to that?
+## but complete redid who in process with excluding scene_preview.
+			## Apply transparency to ScenePreview
+			##scene_preview_mesh.set_transparency(0.4)
+######################KEEP
+#
+			### Change selection to the "ScenePreview"
+			##call_deferred("keep_scene_preview_focus", scene_preview)
+#
+### TEMP DISABLED
+			## Put the preview at the last previews position when in quick cycle
+			## NOTE: Otherwise spawns at Vector3.ZERO point in 3d viewport
+			##scene_preview.global_transform.origin = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
+			#scene_preview.global_transform.origin = last_scene_preview_pos
+#
+#
+#
+			## NOTE: Check for scale and rotation matching and apply here on preview since placed objects gets its scale and rotation from it
+			#scene_preview = match_scene_hold_state(scene_preview)
+#
+#
+#
+#
+#
+#
+			##var editor_camera3d: Camera3D = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+			##var mouse_pos = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
+##
+			### Obtain the ray origin and direction from the camera through the mouse position
+			##var ray_origin = editor_camera3d.project_ray_origin(mouse_pos)
+			##var ray_direction = editor_camera3d.project_ray_normal(mouse_pos)
+##
+			### Calculate the intersection with the Y = 0 plane
+			##var plane_y = 0.0#10.0
+			##var distance = (plane_y - ray_origin.y) / ray_direction.y
+			###if debug: print("distance: ", distance)
+			### Compute the position on the Y = 0 plane
+			##var snap_position = ray_origin + ray_direction * distance
+			##scene_preview.global_transform.origin = snap_position
+#
+### FIXME NOTE: Doesn't work to snap to floor, but does work to keep scene_preview from spaneing at Vector3.ZERO in 3d viewport?
+			### Get distance to floor snapping
+			##var editor_camera3d: Camera3D = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+			##var mouse_pos = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
+			##var distance = (0 - editor_camera3d.project_ray_origin(mouse_pos).y) / editor_camera3d.project_ray_normal(mouse_pos).y
+			##if scene_viewer_panel_instance.current_scene_path != last_scene_path:
+				##scene_preview.global_transform.basis = Basis.IDENTITY
+				### Reset object_rotated flag for new scene
+				##object_rotated = false
+###
+###
+###
+			##if snap_down:
+				##scene_preview.global_transform.origin = editor_camera3d.project_position(mouse_pos, distance)
+##???????????????????????????????????????????????????????
+			#scene_preview_mesh = scene_preview
+#
+			## NOTE Still will flicker to ScenePreview2" briefly, but otherwise works. FIXME Not sure possible
+			#await get_tree().process_frame
+			#if scene_preview: # Make sure still exists after waiting (used for when switching main collection tabs when scene_preview active to avoid errors)
+				#scene_preview.name = "ScenePreview"
+				#call_deferred("keep_scene_preview_focus", scene_preview)
+#
+			#await get_tree().process_frame # Delay required for engine to do auto rename 
+			### NOTE: Second check and rename required because sometimes rename above does not work.
+			#if scene_preview.name != "ScenePreview":
+				#scene_preview.name = "ScenePreview"
+#
+#
+			#var nodes: Array[Node] = []
+			#get_all_children(nodes, scene_preview, null, [Node])
+			#if debug: print("scene_preview child count: ", nodes.size())
+			#for node: Node in nodes:
+				#if debug: print("scene_preview child name: ", node.name)
+#
+#
+		#else:
+			##scene_preview_3d_active = false
+			## Only required if loading scene dynamically from disk when placing, not from memory and dictionary lookup.
+			#scene_preview.queue_free()
+			##scene_preview = null
+#
+#
+	#initialize_scene_preview = false
+	#last_scene_path = scene_viewer_panel_instance.current_scene_path
+##endregion
+
 ## Find the focused button within the visible on-screen buttons if none get the first button 
-func get_focused_button_scene_number() -> int:
-	scene_number = 0
+func get_focused_button_scene_number(new_tab: bool = false) -> int:
+	#if not scene_preview_3d_active:
+	# FIXME When I disable below it I think it can not find when filter but setting to 0 resets when presseing buttons.
+	# But cycling with mouse works okay so need to do the same as what that is doing.
+	# The issue is that when pressing the button the asset button loses focus to the button being pressed
+	
+	# FIXME issue current visible buttons not updated when filter applied
+	#scene_number = 0
+	##var current_visible_buttonss = current_visible_buttons.filter(func (button: Button) -> bool: return is_instance_valid(button)) 
+	#var current_visible_buttons_filtered = current_visible_buttons.filter(func(button) -> bool: return is_instance_valid(button))
+	#
+	#for button: Button in current_visible_buttons_filtered:
+		#if button.has_focus():
+			#if debug: print("focused: ", button)
+			#scene_number = current_visible_buttons_filtered.find(button)
+	#if current_visible_buttons_filtered.size() < scene_number:
+		#scene_number = 0
+	#return scene_number
+	
+	
+	
+	
+	
 	for button: Button in current_visible_buttons:
 		if button.has_focus():
+			if debug: print("focused: ", button)
 			scene_number = current_visible_buttons.find(button)
+	# If switching tabs reset scene_preview to first item in collection.
+	if new_tab or current_visible_buttons.size() < scene_number:
+		scene_number = 0
 	return scene_number
 
 
@@ -7629,12 +9305,442 @@ var existing_preview: Node3D = null
 
 var current_closest_object = null
 
+#func process_snap_flow_manager_connections(collision_point: Vector3, vector_normal: Vector3) -> void:
+	#var snap_flag: String = ""
+#
+	#if selected_scene_view_button and selected_scene_view_button.tags != []:
+		#var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
+		#var reverse_connection_lookup: Dictionary[String, String] = {}
+#
+		#var closest_object_tags: Array[String] = []
+		#if closest_object and closest_object.has_meta("extras"):
+			#var metadata: Dictionary = closest_object.get_meta("extras")
+			#closest_object_tags = metadata.tags
+#
+		## PASS 1: Build reverse connection map
+		#for connection: Dictionary in connections:
+			#var from_node: String = connection.from_node
+			#var from_port: int = connection.from_port
+			#var to_node: String = connection.to_node
+			#var to_port: int = connection.to_port
+#
+			#if from_node == "IndividualTags" and node_indices.has(from_node) and node_indices[from_node].has(from_port):
+				#var enter_string: String = to_node + str(to_port)
+				#var from_string: String = from_node + str(from_port)
+				#reverse_connection_lookup[enter_string] = from_string
+				#if debug: print("Added reverse connection:", enter_string, "→", from_string)
+#
+		## PASS 2: Process all connections
+		#for connection: Dictionary in connections:
+			#var from_node: String = connection.from_node
+			#var from_port: int = connection.from_port
+			#var to_node: String = connection.to_node
+			#var to_port: int = connection.to_port
+#
+			#var code_edit_node := snap_flow_manager_graph.find_child(to_node).get_child(to_port).get_child(1)
+#
+			## CASE 1: Direct connection from IndividualTags → Modifier
+			#if from_node == "IndividualTags" and node_indices.has(from_node) and node_indices[from_node].has(from_port):
+				#if selected_scene_view_button.tags.has(node_indices[from_node][from_port]):
+					#if code_edit_node is CodeEdit and scene_preview:
+						#evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+						#if debug: print("Processed direct IndividualTags → Modifier connection")
+#
+			## CASE 2: Indirect connection: IndividualTags → SnapToObject → Modifier
+			#if from_node == "SnapToObject" and node_indices.has(from_node) and node_indices[from_node].has(from_port):
+				#if closest_object_tags.has(node_indices[from_node][from_port]):
+					#var lookup_string: String = from_node + str(from_port)
+					#if reverse_connection_lookup.has(lookup_string):
+						#if code_edit_node is CodeEdit and scene_preview:
+							#evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+							#if debug: print("Processed indirect IndividualTags → SnapToObject → Modifier connection")
+					#else:
+						#if debug: print("Warning: No reverse connection found for", lookup_string)
+#
+	## OPTIONAL: Post-processing
+	#await get_tree().process_frame
+	#if dragging_node != null and dragging_node.is_inside_tree():
+		#dragging_node.global_position = collision_point
+#
+	#set_scene_to_collision_point(collision_point)
+	#enable_placement = false
 
-# FIXME Objects being placed either do not have tags or global tags are not decrypted?
-# FIXME Placed objects only need tags (decrypted global and shared tags) combined. but this is not happening
+# Add these variables to the top of your script
+var graph_is_dirty: bool = true
+var cached_connections: Array[Dictionary] = []
+var cached_code_edit_nodes: Dictionary = { } # Maps a key like "NodeName1" to a CodeEdit node
+# NEW CACHE: Maps an input port (key) to its source output port (value).
+# e.g., {"SnapToObject_0": "IndividualTags_5"}
+var cached_input_sources: Dictionary = { }
 
-## MODIFIED VERSION 2
+func rebuild_graph_caches() -> void:
+	# 1. Clear old caches
+	cached_connections.clear()
+	cached_code_edit_nodes.clear()
+	cached_input_sources.clear()
+
+	var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
+	cached_connections = connections
+
+	for connection in connections:
+		var from_node_key = str(connection.from_node)
+		var from_port_idx = connection.from_port
+		var to_node_key = str(connection.to_node)
+		var to_port_idx = connection.to_port
+
+		var input_key = "%s_%s" % [to_node_key, to_port_idx]
+		var output_key = "%s_%s" % [from_node_key, from_port_idx]
+
+		# --- CORRECTED LOGIC FOR MULTIPLE SOURCES ---
+		# If this is the first time we've seen this input port, create an empty array for it.
+		if not cached_input_sources.has(input_key):
+			cached_input_sources[input_key] = []
+		
+		# Always append the new source to the array for this input port.
+		cached_input_sources[input_key].append(output_key)
+		# --- END OF CORRECTION ---
+
+		# (The logic for caching CodeEdit nodes is unchanged and still correct)
+		var code_edit_cache_key = input_key
+		if not cached_code_edit_nodes.has(code_edit_cache_key):
+			var code_edit_node: CodeEdit = null
+			var to_node_obj := snap_flow_manager_graph.find_child(to_node_key)
+			if to_node_obj and to_node_obj.get_child_count() > to_port_idx:
+				var port_node := to_node_obj.get_child(to_port_idx)
+				if port_node and port_node.get_child_count() > 1:
+					code_edit_node = port_node.get_child(1) as CodeEdit
+			cached_code_edit_nodes[code_edit_cache_key] = code_edit_node
+	
+	graph_is_dirty = false
+	if debug: print("Graph caches rebuilt. Input sources can now have multiple connections.")
+
+
+# FIXME This needs to be decoupled to a new script with added snap zones and mesh_uid lookup.
+# TODO Need to load json lookup snap table from collections folder
 func process_snap_flow_manager_connections(collision_point: Vector3, vector_normal: Vector3) -> void:
+	if graph_is_dirty:
+		rebuild_graph_caches()
+
+	#set_scene_preview_position(collision_point)
+	#if not (selected_scene_view_button and not selected_scene_view_button.tags.is_empty()):
+		#set_scene_preview_position(collision_point)
+		#return
+
+	# Create lookup tables for performance (this part is correct)
+	var selected_tags_lookup: Dictionary = { }
+	if selected_scene_view_button:
+		for tag in selected_scene_view_button.tags:
+			selected_tags_lookup[tag] = true
+	var closest_tags_lookup: Dictionary = { }
+	if closest_object and closest_object.has_meta("extras"):
+		var metadata: Dictionary = closest_object.get_meta("extras")
+		if metadata.has("tags"):
+			for tag in metadata.tags:
+				closest_tags_lookup[tag] = true
+
+	# --- Main Evaluation Loop ---
+	for connection in cached_connections:
+		var to_key = "%s_%s" % [connection.to_node, connection.to_port]
+		var code_edit_node: CodeEdit = cached_code_edit_nodes.get(to_key)
+
+		if not (code_edit_node and scene_preview):
+			continue
+
+		var from_node_name = str(connection.from_node)
+		var from_port_idx = connection.from_port
+		
+		match from_node_name:
+			"IndividualTags":
+				var from_tag = node_indices.get(from_node_name, { }).get(from_port_idx)
+				if from_tag and selected_tags_lookup.has(from_tag):
+					evaluating_user_code = true
+					evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+				else:
+					evaluating_user_code = false
+
+			"SnapToObject":
+				var output_tag = node_indices.get(from_node_name, { }).get(from_port_idx)
+				if not (output_tag and closest_tags_lookup.has(output_tag)):
+					continue
+
+				# --- CORRECTED LOGIC TO CHECK ALL SOURCES ---
+				var input_key_for_this_node = "%s_%s" % [from_node_name, from_port_idx]
+				# This now gets an ARRAY of sources, or null if none.
+				var source_output_keys: Array = cached_input_sources.get(input_key_for_this_node)
+
+				if source_output_keys:
+					# Loop through every source connected to this node's input.
+					for source_output_key in source_output_keys:
+						var source_node_name = source_output_key.get_slice("_", 0)
+						
+						if source_node_name == "IndividualTags":
+							var source_port_idx = source_output_key.get_slice("_", 1).to_int()
+							var source_tag = node_indices.get(source_node_name, { }).get(source_port_idx)
+							
+							# If we find ANY valid source, evaluate the code and stop checking.
+							if source_tag and selected_tags_lookup.has(source_tag):
+								evaluating_user_code = true
+								evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+								break # Exit the inner 'for' loop, we found a valid path.
+							else:
+								evaluating_user_code = false
+
+	if not evaluating_user_code or cached_connections.size() == 0:
+		set_scene_preview_position(collision_point)
+
+
+
+
+# FIXME Toggle between snapping to non-collision shapes and surface plane here and within _forward_3d_gui_input
+# NOTE: When this is disabled will snap to surface plane set by _forward_3d_gui_input so working at the same time NEEDS toggle
+func set_scene_preview_position(collision_point: Vector3) -> void:
+	await get_tree().process_frame # Give time for scene_preview node to be added to tree
+	if dragging_node and dragging_node.is_inside_tree():
+		dragging_node.global_position = collision_point
+	set_scene_to_collision_point(collision_point)
+	enable_placement = false
+
+
+
+# This version is based on the superior Version 1, with added comments and clarity.
+func process_snap_flow_manager_connections5(collision_point: Vector3, vector_normal: Vector3) -> void:
+	# --- 1. Initial Validation (Guard Clause) ---
+	# If we don't have a selected object with tags, there's nothing to process.
+	if not (selected_scene_view_button and not selected_scene_view_button.tags.is_empty()):
+		return
+
+	var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
+	var closest_object_tags: Array[String] = []
+
+	# Cache tags from the object we are hovering over, if any.
+	if closest_object and closest_object.has_meta("extras"):
+		var metadata: Dictionary = closest_object.get_meta("extras")
+		if metadata.has("tags"):
+			closest_object_tags = metadata.tags
+
+	# --- 2. Pre-computation: Build a Reverse Connection Lookup ---
+	# This helps us identify when a "SnapToObject" node is activated because of a
+	# connection to an "IndividualTags" node from our selected object.
+	var reverse_connection_lookup: Dictionary = { } # String -> String
+	for connection in connections:
+		# We only care about connections starting from the "IndividualTags" node.
+		if connection.from_node != "IndividualTags":
+			continue
+
+		# Safely get the tags associated with the connection ports.
+		var from_dict := node_indices.get(connection.from_node)
+		var to_dict := node_indices.get(connection.to_node)
+		if not (from_dict and to_dict and from_dict.has(connection.from_port) and to_dict.has(connection.to_port)):
+			continue
+
+		var from_tag: String = from_dict[connection.from_port]
+		var to_tag: String = to_dict[connection.to_port]
+
+		# If this connection links a tag on our selected object to a tag on the closest object...
+		if selected_scene_view_button.tags.has(from_tag) and closest_object_tags.has(to_tag):
+			# ...create a reverse lookup entry.
+			var to_key = "%s%s" % [connection.to_node, connection.to_port]
+			var from_key = "%s%s" % [connection.from_node, connection.from_port]
+			reverse_connection_lookup[to_key] = from_key
+			if debug: print("Built reverse link from %s to %s" % [from_key, to_key])
+
+	# --- 3. Evaluation: Process All Connections ---
+	for connection in connections:
+		# Safely get the code evaluation node. This is robust and will not crash.
+		var code_edit_node: CodeEdit = null
+		var to_node_obj := snap_flow_manager_graph.find_child(str(connection.to_node))
+		if to_node_obj and to_node_obj.get_child_count() > connection.to_port:
+			var port_node := to_node_obj.get_child(connection.to_port)
+			if port_node and port_node.get_child_count() > 1:
+				code_edit_node = port_node.get_child(1) as CodeEdit
+
+		# If we couldn't find a CodeEdit node or don't have a preview scene, skip.
+		if not (code_edit_node and scene_preview):
+			continue
+
+		# Safely get the tag from the source port.
+		var from_dict := node_indices.get(connection.from_node)
+		if not (from_dict and from_dict.has(connection.from_port)):
+			continue
+		var from_tag: String = from_dict[connection.from_port]
+
+		# Evaluate the code based on the source node type.
+		match connection.from_node:
+			"IndividualTags":
+				# Direct connection: Does our selected object have this tag?
+				if selected_scene_view_button.tags.has(from_tag):
+					evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+
+			"SnapToObject":
+				# Indirect connection: Is this activated by a valid reverse link?
+				var to_key = "%s%s" % [connection.to_node, connection.to_port]
+				if reverse_connection_lookup.has(to_key):
+					evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+
+	# --- 4. Final Placement and State Update ---
+	# Allow the physics/rendering engine one frame to settle after potential changes.
+	await get_tree().process_frame
+
+	if dragging_node and dragging_node.is_inside_tree():
+		dragging_node.global_position = collision_point
+
+	set_scene_to_collision_point(collision_point)
+	enable_placement = false
+
+
+
+func process_snap_flow_manager_connections6(collision_point: Vector3, vector_normal: Vector3) -> void:
+	var snap_flag: String = ""
+	if not (selected_scene_view_button and not selected_scene_view_button.tags.is_empty()):
+		return
+	if not (selected_scene_view_button and selected_scene_view_button.tags != []):
+		return
+
+	var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
+	var reverse_connection_lookup: Dictionary[String, String] = { }
+	var closest_object_tags: Array[String] = []
+
+	# Cache closest object tags if available
+	if closest_object and closest_object.has_meta("extras"):
+		var metadata: Dictionary = closest_object.get_meta("extras")
+		closest_object_tags = metadata.tags
+
+	# Build reverse connection lookup
+	for connection in connections:
+		var from_node = connection.from_node
+		var from_port = connection.from_port
+		var to_node = connection.to_node
+		var to_port = connection.to_port
+
+		if from_node != "IndividualTags":
+			continue
+
+		var from_dict := node_indices.get(from_node)
+		var to_dict := node_indices.get(to_node)
+		if not (from_dict and to_dict and from_dict.has(from_port) and to_dict.has(to_port)):
+			continue
+
+		var from_tag = from_dict[from_port]
+		var to_tag = to_dict[to_port]
+
+		if selected_scene_view_button.tags.has(from_tag) and closest_object_tags.has(to_tag):
+			var enter_string = to_node + str(to_port)
+			var from_string = from_node + str(from_port)
+			reverse_connection_lookup[enter_string] = from_string
+
+	# Evaluate connections
+	for connection in connections:
+		var from_node = connection.from_node
+		var from_port = connection.from_port
+		var to_node = connection.to_node
+		var to_port = connection.to_port
+
+		# Cache tag lookup
+		var from_dict := node_indices.get(from_node)
+		if not (from_dict and from_dict.has(from_port)):
+			continue
+		var from_tag = from_dict[from_port]
+
+		# Safely resolve CodeEdit node
+		var code_edit_node: CodeEdit = null
+		var to_node_obj := snap_flow_manager_graph.find_child(to_node)
+		if to_node_obj and to_node_obj.get_child_count() > to_port:
+			var port_node := to_node_obj.get_child(to_port)
+			if port_node and port_node.get_child_count() > 1:
+				code_edit_node = port_node.get_child(1) as CodeEdit
+
+		if code_edit_node and scene_preview:
+			match from_node:
+				"IndividualTags":
+					if selected_scene_view_button.tags.has(from_tag):
+						evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+						if debug: print("Processed direct IndividualTags → Modifier connection")
+
+				"SnapToObject":
+					if closest_object_tags.has(from_tag):
+						var lookup_string = from_node + str(from_port)
+						if reverse_connection_lookup.has(lookup_string):
+							if debug: print("reverse_connection_lookup[lookup_string]: ", reverse_connection_lookup[lookup_string])
+							evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+
+	# Let scene_preview settle in the tree
+	await get_tree().process_frame
+
+	# Move dragging node
+	if dragging_node and dragging_node.is_inside_tree():
+		dragging_node.global_position = collision_point
+
+	set_scene_to_collision_point(collision_point)
+	enable_placement = false
+
+
+
+## MODIFIED VERSION 4
+func process_snap_flow_manager_connections4(collision_point: Vector3, vector_normal: Vector3) -> void:
+	var snap_flag: String = ""
+
+	if selected_scene_view_button and selected_scene_view_button.tags != []:
+		var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
+		var reverse_connection_lookup: Dictionary[String, String] = { }
+		var closest_object_tags : Array[String] = []
+
+		if closest_object and closest_object.has_meta("extras"):
+			var metadata: Dictionary = closest_object.get_meta("extras")
+			closest_object_tags = metadata.tags
+
+		for connection: Dictionary in connections:
+			var to_node: String = connection.to_node
+			var to_port: int = connection.to_port
+			var from_node: String = connection.from_node
+			var from_port: int = connection.from_port
+
+			if from_node == "IndividualTags":
+				if node_indices.has(from_node) and node_indices[from_node].has(from_port) and node_indices.has(to_node) and node_indices[to_node].has(to_port):
+					var from_tag: String = node_indices[from_node][from_port]
+					if selected_scene_view_button.tags.has(from_tag):
+						if closest_object and closest_object_tags.has(from_tag):
+							var enter_string: String = to_node + str(to_port)
+							var from_string: String = from_node + str(from_port)
+							reverse_connection_lookup[enter_string] = from_string
+
+		for connection: Dictionary in connections:
+			var to_node: String = connection.to_node
+			var to_port: int = connection.to_port
+			var from_node: String = connection.from_node
+			var from_port: int = connection.from_port
+
+			var code_edit_node: = snap_flow_manager_graph.find_child(connection.to_node).get_child(connection.to_port).get_child(1)
+
+			if from_node == "IndividualTags" or from_node == "SnapToObject":
+				if node_indices.has(from_node) and node_indices[from_node].has(from_port):
+					var from_tag: String = node_indices[from_node][from_port]
+					match from_node:
+						"IndividualTags": 
+							if selected_scene_view_button.tags.has(from_tag):
+								if code_edit_node is CodeEdit and scene_preview:
+									evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+						"SnapToObject":
+							if closest_object_tags.has(from_tag):
+								var lookup_string: String = from_node + str(from_port)
+								if reverse_connection_lookup.has(lookup_string):
+									if code_edit_node is CodeEdit and scene_preview:
+										evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+
+	await get_tree().process_frame # Give time for scene_preview node to be added to tree
+	if dragging_node != null and dragging_node.is_inside_tree():
+		dragging_node.global_position = collision_point
+
+###############################################################################################################################################################FIXME Toggle between snapping to non-collision shapes and surface plane here and within _forward_3d_gui_input
+	# NOTE: When this is disabled will snap to surface plane set by _forward_3d_gui_input so working at the same time NEEDS toggle
+	# TODO Sort out when using scene_preview and scene_preview_mesh, maybe combine back to 1 so not confusing?
+	set_scene_to_collision_point(collision_point)
+	enable_placement = false
+
+
+
+
+## MODIFIED VERSION 3 NOTE: WORKS BUT FOCUS ON DIFFERENCES 
+func process_snap_flow_manager_connections3(collision_point: Vector3, vector_normal: Vector3) -> void:
 	var snap_flag: String = ""
 	# Runs if scene_preview active and scene has tag
 	if selected_scene_view_button and selected_scene_view_button.tags != []:# and closest_object:
@@ -7642,7 +9748,111 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 
 		# FIXME If new connection is made to center tag that already has connection to output snap does not "see" the connection 
 		# Only when entire connection is made does it "see" the route back to the first tag
-		var reverse_connection_lookup: Dictionary[String, String] = {} # Get the root connection from the final transform modifier given the middle Snap-To-Object
+		var reverse_connection_lookup: Dictionary[String, String] = { } # Get the root connection from the final transform modifier given the middle Snap-To-Object
+		#if debug: print("reverse_connection_lookup: ", reverse_connection_lookup)
+
+
+		var closest_object_tags : Array[String] = []
+		if closest_object and closest_object.has_meta("extras"):
+			if debug: print("connection processed 3")
+			var metadata: Dictionary = closest_object.get_meta("extras")
+			closest_object_tags = metadata.tags
+
+
+		for connection: Dictionary in connections:
+			var to_node: String = connection.to_node
+			var to_port: int = connection.to_port
+			var from_node: String = connection.from_node
+			var from_port: int = connection.from_port
+			
+			if from_node == "IndividualTags":
+				if node_indices.has(from_node) and node_indices[from_node].has(from_port) and node_indices.has(to_node) and node_indices[to_node].has(to_port):
+					var from_tag: String = node_indices[from_node][from_port]
+					if selected_scene_view_button.tags.has(from_tag):
+						if closest_object and closest_object_tags.has(from_tag):
+							var enter_string: String = to_node + str(to_port)
+							var from_string: String = from_node + str(from_port)
+							reverse_connection_lookup[enter_string] = from_string
+
+
+		for connection: Dictionary in connections:
+			var to_node: String = connection.to_node
+			var to_port: int = connection.to_port
+			var from_node: String = connection.from_node
+			var from_port: int = connection.from_port
+
+			# FIXME Will change if scene tree structure changes FIXME Unoptimized.
+			var code_edit_node: = snap_flow_manager_graph.find_child(connection.to_node).get_child(connection.to_port).get_child(1)
+
+			if from_node == "IndividualTags" or from_node == "SnapToObject":
+				if node_indices.has(from_node) and node_indices[from_node].has(from_port):
+					var from_tag: String = node_indices[from_node][from_port]
+					match from_node:
+						"IndividualTags": 
+							if selected_scene_view_button.tags.has(from_tag):
+								if code_edit_node is CodeEdit and scene_preview:
+									evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+						"SnapToObject":
+							if closest_object_tags.has(from_tag):
+								var lookup_string: String = from_node + str(from_port)
+								if reverse_connection_lookup.has(lookup_string):
+									if code_edit_node is CodeEdit and scene_preview:
+										evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
+
+
+
+## ORIGNAL CODE WORKS
+			### FIXME Will change if scene tree structure changes
+			#var code_edit_node: = snap_flow_manager_graph.find_child(connection.to_node).get_child(connection.to_port).get_child(1)
+#
+			## CASE 1: Direct connection from IndividualTags → Modifier
+			#if from_node == "IndividualTags" and node_indices.has(from_node) and node_indices[from_node].has(from_port):
+				#if selected_scene_view_button.tags.has(node_indices[from_node][from_port]):
+					#if code_edit_node is CodeEdit and scene_preview:
+						#evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+						#if debug: print("Processed direct IndividualTags → Modifier connection")
+#
+			#if from_node == "SnapToObject" and node_indices.has(from_node) and node_indices[from_node].has(from_port):
+				#if closest_object_tags.has(node_indices[from_node][from_port]):
+					#var lookup_string: String = from_node + str(from_port)
+					#if debug: print("connection processed 4")
+					#if reverse_connection_lookup.has(lookup_string):
+						#if debug: print("reverse_connection_lookup[lookup_string] EXPECT IndividualTags0: ", reverse_connection_lookup[lookup_string])
+#
+						#if code_edit_node is CodeEdit and scene_preview:# and connection.from_node == "IndividualTags":
+							#evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+## ORIGNAL CODE WORKS
+
+
+# TEST DISABLE TO CHECK
+	#apply_scene_preview_snap_logic(collision_point, vector_normal, snap_flag)
+	# FIXME Similar logic from button scene_view loading must be applied here 
+	await get_tree().process_frame # Give time for scene_preview node to be added to tree
+	if dragging_node != null and dragging_node.is_inside_tree():
+		dragging_node.global_position = collision_point
+
+###############################################################################################################################################################FIXME Toggle between snapping to non-collision shapes and surface plane here and within _forward_3d_gui_input
+	# NOTE: When this is disabled will snap to surface plane set by _forward_3d_gui_input so working at the same time NEEDS toggle
+	# TODO Sort out when using scene_preview and scene_preview_mesh, maybe combine back to 1 so not confusing?
+	set_scene_to_collision_point(collision_point)
+	enable_placement = false
+
+
+
+
+# FIXME Objects being placed either do not have tags or global tags are not decrypted?
+# FIXME Placed objects only need tags (decrypted global and shared tags) combined. but this is not happening
+
+## MODIFIED VERSION 2
+func process_snap_flow_manager_connections2(collision_point: Vector3, vector_normal: Vector3) -> void:
+	var snap_flag: String = ""
+	# Runs if scene_preview active and scene has tag
+	if selected_scene_view_button and selected_scene_view_button.tags != []:# and closest_object:
+		var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
+
+		# FIXME If new connection is made to center tag that already has connection to output snap does not "see" the connection 
+		# Only when entire connection is made does it "see" the route back to the first tag
+		var reverse_connection_lookup: Dictionary[String, String] = { } # Get the root connection from the final transform modifier given the middle Snap-To-Object
 		#if debug: print("reverse_connection_lookup: ", reverse_connection_lookup)
 
 
@@ -7661,19 +9871,20 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 
 			#if debug: print("connection: ", connection)
 			# FIXME Will change if scene tree structure changes
-			var code_edit_node = snap_flow_manager_graph.find_child(connection.to_node).get_child(connection.to_port).get_child(1)
+			var code_edit_node: = snap_flow_manager_graph.find_child(connection.to_node).get_child(connection.to_port).get_child(1)
 
 			# EVALUATE FIRST CONNECTION FROM ROOT FIXME Evaluates 2nd connection here too when snapping to self
-
+			if debug: print("node_indices[from_node][from_port]: ", node_indices)
 			# Get the tags stored in the scene_view_buttons tags variable and check if one of the tags in snap_flow_manager_graph
 			# EXAMPLE: node_indices: { &"SnapToObject": { 0: "shelf" }, &"IndividualTags": { 0: "log", 1: "bag" } }
 			# NOTE: The tag is within the individualTags and has a connection coming out of it.
+			
 			if from_node == "IndividualTags" and selected_scene_view_button.tags.has(node_indices[from_node][from_port]):
 				
 				if code_edit_node is CodeEdit: # When Tag from "IndividualTags" is connected out directly to a modifier
 
 					if scene_preview:# and evaluate_user_code(code_edit_node.text, scene_preview, vector_normal) != null:
-						evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+						evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
 						if debug: print("connection processed 1")
 
 				elif closest_object and closest_object_tags.has(node_indices[to_node][to_port]):
@@ -7685,7 +9896,8 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 						#if closest_object_tags.has(node_indices[to_node][to_port]):
 							#if debug: print("connection processed 2")
 					var enter_string: String = to_node + str(to_port)
-					reverse_connection_lookup[enter_string] = from_node + str(from_port)
+					var from_string: String = from_node + str(from_port)
+					reverse_connection_lookup[enter_string] = from_string
 
 
 			## EVALUATE POSSIBLE SECOND CONNECTION FROM MIDDLE TAG2 SNAP-TO-OBJECT
@@ -7703,7 +9915,7 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 					if code_edit_node is CodeEdit:# and connection.from_node == "IndividualTags":
 
 						if scene_preview:# and evaluate_user_code(code_edit_node.text, scene_preview, vector_normal) != null:
-							evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+							evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
 							if debug: print("connection processed 5")
 
 
@@ -7722,7 +9934,7 @@ func process_snap_flow_manager_connections(collision_point: Vector3, vector_norm
 
 
 ## MODIFIED VERSION 1
-func process_snap_flow_manager_connections2(collision_point: Vector3, vector_normal: Vector3) -> void:
+func process_snap_flow_manager_connections1(collision_point: Vector3, vector_normal: Vector3) -> void:
 	var snap_flag: String = ""
 	# For object to object snapping
 	# Add gates to reduce process in most restrictive possible order first
@@ -7734,7 +9946,7 @@ func process_snap_flow_manager_connections2(collision_point: Vector3, vector_nor
 		
 		# FIXME If new connection is made to center tag that already has connection to output snap does not "see" the connection 
 		# Only when entire connection is made does it "see" the route back to the first tag
-		var reverse_connection_lookup: Dictionary[String, String] = {} # Get the root connection from the final transform modifier given the middle Snap-To-Object
+		var reverse_connection_lookup: Dictionary[String, String] = { } # Get the root connection from the final transform modifier given the middle Snap-To-Object
 		if debug: print("reverse_connection_lookup: ", reverse_connection_lookup)
 		for connection: Dictionary in connections:
 			# FIXME Will change if scene tree structure changes
@@ -7764,7 +9976,7 @@ func process_snap_flow_manager_connections2(collision_point: Vector3, vector_nor
 					#await get_tree().process_frame
 					#if scene_preview:
 					if scene_preview:# and evaluate_user_code(code_edit_node.text, scene_preview, vector_normal) != null:
-						evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+						evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
 						#pass
 						#if debug: print(evaluate_user_code(code_edit_node.text, scene_preview))
 				#Invalid access to property or key 'Mesh2' on a base object of type 'Dictionary[String, Array]'. When instance and then snapping to that
@@ -7820,10 +10032,6 @@ func process_snap_flow_manager_connections2(collision_point: Vector3, vector_nor
 			# TODO Check if breaks with "extras" but no "tags"
 			if closest_object and closest_object.has_meta("extras"):
 				var metadata: Dictionary = closest_object.get_meta("extras")
-
-				# FIXME Objects being placed either do not have tags or global tags are not decrypted?
-				# FIXME Placed objects only need tags (decrypted global and shared tags) combined. but this is not happening
-				#if debug: print("node_indices: ", node_indices)
 				if connection.from_node == "SnapToObject" and metadata["tags"].has(node_indices[connection.from_node][connection.from_port]):
 					#if debug: print("the socond connection out starts here from: ", connection.from_node)
 					var lookup_string: String = connection.from_node + str(connection.from_port)
@@ -7843,7 +10051,7 @@ func process_snap_flow_manager_connections2(collision_point: Vector3, vector_nor
 							# Store Transform for multi transform addition
 								# Returns the transform to be applied to scene_preview
 							if scene_preview:# and evaluate_user_code(code_edit_node.text, scene_preview, vector_normal) != null:
-								evaluate_user_code(code_edit_node.text, scene_preview, vector_normal)
+								evaluate_user_code(code_edit_node.text, scene_preview, vector_normal, collision_point)
 								pass
 								#if debug: print(evaluate_user_code(code_edit_node.text, scene_preview))
 
@@ -8198,6 +10406,8 @@ func input_rotation(direction: String, rotation_value: int) -> void:
 						else:
 							scene_view_rotation(node, rotation_value, Vector3.UP, true)
 
+
+
 # FIXME Conflict with this and default scaling with dragging and holding down left mouse button when in scale mode objects are scaled very large
 # NOTE: Little exclamation mark warning, but it looks like it can be safely ignored.
 # Reference: https://github.com/godotengine/godot/issues/5734#issuecomment-2220778601 (hmans)
@@ -8215,6 +10425,7 @@ func input_scale(direction: String, scale_reduction_value: int) -> void:
 					"down":
 						if node.scale - Vector3.ONE / scale_reduction_value > Vector3.ZERO:
 							node.scale -= node.scale * Vector3.ONE / scale_reduction_value
+				#scene_preview_scale = node.scale
 
 
 
@@ -8276,40 +10487,43 @@ func scene_view_rotation(node: Node3D, rotation_value: float, vector: Vector3, i
 		node.rotate_y(deg_to_rad(rotation_value))
 
 
+	#scene_preview_rotation = node.rotation
 
 
-# NOTE calling create_pivot_node_and_center() preventing changing FIXME
-func change_pivot_point_position() -> void:
-	EditorInterface.get_editor_viewport_3d(0).set_input_as_handled()
-	var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
-	# NOTE may be issues with shared AABB check if things are not working
-	#var aabb
-	
-	if selected_nodes != []:
-		for node in selected_nodes:
-			if node is Node3D and node.name.begins_with("PivotNode3D_") and node.get_child(0):
-				var pivot_point_scene_child = node.get_child(0)
-				
 
-				# Get aabb from scenes 1st child
-				var mesh_child = pivot_point_scene_child.get_child(0)
-				# NOTE adjust for none child(0) meshinstance3d children or multiple mesh
-				if mesh_child is MeshInstance3D:
-					var aabb = mesh_child.get_aabb()
-					#if debug: print(aabb)
-					#if debug: print(aabb.get_center())
-					
-					node.get_child(0).reparent(node.get_parent())
-					
-					# Move node to center postion FIXME swap out default to rotate on center not snap point
-					for ray_cast_3d: RayCast3D in get_tree().get_nodes_in_group("snap_ray_cast_3d"):
-						#if debug: print(ray_cast_3d)
-						if ray_cast_3d:
-							node.position = ray_cast_3d.global_position
-					#node.position = mesh_child.global_position + aabb.get_center()
 
-					# Reparent scene back to pivotnode3d parent
-					pivot_point_scene_child.reparent(node)
+## NOTE calling create_pivot_node_and_center() preventing changing FIXME
+#func change_pivot_point_position() -> void:
+	#EditorInterface.get_editor_viewport_3d(0).set_input_as_handled()
+	#var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
+	## NOTE may be issues with shared AABB check if things are not working
+	##var aabb
+	#
+	#if selected_nodes != []:
+		#for node in selected_nodes:
+			#if node is Node3D and node.name.begins_with("PivotNode3D_") and node.get_child(0):
+				#var pivot_point_scene_child = node.get_child(0)
+				#
+#
+				## Get aabb from scenes 1st child
+				#var mesh_child = pivot_point_scene_child.get_child(0)
+				## NOTE adjust for none child(0) meshinstance3d children or multiple mesh
+				#if mesh_child is MeshInstance3D:
+					#var aabb = mesh_child.get_aabb()
+					##if debug: print(aabb)
+					##if debug: print(aabb.get_center())
+					#
+					#node.get_child(0).reparent(node.get_parent())
+					#
+					## Move node to center postion FIXME swap out default to rotate on center not snap point
+					#for ray_cast_3d: RayCast3D in get_tree().get_nodes_in_group("snap_ray_cast_3d"):
+						##if debug: print(ray_cast_3d)
+						#if ray_cast_3d:
+							#node.position = ray_cast_3d.global_position
+					##node.position = mesh_child.global_position + aabb.get_center()
+#
+					## Reparent scene back to pivotnode3d parent
+					#pivot_point_scene_child.reparent(node)
 
 
 # FIXME EXTREMELY MESSED UP NEEDS A LOT OF WORK
@@ -8433,7 +10647,7 @@ func _move_selection(viewport_camera: Camera3D, event: InputEventMouseMotion) ->
 			ray_direction = -editor_camera3d.global_transform.basis.z.normalized()
 
 		# Calculate the intersection with the Y = 0 plane
-		var plane_y = 1.0
+		var plane_y = 100.0
 		var distance = (plane_y - ray_origin.y) / ray_direction.y
 		#if debug: print("distance: ", distance)
 		# Compute the position on the Y = 0 plane
@@ -8479,7 +10693,8 @@ func _move_selection(viewport_camera: Camera3D, event: InputEventMouseMotion) ->
 		# Snap the object to the Y = 0 plane
 		if snap_down:# and distance >= 0 and not mesh_hit:
 			if scene_preview_mesh != null:
-				#if debug: print("snap position: ", snap_position)
+				print("snap position: ", snap_position)
+				#snap_position = Vector3(0,0,0)
 				if scene_preview_mesh.is_inside_tree():
 					scene_preview_mesh.global_transform.origin = snap_position
 			if scene_preview != null:
@@ -8520,7 +10735,7 @@ func _move_selection(viewport_camera: Camera3D, event: InputEventMouseMotion) ->
 
 
 
-var csg_use_collisions: Array[Dictionary] = []
+#var csg_use_collisions: Array[Dictionary] = []
 var selected_children: Array[Node] = []
 var visual_instances_data: Array[Dictionary] = []
 #func _handles2(object: Object) -> bool: # ORIGINAL
@@ -8541,50 +10756,559 @@ var visual_instances_data: Array[Dictionary] = []
 
 # Move to after scene is finished loading
 func _handles(object: Object) -> bool: # TEST
-	#if debug: print("object: ", object)
-	if object is Node3D:
-		selected = object
-		
-		
-		#var mesh_node_instances: Array[Node] = object.find_children("*", "MeshInstance3D", true, false)
-		#for mesh_child: MeshInstance3D in mesh_node_instances:
-			#add_global_tris(mesh_child)
-#
-			#if not mesh_child.tree_exited.is_connected(remove_global_tris):
-				#mesh_child.tree_exited.connect(remove_global_tris.bind(mesh_child))
-				#if debug: print("signal connected")
-
-
-		#if not visual_instances_data.size() > 0:
-			#collect_global_tris(object)
-		#visual_instances_data = []
-		#else:
-			#collect_global_tris2(object)
-
-		var out: Array[Node] = []
-		get_all_children(out, object, null, [CollisionObject3D, CSGShape3D])
-		selected_children = out
+	# NOTE: was not handling mesh objects moved in scene to reset offset in stored_mesh_offsets.erase(node_id) 
+	#if (handled_built_in_classes.has(object.get_class()) and scene_preview) or handled_plugin_classes.has(object.get_class()):
+	if handled_built_in_classes.has(object.get_class()) or handled_plugin_classes.has(object.get_class()):
+		if debug: print("This class is handled: ", object.get_class())
 		return true
-
-	selected = null
-	selected_children = []
-	#visual_instances_data = []
+	if debug: print("This class is NOT handled: ", object.get_class())
 	return false
 
+	#if object.get_class() == "MeshInstance3D" or object.get_class() == "Node3D":
+		#return true
+	#return false
+	## Support for TerraBrush # NOTE: Will crash editor without excluding TextureSetResource when accessing it.
+## ALERT PackedScene Gets handled by both and will crash editor FIXME
+	#if terra_brush_plugin_active: #and (object.get_class() == "TextureSetResource" or object.get_class() == "ObjectDefinitionResource" or object.get_class() == "NoiseTexture2D"):
+		#return false
+	#return true
+
+	#return true
+	######## FIXME Adjust to needs
+	##if debug: print("object: ", object)
+	#if object is Node:
+		#return true
+	#return false
+		#selected = object
+		#
+		#
+		##var mesh_node_instances: Array[Node] = object.find_children("*", "MeshInstance3D", true, false)
+		##for mesh_child: MeshInstance3D in mesh_node_instances:
+			##add_global_tris(mesh_child)
+##
+			##if not mesh_child.tree_exited.is_connected(remove_global_tris):
+				##mesh_child.tree_exited.connect(remove_global_tris.bind(mesh_child))
+				##if debug: print("signal connected")
+#
+#
+		##if not visual_instances_data.size() > 0:
+			##collect_global_tris(object)
+		##visual_instances_data = []
+		##else:
+			##collect_global_tris2(object)
+#
+		#var out: Array[Node] = []
+		#get_all_children(out, object, null, [CollisionObject3D, CSGShape3D])
+		#selected_children = out
+		#return true
+#
+	#selected = null
+	#selected_children = []
+	##visual_instances_data = []
+	#return false
+	######## FIXME Adjust to needs
 
 
 
-func _on_left_mouse_button_pressed() -> void:
+func place_scene_instance() -> void:
 	if scene_preview_3d_active:# and editor_viewport_3d_active:
 		move_pressed = true
 		var existing_preview = get_tree().get_root().find_child("ScenePreview", true, true)
 		if existing_preview:
 			pass
 		else:
-			#if debug: print(EditorInterface.get_editor_viewport_3d(0).get_size())
 			create_scene_preview()
 
 var enable_placement: bool = false
+var intersection_point: Vector3 = Vector3.ZERO
+var terrain: Node = null
+var terra_brush: Node = null
+var continue_to_process: bool = true
+var terra_brush_helper_script: TerraBrushHelper = null
+var terrain_3d_node_selected: bool = false
+var terrain_position: Vector3 = Vector3.ZERO
+
+# FIXME TODO This needs to be tied into the Terrain3D UI brush size value selected by user
+# NOTE: current setting of 100.0 about matches the Terrain3D UI brush size max value of 200. Changed to 150 because
+# seemed to be not grabbing all the objects in the effected area.
+var max_distance: float = 150.0
+
+
+
+#var filtered_nodes: Array[Node3D] = []
+var max_dist_sq: int = max_distance * max_distance
+
+#var target_point: Vector3 = Vector3.ZERO
+
+var stored_mesh_offsets: Dictionary[int, Vector3] = { }
+var stored_curve_point_offsets: Dictionary[int, Vector3] = { }
+
+### Clear mesh from stored_mesh_offsets if moved in editor.
+## TODO Add support for undo-redo to reset positions
+## FIXME BUG when undo because needs undo/redo support and storing previous offsets 
+#func refresh_moved_nodes(selected_nodes: Array[Node]) -> void:
+	#var stored_mesh_offsets_dup = stored_mesh_offsets.duplicate()
+	#for node: Node in selected_nodes:
+		#if node.is_in_group("follow_terrain_group"):
+			#if stored_mesh_offsets_dup.keys().has(node):
+				#stored_mesh_offsets.erase(node)
+
+
+
+#func get_mouse_terrain_hit(camera: Camera3D, terrain: Terrain3D) -> Vector3:
+	#var mouse_pos = get_viewport().get_mouse_position()
+	##var mouse_pos = EditorInterface.get_editor_viewport_3d(0).get_mouse_position()
+	##var ray_origin = camera.project_ray_origin(mouse_pos)
+	##var ray_direction = camera.project_ray_normal(mouse_pos).normalized()
+#
+#
+	#var ray_origin = editor_camera3d.project_position(mouse_pos, 0)
+	#var ray_direction = -editor_camera3d.global_transform.basis.z.normalized()
+	##if editor_camera3d.projection == Camera3D.PROJECTION_PERSPECTIVE:
+		##ray_origin = editor_camera3d.project_ray_origin(mouse_pos)
+		##ray_direction = editor_camera3d.project_ray_normal(mouse_pos)
+	##elif editor_camera3d.projection == Camera3D.PROJECTION_ORTHOGONAL:
+		##ray_origin = editor_camera3d.project_position(mouse_pos, 0)
+		##ray_direction = -editor_camera3d.global_transform.basis.z.normalized()
+#
+#
+#
+#
+#
+	#var max_distance = 5000.0
+	#var step = 1.0
+	#var current_pos = ray_origin
+#
+	#for i in range(int(max_distance / step)):
+		#var xz = Vector3(current_pos.x, 0.0, current_pos.z)
+		#
+		#if terrain.data.has_regionp(xz):
+			#var terrain_height = round(terrain.data.get_height(xz))
+			##print("terrain_height: ", terrain_height)
+#
+			#if !is_nan(terrain_height):
+				## Check if current Y position is below the terrain surface
+				#print("terrain_height: ", terrain_height)
+				#if current_pos.y <= terrain_height:
+					#return Vector3(xz.x, terrain_height, xz.z)
+#
+		#current_pos += ray_direction * step
+		##print("current_pos.y: ", current_pos.y)
+#
+	#return Vector3.INF  # No hit found
+
+
+
+## NOTE this needs to be done on path3ds curve points converted to global space.
+#func filter_nodes(follow_terrain_nodes: Array[Node], intersection_point: Vector3) -> Array[Node3D]:
+	#var filtered_nodes: Array[Node3D] = []
+	#for node in follow_terrain_nodes:
+		#if node is Path3D:
+			#if not path3d_node_heights.has(node):
+				#path3d_node_heights[node] = node.global_position.y
+#
+			#var filtered_points_dict: Dictionary[int, Vector3] = { }
+			#for point_index: int in range(0, node.curve.point_count):
+#
+				#var curve_point_local_pos: Vector3 = node.curve.get_point_position(point_index)
+				#var pos: Vector3 = node.global_transform * curve_point_local_pos
+				#var dx: float = pos.x - intersection_point.x
+				#var dz: float = pos.z - intersection_point.z
+				#if (dx * dx + dz * dz) <= max_dist_sq:
+					#
+					#filtered_points_dict[point_index] = curve_point_local_pos
+#
+			#if filtered_points_dict:
+				#filtered_points[node] = filtered_points_dict
+			#else:
+				#filtered_points.erase(node)
+#
+#
+		#else:
+			#var pos: Vector3 = node.global_position
+			#var dx: float = pos.x - intersection_point.x
+			#var dz: float = pos.z - intersection_point.z
+			#if (dx * dx + dz * dz) <= max_dist_sq:
+				#filtered_nodes.append(node)
+	#return filtered_nodes
+
+
+
+# NOTE this needs to be done on path3ds curve points converted to global space.
+func filter_nodes(follow_terrain_nodes: Array[Node], intersection_point: Vector3) -> Array[int]:
+	var filtered_nodes: Array[int] = []
+	for node in follow_terrain_nodes:
+		var node_id: int = node.get_instance_id()
+		if node is Path3D:
+			if not path3d_node_heights.has(node_id):
+				path3d_node_heights[node_id] = node.global_position.y
+
+			var filtered_points_dict: Dictionary[int, Vector3] = { }
+			for point_index: int in range(0, node.curve.point_count):
+
+				var curve_point_local_pos: Vector3 = node.curve.get_point_position(point_index)
+				var pos: Vector3 = node.global_transform * curve_point_local_pos
+				var dx: float = pos.x - intersection_point.x
+				var dz: float = pos.z - intersection_point.z
+				if (dx * dx + dz * dz) <= max_dist_sq:
+					
+					filtered_points_dict[point_index] = curve_point_local_pos
+
+			if filtered_points_dict:
+				filtered_points[node_id] = filtered_points_dict
+			else:
+				filtered_points.erase(node_id)
+
+# TODO Convert to node_id
+		else:
+			var pos: Vector3 = node.global_position
+			var dx: float = pos.x - intersection_point.x
+			var dz: float = pos.z - intersection_point.z
+			if (dx * dx + dz * dz) <= max_dist_sq:
+				filtered_nodes.append(node_id)
+	return filtered_nodes
+
+
+
+
+
+
+
+
+## NOTE this needs to be done on path3ds curve points converted to global space.
+#func filtered_nodes(follow_terrain_nodes: Array[Node], intersection_point: Vector3) -> Array[Node3D]:
+	#var filtered_nodes: Array[Node3D] = []
+	#for node in follow_terrain_nodes:
+		#if node is Path3D:
+			#if not path3d_node_heights.has(node):
+				#path3d_node_heights[node] = node.global_position.y
+				#filtered_points.append(point)
+			##print("node.global_position: ", node.global_position)
+			##print("node.curve.get_closest_point(intersection_point): ", node.curve.get_closest_point(intersection_point))
+#
+		#else:
+			#var pos: Vector3 = node.global_position
+			#var dx: float = pos.x - intersection_point.x
+			#var dz: float = pos.z - intersection_point.z
+			#if (dx * dx + dz * dz) <= max_dist_sq:
+				#filtered_nodes.append(node)
+	#return filtered_nodes
+
+
+
+## NOTE this needs to be done on path3ds curve points converted to global space.
+#func filtered_nodes(follow_terrain_nodes: Array[Node], intersection_point: Vector3) -> Array[Node3D]:
+	#var filtered_nodes: Array[Node3D] = []
+	#for node in follow_terrain_nodes:
+		#var pos: Vector3 = node.global_position
+		#var dx: float = pos.x - intersection_point.x
+		#var dz: float = pos.z - intersection_point.z
+		#if (dx * dx + dz * dz) <= max_dist_sq:
+			#filtered_nodes.append(node)
+	#return filtered_nodes
+
+# FIXME Line does not start at start point
+# FIXME Getting ERROR: scene/resources/multimesh.cpp:232 - Condition "p_count < 0" is true.
+# TODO Change name drag_line and LINE_DRAG_PLACE to better name.
+# First point is full object off fixing might solve "p_count < 0" error?
+#func create_drag_line(line_start_point: Vector3) -> void:
+func create_drag_line() -> void:
+	if scene_preview:
+		
+		var scene_name: String = scene_name()
+		#drag_line = LINE_DRAG_PLACE.instantiate()
+		drag_line = Path3D.new()
+		#drag_line.global_position = collision_point
+		drag_line.set_script(PATH3D_SCRIPT)
+		#drag_line.get_xz_point_heights.connect(return_xz_point_heights)
+		
+		var new_curve: Curve3D = Curve3D.new()
+		drag_line.curve = new_curve
+		#drag_line.set_first_point(collision_point)
+		var new_multimesh: MultiMesh = MultiMesh.new()
+		#new_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+		#new_multimesh.set_instance_count(10000)
+
+		#new_multimesh.instance_count = 10
+
+		#var multimesh3d: MultiMeshInstance3D = drag_line.get_child(0)
+		var multimesh3d: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		drag_line.add_child(multimesh3d)
+		multimesh3d.multimesh = new_multimesh
+		
+		multimesh3d.multimesh.transform_format = MultiMesh.TRANSFORM_3D
+		#multimesh3d.multimesh.set_instance_count(10000)
+		
+		
+		
+		#multimesh3d.instance_count = 1  # or however many instances you intend
+		
+		var scene_preview_mesh_instance_3d: MeshInstance3D
+		if center_scene_preview:
+			scene_preview_mesh_instance_3d = scene_preview.get_child(0).get_child(0)
+		else:
+			scene_preview_mesh_instance_3d = scene_preview.get_child(0)
+		if debug: print("scene_preview.get_child(0).get_child(0) children: ", scene_preview.get_children())
+		#drag_line.static_body = scene_preview.get_child(0)
+		drag_line.primitive_collision_offset = primitive_collision_offset
+		if collision_shape_type == "primitive":
+			drag_line.primitive_collision_shape = true
+		else:
+			drag_line.primitive_collision_shape = false
+		
+
+		#drag_line.collisions_enabled = enable_collisions
+		var collision_shape: CollisionShape3D = null
+		if center_scene_preview:
+			if enable_collisions:
+				collision_shape = scene_preview.get_child(0).get_child(1)
+		else:
+			if enable_collisions:
+				collision_shape = scene_preview.get_child(1)
+		if collision_shape:
+			drag_line.scene_preview_collision_shape_3d = collision_shape.duplicate()
+		
+		
+		drag_line.scene_name = scene_name
+		drag_line.scene_preview = scene_preview
+		drag_line.instance_scale = scene_preview_mesh.scale
+		drag_line.scene_preview_basis = scene_preview_mesh.basis
+		multimesh3d.multimesh.mesh = scene_preview_mesh_instance_3d.mesh
+
+		
+
+		multimesh3d.set_material_override(scene_preview_mesh_instance_3d.get_surface_override_material(0))
+		EditorInterface.get_edited_scene_root().add_child(drag_line)
+		#drag_line.global_position = collision_point
+		drag_line.owner = EditorInterface.get_edited_scene_root()
+		drag_line.global_position = collision_point
+		multimesh3d.owner = EditorInterface.get_edited_scene_root()
+		
+		
+		reparent_to_selected_node(drag_line, EditorInterface.get_edited_scene_root())
+		
+
+		#drag_line.curve.add_point(collision_point)
+
+		#drag_line.name = "Path3D"
+		#multimesh3d.name = "MultimeshInstance3D"
+		#node_set_owner_recursive(drag_line, EditorInterface.get_edited_scene_root())
+		#var scene_path: String = scene_viewer_panel_instance.current_scene_path
+		#var scene_name_no_ext: String = scene_viewer_panel_instance.get_scene_name(scene_path, true)
+		#var scene_name: String = scene_name()
+		drag_line.name = "Path3D_" + scene_name
+		multimesh3d.name = "MM3D_" + scene_name
+		# Support for Terrain3D and TerraBrush
+		if (terrain_3d_plugin_active and terrain) or (terra_brush_plugin_active and terra_brush):
+			drag_line.add_to_group("follow_terrain_group", true)
+
+## Sets the given collision_point: Vector3 as the line_start_point variable.
+func get_start_point(collision_point: Vector3) -> Vector3:
+	var line_start_point: Vector3 = Vector3.ZERO
+	if add_start_point:
+		add_start_point = false
+		if not collision_point == Vector3.ZERO:
+			line_start_point = collision_point
+	return line_start_point
+
+
+func remove_scene_instance() -> void:
+	var scene_to_remove: Node = placed_scenes.pop_back()
+	if scene_to_remove:
+		scene_to_remove.queue_free()
+
+func remove_multimesh_path_3d() -> void:
+	var path_to_remove: Node = placed_multimesh_paths.pop_back()
+	if path_to_remove:
+		path_to_remove.queue_free()
+
+
+#func return_xz_point_heights(xz_point_cache: Array[Vector2]) -> void:
+	#drag_line.xz_point_heights.clear()
+	#for point: Vector2 in xz_point_cache:
+		#var ray_origin = Vector3(point.x, 1000, point.y)
+		#var ray_direction = Vector3.DOWN
+		#var ray_end: Vector3 = ray_origin + ray_direction * 10000
+		#var object_ids = RenderingServer.instances_cull_ray(ray_origin, ray_end, scenario_rid)
+#
+#
+##region non_collision_object_snapping CODE MODIFIED
+		#filtered_object_ids2.clear()
+		#var min_t: float = FLOAT64_MAX
+		#var min_p = Vector3.ZERO # Expose min_p for Terrain3D support
+		#var min_n = Vector3.ZERO # Expose Min_n for Terrain3D Support
+		#var closest_object_id: int = -1
+#
+		##var ray_end: Vector3 = ray_origin + ray_direction * 1000
+		#if not scenario_rid:
+			#await get_tree().process_frame
+			##scenario_rid = EditorInterface.get_edited_scene_root().get_world_3d().get_scenario()
+#
+		##object_ids = RenderingServer.instances_cull_ray(ray_origin, ray_end, scenario_rid)
+#
+		#for object_id: int in object_ids:
+			## Filter out duplicate ids
+			#if not filtered_object_ids2.has(object_id):
+				#filtered_object_ids2.append(object_id)
+#
+#
+			## FIXME if subtract find way to only snap to inside of overlapping area?
+			## Example Box with anoher subtract box inside and snapping to inside wall of "Room"
+			## NOTE: Above will work easily with collision shape and raycast since collision shape is auto generated that has cutout
+			## Exclude CSGShape3D that have operation subtract
+			#if instance_from_id(object_id) is CSGShape3D and instance_from_id(object_id).get_operation() == 2: #instance_from_id(object_id).OPERATION_SUBTRACTION:
+				#filtered_object_ids2.erase(object_id)
+#
+#
+			## Exclude all objects that are not either MeshInstance3D or CSGShape3D
+			#filtered_object_ids2 = filtered_object_ids2.filter(
+				#func (object_id) -> bool: 
+					#return instance_from_id(object_id) is CSGShape3D or instance_from_id(object_id) is MeshInstance3D
+			#)
+#
+#
+		## FIXME TODO CSGTerrain Support: CSGTerrain Node when selected and child line or scg edited then CSGTerrain node needs to be filtered out to recalculate collisions.
+		## Also add support for when Terrain changed that objects follow edit. so we need height y at object position within area of edit like Terrain3D support adds.
+		## FIXME not excluding csg shape3d
+		## Exclude the scene_preview or selected node to reposition
+		#if dragging_node:
+			#filter_out_object_ids(dragging_node)
+		#else:
+			#filter_out_object_ids(scene_preview)
+#
+		#idle = false
+#
+		#if filtered_object_ids2:
+			#for object_id: int in filtered_object_ids2:
+				#if object_tris.keys().has(object_id):
+#
+					#var tris: PackedVector3Array = object_tris[object_id]
+					##if debug: print("tris: ", tris)
+					#for i: int in range(0, tris.size(), 3):
+						#var v0: Vector3 = tris[i + 0]
+						#var v1: Vector3 = tris[i + 1]
+						#var v2: Vector3 = tris[i + 2]
+						## NOTE: The speed bottleneck is here running ray_intersects_triangle in rust within same script is much faster
+						#var res: Variant = Geometry3D.ray_intersects_triangle(ray_origin, ray_direction, v0, v1, v2)
+						#if res is Vector3:
+							#var len: float = ray_origin.distance_squared_to(res)
+#
+							#if len < min_t:
+								#min_t = len
+								#min_p = res
+								#var v0v1: Vector3 = v1 - v0
+								#var v0v2: Vector3 = v2 - v0
+								#min_n = v0v2.cross(v0v1).normalized()
+								#closest_object_id = object_id
+#
+				#else:
+					#var object = instance_from_id(object_id)
+					#var tris: PackedVector3Array = []
+					#if object is MeshInstance3D:
+						#var verts: PackedVector3Array = object.mesh.get_faces()
+						#for vert: Vector3 in verts:
+							#tris.append(object.global_transform * vert)
+#
+					#else: # it is a CSGShape3D:
+						#var meshes: Array = object.get_meshes()
+						#var verts: PackedVector3Array = (meshes[1] as ArrayMesh).get_faces()
+						#for vert: Vector3 in verts:
+							#tris.append(object.global_transform * vert)
+					#object_tris[object_id] = tris
+#
+			#if min_t < FLOAT64_MAX:
+				#closest_object = instance_from_id(closest_object_id)
+				##if debug: print("object name: ", closest_object.name)
+				##if debug: print("Snapping to object: ", closest_object.get_parent().name)
+				#closest_object_scale = closest_object.get_scale()
+					##
+				###if debug: print("closest_object scale: ", closest_object.get_scale())
+				###if debug: print("object property list: ", closest_object.get_property_list())
+				##if closest_object.has_meta("extras"):
+					##var metadata: Dictionary = closest_object.get_meta("extras")
+##
+				### Support for Terrain3D
+				#if not terrain_3d_plugin_active or terrain == null:
+					#drag_line.xz_point_heights.append(min_p.y)
+					##collision_point = min_p
+					##if virtual_plane_enabled and virtual_plane_3d_instance:
+						##set_scene_preview_position(min_p)
+					##else:
+						##process_snap_flow_manager_connections(min_p, min_n)
+				#
+			#else:
+				#idle = true
+				#closest_object = null
+#
+		#if not filtered_object_ids2 or idle:
+			#pass
+			##push_error("no objects found")
+			### Support for Terrain3D
+			##if not terrain_3d_plugin_active or terrain == null:
+				##var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+				##if virtual_plane_enabled and virtual_plane_3d_instance:
+					##virtual_plane_3d_instance.global_position = ray_idle
+				##else:
+					### Use ray_direction.normalized() to avoid ERROR: The target vector can't be zero.
+					##process_snap_flow_manager_connections(ray_idle, ray_direction.normalized())
+##
+		##else:
+			###scene_preview = null
+			##dragging_node = null
+##endregion
+
+
+#func get_terrain_height() -> float:
+	#var terrain_height: float
+	#if terrain3d_node_selected:
+		#return = terrain.data.get_height(node.global_position)
+	#elif terrabrush_node_selected:
+		#var point_pos_overhead_origin: Vector3 = Vector3(node.global_position.x, node.global_position.y + point_check_offset, node.global_position.z)
+		#return = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+
+
+func find_terrain_plugin_nodes(editor_camera3d: Camera3D) -> void:
+	# Check if edited_scene tree has Terrain3D node or TerraBrush node. 
+	# Terrain3D & TerraBrush Support:
+	continue_to_process = true 
+	if EditorInterface.is_plugin_enabled("terrain_3d") and GDExtensionManager.is_extension_loaded("res://addons/terrain_3d/terrain.gdextension"):
+		terrain_3d_plugin_active = true
+	if terrain_3d_plugin_active:
+		#push_error("terrain3d plugin is active")
+		terrain = EditorInterface.get_edited_scene_root().find_child("Terrain3D", false, false)
+		if terrain:
+			#push_error("terrain3d node found")
+			continue_to_process = false # Prevent non_collision_object_snapping() from processing collision (handled below)
+			terrain.set_camera(editor_camera3d)
+		else:
+			#push_error("setting terrain to null!")
+			terrain = null
+
+	if GDExtensionManager.is_extension_loaded("res://addons/terrabrush/terrabrush.gdextension"):
+		terra_brush_plugin_active = true
+	if terra_brush_plugin_active:
+		terra_brush = EditorInterface.get_edited_scene_root().find_child("TerraBrush", false, false)
+		if terra_brush:
+			continue_to_process = false # Prevent non_collision_object_snapping() from processing collision (handled below)
+			if not terra_brush_helper_script:
+				# Load the terra brush helper script
+				terra_brush_helper_script = TerraBrushHelper.new()
+				terra_brush_helper_script.terra_brush = terra_brush
+		else:
+			terra_brush = null
+
+
+func scene_name() -> String:
+	var scene_path: String = scene_viewer_panel_instance.current_scene_path
+	return scene_viewer_panel_instance.get_scene_name(scene_path, true)
+
+
+var path3d_node_heights: Dictionary[int, float] = { }
+var path3d_curve_point_heights: Array[float] = []
+#var filtered_points: Array[Vector3] = []
+#var filtered_points: Dictionary[Node, Array] = {}
+var filtered_points: Dictionary[int, Dictionary] = { }
+#var path3d_node_height: float = 0.0
 
 # NOTE UPDATING IN PHYSICS PROCESS NEEDS TO MOVED HERE TOO SO THAT IT IS NOT MOVING PREVIEW WHEN OUTSIDE VIEWPORT
 # This keeps input confined to the 3d viewport window
@@ -8592,51 +11316,545 @@ var enable_placement: bool = false
 #func _forward_3d_gui_input(viewport_camera: Camera3D, event: InputEvent) -> int:
 	#return EditorPlugin.AFTER_GUI_INPUT_PASS
 # NOTE: DISABLE set_scene_to_collision_point(collision_point) IN process_snap_flow_manager_connections() FOR PLANE SNAPPING TO WORK
+# NOTE: IMPORTANT: This is only active when within the 3D viewport and moving the mouse and node is selected.
+# FIXME TODO To be useful on touch devices will need to place object on finger release and have scene offset from finger position to see it. 
 func _forward_3d_gui_input(viewport_camera: Camera3D, event: InputEvent) -> int:
-	#if event.is_action("KEY_SHIFT"):
-	#if Input.is_key_pressed(KEY_SHIFT):
-		#return EditorPlugin.AFTER_GUI_INPUT_PASS
-	non_collision_object_snapping()
-	#if debug: print("moving in 3d viewport")
-	if event:
-		enable_placement = true
+	#if terrain != null: # NOTE: Set when changing scene tabs in editor by find_terrain_plugin_nodes().
+		#push_error("terrain3d node found and updating set camera")
+		#terrain.set_camera(viewport_camera)
+	# Update last_scene_preview_pos so that next Scene_Preview is instantiated in the last objects position.
+	if scene_preview:
+		last_scene_preview_pos = scene_preview.global_transform.origin 
+	var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
+	# Terrain3D & TerraBrush Support
+	var terrain3d_node_selected: bool = false
+	var terrabrush_node_selected: bool = false
+	for node: Node in selected_nodes:
+		var node_id: int = node.get_instance_id()
+		if node.name == "Terrain3D":
+			terrain3d_node_selected = true
+		if node.name == "TerraBrush":
+			terrabrush_node_selected = true
+	#refresh_moved_nodes(selected_nodes)
 
-		
-		#if debug: print("firing")
-	#return EditorPlugin.AFTER_GUI_INPUT_STOP if event is InputEventMouseMotion else EditorPlugin.AFTER_GUI_INPUT_PASS
+		# NOTE: Clear mesh from stored_mesh_offsets if moved in editor.
+		if node.is_in_group("follow_terrain_group"):
+			if stored_mesh_offsets.has(node_id):
+				stored_mesh_offsets.erase(node_id)
+
+#region KEEP
+
+		## TODO Implement nested node offsets
+		#var selected_node_children: Array[Node] = []
+		#get_all_children(selected_node_children, selected_node)
+		##push_error("selected_node_children; ", selected_node_children)
+		#for selected_node_child: Node in selected_node_children:
+			## NOTE: Clear mesh from stored_mesh_offsets if moved in editor.
+			#if selected_node_child.is_in_group("follow_terrain_group"):
+				#push_error("it in group")
+				#if stored_mesh_offsets.has(node_id):
+					#push_error("it has it")
+					#stored_mesh_offsets.erase(node_id)
+#endregion
 
 
-	### ADDED CODE
-	## FIXME NEED TO CREATE SINGLE JUST PRESSED FOR MOUSE_BUTTON_LEFT TO PREVENT MANY SPAWANS OF scene_preview
+# FIXME TODO MOVE BELOW TO ON SCENE TREE CHANGED OR SCENE TAB CHANGED 
+	# NOTE FIXME Was not registering when set in on_ready or enter_tree.
+	# Reset flag when changing to new scene
+	## Check if edited_scene tree has Terrain3D node or TerraBrush node. 
+	## Terrain3D & TerraBrush Support:
+	#continue_to_process = true 
+	#if EditorInterface.is_plugin_enabled("terrain_3d") and GDExtensionManager.is_extension_loaded("res://addons/terrain_3d/terrain.gdextension"):
+		#terrain_3d_plugin_active = true
+	#if terrain_3d_plugin_active:
+		#terrain = EditorInterface.get_edited_scene_root().find_child("Terrain3D", false, false)
+		#if terrain:
+			#continue_to_process = false # Prevent non_collision_object_snapping() from processing collision (handled below)
+			#terrain.set_camera(viewport_camera)
+		#else:
+			#terrain = null
+#
+	#if GDExtensionManager.is_extension_loaded("res://addons/terrabrush/terrabrush.gdextension"):
+		#terra_brush_plugin_active = true
+	#if terra_brush_plugin_active:
+		#terra_brush = EditorInterface.get_edited_scene_root().find_child("TerraBrush", false, false)
+		#if terra_brush:
+			#continue_to_process = false # Prevent non_collision_object_snapping() from processing collision (handled below)
+			#if not terra_brush_helper_script:
+				## Load the terra brush helper script
+				#terra_brush_helper_script = TerraBrushHelper.new()
+				#terra_brush_helper_script.terra_brush = terra_brush
+		#else:
+			#terra_brush = null
 
-	if event is InputEventMouseButton:
-		##if debug: print("this is working here")
-		# Prevent Scene Viewer panel zooming when in 3D viewport
-		scene_viewer_panel_instance.enable_panel_button_sizing = false
+## FIXME TODO MOVE ABOVE TO ON SCENE TREE CHANGED OR SCENE TAB CHANGED
 
-		##if debug: print("motion")
-		var mouse_event = event as InputEventMouseButton
-		
-		# Check if the event is for the left mouse button
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT:
-			if mouse_event.pressed and allow_pressed:
-				# Left mouse button was pressed
-				_on_left_mouse_button_pressed()
-				# Prevents button from spamming scene previews
-				allow_pressed = false
-			elif not mouse_event.pressed:
-				# Left mouse button was released
-				allow_pressed = true
 
-	if has_moved:
-		for csg_data: Dictionary in csg_use_collisions:
-			(csg_data['node'] as CSGShape3D).use_collision = csg_data['use_collision']
-		
-		csg_use_collisions = []
+	#var collision_point: Vector3 = Vector3.ZERO
+	if (terrain_3d_plugin_active and terrain3d_node_selected) or virtual_plane_enabled or (is_instance_valid(scene_preview) and scene_preview.is_inside_tree()) \
+	or (is_instance_valid(dragging_node) and dragging_node.is_inside_tree()) or (terra_brush_plugin_active and terrabrush_node_selected):
+		#var collision_point: Vector3 = Vector3.ZERO
+		if (terrain_3d_plugin_active and terrain) or (terra_brush_plugin_active and terra_brush):
+			# FIXME This is run in the physics process so it should be current, but when Terrain3D node selected something is off and needs to be recalculated here?
+			var mouse_pos = editor_viewport_3d.get_mouse_position()
 
-		#undoredo_action.add_do_property(selected, "global_transform", Transform3D(selected.global_transform))
-		#undoredo_action.commit_action()
-		has_moved = false
+			# NOTE: Required for when in TOP BOTTOM LEFT RIGHT FRONT REAR VIEWS.
+			if editor_camera3d.projection == Camera3D.PROJECTION_PERSPECTIVE:
+				ray_origin = editor_camera3d.project_ray_origin(mouse_pos)
+				ray_direction = editor_camera3d.project_ray_normal(mouse_pos)
+			elif editor_camera3d.projection == Camera3D.PROJECTION_ORTHOGONAL:
+				ray_origin = editor_camera3d.project_position(mouse_pos, 0)
+				ray_direction = -editor_camera3d.global_transform.basis.z.normalized()
+
+			if terra_brush_plugin_active and terra_brush:
+				intersection_point = terra_brush_helper_script.get_mouse_click_to_zone_height(ray_origin, ray_direction)
+
+			if terrain_3d_plugin_active and terrain:
+				intersection_point = terrain.get_intersection(ray_origin, ray_direction, true)
+				await RenderingServer.frame_post_draw
+				intersection_point = terrain.get_intersection(ray_origin, ray_direction, true)
+			
+			if intersection_point.z > 3.4e38 or is_nan(intersection_point.y): # max double or nan
+				var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+				set_scene_preview_position(ray_idle)
+				return AFTER_GUI_INPUT_PASS
+			#print("intersection_point: ", intersection_point)
+
+
+		### FIXME Does not pick up multimesh (Multimesh position is updated within the path_3d.gd not here) This code is for single placed mesh.
+		## ALERT For updating nodes when terrain being edited
+		#if selected_nodes.has(terrain):
+#
+			#var follow_terrain_nodes: Array[Node] = get_tree().get_nodes_in_group("follow_terrain_group")
+			#var filtered_nodes = filter_nodes(follow_terrain_nodes, intersection_point)
+#
+			#for node in filtered_nodes:
+				#if is_instance_valid(node) and node.is_inside_tree():
+#
+					##if node is Path3D: # TEST to trigger points update to terrain height.
+						##node.multimesh_to_line()
+					#var terrain_height: float = terrain.data.get_height(node.global_position)
+					#if not stored_mesh_offsets.has(node):
+						#var node_global_pos: Vector3 = node.global_position
+						#var current_offset_y: float = (terrain_height - node_global_pos.y)
+						#stored_mesh_offsets[node] = Vector3(node_global_pos.x, current_offset_y, node_global_pos.z)
+					#node.global_position.y = (terrain_height - stored_mesh_offsets[node].y)
+#
+#
+			## FIXME When selecting Terrain3D points will move up a set amount off the ground
+			## TEST # Here we need to filter path3d global curve points and adjust their heights too with offsets
+			#for node in filtered_points.keys(): # NOTE: Get error when typed. (node: Node) and node previously freed.
+				#if is_instance_valid(node) and node.is_inside_tree():
+					##push_error("showing as valid node2")
+					#for point_index: int in filtered_points[node].keys():
+						##push_error("setting point positions")
+						#
+						##var curve_point_local_pos: Vector3 = filtered_points[node][point_index]
+						##var curve_point_global_pos: Vector3 = node.global_transform * curve_point_local_pos
+						###var curve_point_local_pos: Vector3 = node.to_local(curve_point_global_pos)
+						##var terrain_height = terrain.data.get_height(curve_point_global_pos)
+						##if not stored_curve_point_offsets.has(point_index):
+							###var curve_point_local_pos: Vector3 = filtered_points[node][point_index]
+							###var curve_point_global_pos: Vector3 = node.global_transform * curve_point_local_pos
+							###var terrain_height = terrain.data.get_height(curve_point_global_pos)
+							##
+							##var current_offset_y: float = (terrain_height - curve_point_global_pos.y)
+							###var current_offset_y: float = (curve_point_global_pos.y)
+							##stored_curve_point_offsets[point_index] = Vector3(curve_point_global_pos.x, current_offset_y, curve_point_global_pos.z)
+						##
+						###node.curve.set_point_position(point_index, Vector3(stored_curve_point_offsets[point_index]))
+						##node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - stored_curve_point_offsets[point_index].y, curve_point_local_pos.z))
+						###node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - path3d_node_heights[node], curve_point_local_pos.z))
+						#
+						## ORIGINAL WORKS BUT DOES NOT KEEP OFFSET
+						#var curve_point_local_pos: Vector3 = filtered_points[node][point_index]
+						#var curve_point_global_pos: Vector3 = node.global_transform * curve_point_local_pos
+						#var terrain_height = terrain.data.get_height(curve_point_global_pos)
+						#node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - path3d_node_heights[node], curve_point_local_pos.z))
+						##node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - node.curve.get_point_position(point_index).y, curve_point_local_pos.z))
+				##else:
+					##filtered_points.erase(node)
+#
+		### TODO Add else and ability to follow other objects in scene?
+		## REPEAT CODE OF ABOVE terrain_3d_plugin_active:
+		##if selected_nodes.has(terra_brush):
+		#if terrabrush_node_selected:
+			## NOTE: The amount to add up on the Y axis when checking down for terrain collision point.
+			#var point_check_offset: float = .01
+			#var follow_terrain_nodes: Array[Node] = get_tree().get_nodes_in_group("follow_terrain_group")
+			#var filtered_nodes = filter_nodes(follow_terrain_nodes, intersection_point)
+#
+			#for node in filtered_nodes:
+				#if is_instance_valid(node) and node.is_inside_tree():
+#
+					#var point_pos_overhead_origin: Vector3 = Vector3(node.global_position.x, node.global_position.y + point_check_offset, node.global_position.z)
+					#var terrain_height = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+#
+					#if not stored_mesh_offsets.has(node):
+						#var node_global_pos: Vector3 = node.global_position
+						#var current_offset_y: float = (terrain_height - node_global_pos.y)
+						#stored_mesh_offsets[node] = Vector3(node_global_pos.x, current_offset_y, node_global_pos.z)
+					#node.global_position.y = (terrain_height - stored_mesh_offsets[node].y)
+#
+#
+			#for node in filtered_points.keys():
+				#if is_instance_valid(node) and node.is_inside_tree():
+					#for point_index: int in filtered_points[node].keys():
+#
+						#var curve_point_local_pos: Vector3 = filtered_points[node][point_index]
+						#var curve_point_global_pos: Vector3 = node.global_transform * curve_point_local_pos
+						#var point_pos_overhead_origin: Vector3 = Vector3(curve_point_global_pos.x, curve_point_global_pos.y + point_check_offset, curve_point_global_pos.z)
+						#var terrain_height = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+						#node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - path3d_node_heights[node], curve_point_local_pos.z))
+#
+
+## REFACTORED OF ABOVE CODE
+		#if terrain3d_node_selected or terrabrush_node_selected:
+			## NOTE: The amount to add up on the Y axis when checking down for terrain collision point.
+			#var point_check_offset: float = .01
+			#var follow_terrain_nodes: Array[Node] = get_tree().get_nodes_in_group("follow_terrain_group")
+			#var filtered_nodes = filter_nodes(follow_terrain_nodes, intersection_point)
+#
+			#for node in filtered_nodes: # NOTE: Leave untyped. Get ERROR node previously freed.
+				#if is_instance_valid(node) and node.is_inside_tree():
+#
+					#var terrain_height: float
+					#if terrain3d_node_selected:
+						#terrain_height = terrain.data.get_height(node.global_position)
+					#elif terrabrush_node_selected:
+						#var point_pos_overhead_origin: Vector3 = Vector3(node.global_position.x, node.global_position.y + point_check_offset, node.global_position.z)
+						#terrain_height = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+#
+					#if not stored_mesh_offsets.has(node):
+						#var node_global_pos: Vector3 = node.global_position
+						#var current_offset_y: float = (terrain_height - node_global_pos.y)
+						#stored_mesh_offsets[node] = Vector3(node_global_pos.x, current_offset_y, node_global_pos.z)
+					#node.global_position.y = (terrain_height - stored_mesh_offsets[node].y)
+#
+			#for node in filtered_points.keys(): # NOTE: Leave untyped. Get ERROR node previously freed.
+				#if is_instance_valid(node) and node.is_inside_tree():
+					#for point_index: int in filtered_points[node].keys():
+#
+						#var curve_point_local_pos: Vector3 = filtered_points[node][point_index]
+						#var curve_point_global_pos: Vector3 = node.global_transform * curve_point_local_pos
+						#
+						#var terrain_height: float
+						#if terrain3d_node_selected:
+							#terrain_height = terrain.data.get_height(curve_point_global_pos)
+						#elif terrabrush_node_selected:
+							#var point_pos_overhead_origin: Vector3 = Vector3(curve_point_global_pos.x, curve_point_global_pos.y + point_check_offset, curve_point_global_pos.z)
+							#terrain_height = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+#
+						#node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - path3d_node_heights[node], curve_point_local_pos.z))
+
+
+# REFACTORED OF ABOVE CODE AGAIN TO CONVERT TO NODE_INSTANCE
+		if terrain3d_node_selected or terrabrush_node_selected:
+			# NOTE: The amount to add up on the Y axis when checking down for terrain collision point.
+			var point_check_offset: float = .01
+			var follow_terrain_nodes: Array[Node] = get_tree().get_nodes_in_group("follow_terrain_group")
+			var filtered_nodes = filter_nodes(follow_terrain_nodes, intersection_point)
+
+			# NOTE: For objects placed in the scene.
+			for node_id: int in filtered_nodes:
+				var node: Node = instance_from_id(node_id)
+				if is_instance_valid(node) and node.is_inside_tree():
+
+					var terrain_height: float
+					if terrain3d_node_selected:
+						terrain_height = terrain.data.get_height(node.global_position)
+					elif terrabrush_node_selected:
+						var point_pos_overhead_origin: Vector3 = Vector3(node.global_position.x, node.global_position.y + point_check_offset, node.global_position.z)
+						terrain_height = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+
+					if not stored_mesh_offsets.has(node_id):
+						var node_global_pos: Vector3 = node.global_position
+						var current_offset_y: float = (terrain_height - node_global_pos.y)
+						stored_mesh_offsets[node_id] = Vector3(node_global_pos.x, current_offset_y, node_global_pos.z)
+					node.global_position.y = (terrain_height - stored_mesh_offsets[node.get_instance_id()].y)
+
+			# NOTE: For individual points on a curve. # TODO Store point offsets so user can edit curves.
+			for node_id: int in filtered_points.keys():
+				var node: Node = instance_from_id(node_id)
+				if is_instance_valid(node) and node.is_inside_tree():
+					for point_index: int in filtered_points[node_id].keys():
+
+						var curve_point_local_pos: Vector3 = filtered_points[node_id][point_index]
+						var curve_point_global_pos: Vector3 = node.global_transform * curve_point_local_pos
+						
+						var terrain_height: float
+						if terrain3d_node_selected:
+							terrain_height = terrain.data.get_height(curve_point_global_pos)
+						elif terrabrush_node_selected:
+							var point_pos_overhead_origin: Vector3 = Vector3(curve_point_global_pos.x, curve_point_global_pos.y + point_check_offset, curve_point_global_pos.z)
+							terrain_height = terra_brush_helper_script.get_mouse_click_to_zone_height(point_pos_overhead_origin, Vector3.DOWN).y
+
+						node.curve.set_point_position(point_index, Vector3(curve_point_local_pos.x, terrain_height - path3d_node_heights[node_id], curve_point_local_pos.z))
+
+
+
+
+		else:
+			non_collision_object_snapping() # NOTE: Running this will update min_p for code below
+			if terrain_3d_plugin_active and terrain:
+				
+				# Convert to distance relative to camera
+				var terrain_3d_min_p: Vector3 = (viewport_camera.global_position - intersection_point).abs()
+				var snap_logic_min_p: Vector3 = (viewport_camera.global_position - min_p).abs()
+
+				#print("terrain_3d_min_p.z: ", terrain_3d_min_p.z)
+				#print("snap_logic_min_p.z: ", snap_logic_min_p.z)
+
+				
+				# Rework
+				if terrain_3d_min_p.z > 3000 and min_p.z == 0.0:
+					collision_point = Vector3.ZERO
+					var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+					if virtual_plane_enabled and virtual_plane_3d_instance:
+						virtual_plane_3d_instance.global_position = ray_idle
+					else:
+						set_scene_preview_position(ray_idle)
+						## Use ray_direction.normalized() to avoid ERROR: The target vector can't be zero.
+						#process_snap_flow_manager_connections(ray_idle, ray_direction.normalized())
+
+				else:
+					# Get the closest point between the two plugins
+					if terrain_3d_min_p.z < snap_logic_min_p.z or min_p.z == 0.0:
+						collision_point = intersection_point
+						if virtual_plane_enabled and virtual_plane_3d_instance:
+							set_scene_preview_position(collision_point)
+							#virtual_plane_3d_instance.global_position = intersection_point
+						else:
+							var terrain_vector_normal: Vector3 = terrain.data.get_normal(collision_point)
+							if terrain_vector_normal.is_finite(): 
+								process_snap_flow_manager_connections(collision_point, terrain_vector_normal)
+							else:
+								set_scene_preview_position(collision_point)
+					else:
+						collision_point = min_p
+						if virtual_plane_enabled and virtual_plane_3d_instance:
+							#virtual_plane_3d_instance.global_position = min_p
+							set_scene_preview_position(collision_point)
+						else:
+							process_snap_flow_manager_connections(collision_point, min_n)
+
+# REPEAT CODE OF ABOVE terrain_3d_plugin_active:
+			if terra_brush_plugin_active and terra_brush:
+				#collision_point = min_p
+				#if terrain_3d_plugin_active and terrain:
+				intersection_point = terra_brush_helper_script.get_mouse_click_to_zone_height(ray_origin, ray_direction)
+				#intersection_point = terra_brush.getHeightForMousePosition(editor_camera3d)
+				#push_error("intersection_point: ", intersection_point)
+				#push_error("viewport_camera.global_position: ", viewport_camera.global_position)
+				# Convert to distance relative to camera
+				
+				## FIXME Only need the z so can reduce calculations here?
+				#var terrain_3d_min_p: Vector3 = (viewport_camera.global_position - intersection_point).abs()
+				#var snap_logic_min_p: Vector3 = (viewport_camera.global_position - min_p).abs()
+
+				#var min_p_local = min_p
+				#if is_zero_approx(min_p.y):
+					#min_p_local = Vector3.ZERO
+
+
+				# FIXME Only need the z so can reduce calculations here?
+				var terrain_3d_min_p_z: float = absf(viewport_camera.global_position.z - intersection_point.z)
+				var snap_logic_min_p_z: float = absf(viewport_camera.global_position.z - min_p.z)
+
+
+				#push_error("terrain_3d_min_p.z: ", terrain_3d_min_p.z)
+				#push_error("snap_logic_min_p.z: ", snap_logic_min_p.z)
+
+				# ALERT Something is still off when top down view sometimes snapping to 0.0
+				# FIXME CHECK _HANDLES AND TERRABRUSH BUILT IN CLASSES TO EXCLUDE ADITIONALS
+				# Rework
+				# NOTE When in ortho top down view
+				#print("terrain_3d_min_p.z: ", terrain_3d_min_p.z)
+				#print("intersection_point.y: ", intersection_point.y)
+				#print("min_p: ", min_p)
+				if terrain_3d_min_p_z > 3000 and min_p.z == 0.0:
+					collision_point = Vector3.ZERO
+					var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+					if virtual_plane_enabled and virtual_plane_3d_instance:
+						virtual_plane_3d_instance.global_position = ray_idle
+					else:
+						set_scene_preview_position(ray_idle)
+						## Use ray_direction.normalized() to avoid ERROR: The target vector can't be zero.
+						#process_snap_flow_manager_connections(ray_idle, ray_direction.normalized())
+
+				else:
+
+					#if terrain_3d_min_p_z < snap_logic_min_p_z or is_zero_approx(min_p_axis):
+					if (terrain_3d_min_p_z < snap_logic_min_p_z or min_p.z == 0.0) and not is_equal_approx(terrain_3d_min_p_z, snap_logic_min_p_z):
+
+						collision_point = intersection_point
+						if virtual_plane_enabled and virtual_plane_3d_instance:
+							set_scene_preview_position(collision_point)
+							#virtual_plane_3d_instance.global_position = intersection_point
+						else:
+							# FIXME See if we can get the normal vector from the helper script image heightmap
+							#var terrain_vector_normal: Vector3 = terrain.data.get_normal(collision_point)
+							#if terrain_vector_normal.is_finite(): 
+								#process_snap_flow_manager_connections(collision_point, terrain_vector_normal)
+							#else:
+							set_scene_preview_position(collision_point)
+					else:
+						#push_error("min_p: ", min_p)
+						collision_point = min_p
+						if virtual_plane_enabled and virtual_plane_3d_instance:
+							#virtual_plane_3d_instance.global_position = min_p
+							set_scene_preview_position(collision_point)
+						else:
+							process_snap_flow_manager_connections(collision_point, min_n)
+
+
+
+
+
+
+		# FIXME Combined with left mouse input handling below this one
+		## TODO Add option for single long collision or or individual collisions. 
+		## NOTE TODO On MOUSE_BUTTON_LEFT release need to reset add_start_point flag back to true
+			if event is InputEventMouseButton:
+				var mouse_event = event as InputEventMouseButton
+				# Check if the event is for the left mouse button
+				if mouse_event.button_index == MOUSE_BUTTON_LEFT:
+					if mouse_event.pressed and allow_pressed:
+						#print("mouse pressed")
+						line_start_point = get_start_point(collision_point)
+						#print("line_start_point: ", line_start_point)
+						# Left mouse button was pressed
+						var undo_redo: EditorUndoRedoManager = get_undo_redo()
+						undo_redo.create_action("Place " + scene_name())
+						undo_redo.add_do_method(self, "place_scene_instance")
+						undo_redo.add_undo_method(self, "remove_scene_instance")
+						undo_redo.commit_action()
+						# Prevents button from spamming scene previews
+						allow_pressed = false
+
+					elif not mouse_event.pressed: # Left mouse button was released
+						#drag_line.line_point_cache.clear()
+						if drag_line:
+
+							drag_line.xz_point_cache.clear()
+							# Cleanup drag lines that are to short to have mesh.
+							if drag_line.mesh_count == 0:
+								drag_line.queue_free()
+
+						# Reset flags
+						allow_pressed = true
+						add_start_point = true
+						remove_scene = true
+						drag_line = null
+						#push_error("mouse release")
+
+
+
+
+			### FIXME at set drag distance and undo/redo to placing object to undo if dragged past distance.
+			##if event is InputEventMouseMotion:# and is_instance_valid(scene_preview) and scene_preview.is_inside_tree():
+### FIXME Need additional points along line 1 point for each object so that placing along surface is accurate. see drag_line.multimesh_to_line
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			#push_error("collision_point: ", collision_point)
+			# FIXME Removes nodes that are placed but should only removed the current drag lines placed scene 
+			if event is InputEventMouseMotion and line_start_point.distance_squared_to(collision_point) >= drag_distance_start_path:
+				if scene_preview_3d_active:# and selected_nodes.has("ScenePreview"):
+
+					if remove_scene:
+						remove_scene = false
+						remove_scene_instance()
+
+					## FIXME Need additional points along line 1 point for each object so that placing along surface is accurate. see drag_line.multimesh_to_line
+					if not drag_line:
+						
+						# FIXME Pass in intial starting collision point not collision point after drag distance.
+						# FIXME Start point needs to be offset 1/2 width of object place in opposite direction of vector dragged.
+						#create_drag_line(line_start_point)
+						create_drag_line()
+						#create_drag_line(collision_point)
+						if not placed_multimesh_paths.has(drag_line):
+							placed_multimesh_paths.append(drag_line)
+
+						## Pass in variables
+						#drag_line.collision_point = collision_point
+						#drag_line.line_start_point = line_start_point
+						#drag_line.terrain = terrain
+
+
+						if create_as_line:
+							var undo_redo = get_undo_redo()
+							undo_redo.create_action("multimesh to line " + scene_name())
+							undo_redo.add_undo_method(self, "remove_multimesh_path_3d")
+							undo_redo.commit_action()
+
+						else:
+							var undo_redo = get_undo_redo()
+							undo_redo.create_action("multimesh to path " + scene_name())
+							undo_redo.add_undo_method(self, "remove_multimesh_path_3d")
+							undo_redo.commit_action()
+
+					if drag_line:
+						#push_error("drag_line.curve.point_count: ", drag_line.curve.point_count)
+					#else:
+						# Pass in variables
+						drag_line.set_display_folded(true)
+						drag_line.collision_point = collision_point
+						drag_line.line_start_point = line_start_point
+						drag_line.terrain = terrain
+						drag_line.terra_brush = terra_brush
+
+# FIXME Call from process or physics process and just have flag here to have consistent points added?
+						if create_as_line:
+							#drag_line.multimesh_to_line(collision_point, line_start_point, terrain)
+							drag_line.multimesh_to_line()
+						else:
+							#push_error("running ")
+							drag_line.multimesh_to_path()
+
+						#drag_line.set_display_folded(true)
+
+
+
+
+
+
+
+
+
+#
+		#else:
+			#allow_pressed = true
+				#if event:
+					#enable_placement = true
+#
+			##if event is InputEventMouseButton:
+				###if debug: print("this is working here")
+				## Prevent Scene Viewer panel zooming when in 3D viewport
+				#scene_viewer_panel_instance.enable_panel_button_sizing = false
+#
+				#var mouse_event = event as InputEventMouseButton
+#
+				## Check if the event is for the left mouse button
+				#if mouse_event.button_index == MOUSE_BUTTON_LEFT:
+					#if mouse_event.pressed and allow_pressed:
+						## Left mouse button was pressed
+						#_on_left_mouse_button_pressed()
+						## Prevents button from spamming scene previews
+						#allow_pressed = false
+					#elif not mouse_event.pressed:
+						## Left mouse button was released
+						#allow_pressed = true
+
+
+	#if has_moved:
+		#for csg_data: Dictionary in csg_use_collisions:
+			#(csg_data['node'] as CSGShape3D).use_collision = csg_data['use_collision']
+		#
+		#csg_use_collisions = []
+#
+		##undoredo_action.add_do_property(selected, "global_transform", Transform3D(selected.global_transform))
+		##undoredo_action.commit_action()
+		#has_moved = false
 
 	# FIXME Will cause errors if in Ortho View and snapping 
 	if selected:
@@ -8649,8 +11867,9 @@ func _forward_3d_gui_input(viewport_camera: Camera3D, event: InputEvent) -> int:
 #
 	##if Input.is_key_pressed(KEY_SHIFT):
 		##return EditorPlugin.AFTER_GUI_INPUT_STOP
-#
+
 	return AFTER_GUI_INPUT_PASS
+
 
 
 const FLOAT64_MAX = 1.79769e308
@@ -8857,21 +12076,46 @@ func _collision_objects_snapping(viewport_camera: Camera3D, event: InputEventMou
 				#tris.append(node.global_transform * vert)
 #
 			#visual_instances_data.append({ "node": node, "aabb": aabb, "tris": tris })
-#
 
-var scene_pinned_node: Dictionary [Node, Node] = {}
 
+## Run on: Change scene tab, Q and Left click, Node deleted from tree, Escape.
+func clean_up_scene_preview() -> void:
+	
+	remove_existing_scene_preview()
+	scene_preview_3d_active = false
+	#push_error("Resetting back to user setting")
+	# Reset auto_expand_to_selected back to user settings. NOTE: Used to prevent expanding of Path3D drag_line.
+	settings.set_setting("docks/scene_tree/auto_expand_to_selected", expand_to_selected)
+
+
+var scene_pinned_node: Dictionary [Node, Node] = { }
+
+# FIXME When cycling through scenes blue pin will flicker?
+## Remove connections when changing to new scene in editor
 func changed_to_new_scene(scene_root: Node) -> void:
+	##find_terrain_plugin_nodes(scene_root.get_viewport().get_camera_3d())
+	var editor_camera3d: Camera3D = EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+	find_terrain_plugin_nodes(editor_camera3d)
+	#find_terrain_plugin_nodes()
+
+	## NOTE: Required for when user manually deletes ScenePreview node and edge cases. 
+	#get_tree().node_removed.connect(
+		#func(node: Node) -> void:
+			#if node.name == "ScenePreview" and not quick_scroll_enabled:
+				#clean_up_scene_preview()
+	#)
+
+	#push_error("changed to new scene tab")
 	# Temporarly block removal of pinned node pin since switching scene tabs triggers node removal signal
 	allow_pin_removal = false
 	
 	# Disable ScenePreview and Dragging when switching between scene tabs
 	# FIXME must be removed before changing scene tree and new root
 	if scene_preview_3d_active:
-		scene_preview_3d_active = false
-		
-		remove_existing_scene_preview()
+		clean_up_scene_preview()
+
 	dragging_node = null
+	#terrain = null
 
 	#if scene_preview:
 		#scene_preview.queue_free()
@@ -8889,10 +12133,9 @@ func changed_to_new_scene(scene_root: Node) -> void:
 
 
 
-
 	if scene_root:
-		for key: Node in scene_pinned_node.keys():
-			#if debug: print("key: ", key)
+		# NOTE: Could not set key: Node because will print error when closing scene with pinned node and node freed.
+		for key in scene_pinned_node.keys():
 			if scene_root == key: # Match the current scene root with the one in the dict
 				change_selection_to(scene_pinned_node[key])
 				await get_tree().create_timer(0.01).timeout # Give time for change to take effect
@@ -9010,10 +12253,22 @@ func get_quaternion_from_normal(old_basis: Basis, new_normal: Vector3) -> Quater
 
 
 # NOTE: scene_preview_mesh will not be available when first called because still loading from thread
-# FIXME TODO Will need to have rotation and scale variables filled when this function disabled and when using plane snapping 
+# FIXME TODO Will need to have rotation and scale variables filled when this function disabled and when using plane snapping
+# FIXME Is overriding offset set by code_snippet code
 func set_scene_to_collision_point(collision_point: Vector3) -> void:
+	#surface_collision_point = collision_point
+	#if center_scene_preview:
+		#center_helper_node.global_position = collision_point
+	#else:
+	
+	#print("surface_collision_point: ", collision_point)
+	if virtual_plane_enabled and virtual_plane_3d_instance:
+		virtual_plane_3d_instance.global_position = collision_point
+		
 	if scene_preview_mesh:
-		scene_preview_mesh.global_position = collision_point
+		scene_preview_mesh.global_position = collision_point# TEST + Vector3(1, 0, 0)
+		
+	
 		## Create new Scene Preview at last ones position
 		#last_scene_preview_pos = collision_point
 		#last_scene_preview_scale = scene_preview_mesh.scale
@@ -9713,8 +12968,9 @@ func aabb_flush_snapping(node: Node3D, dest_global_aabb: AABB, scene_preview_aab
 # Updates scene_preview to the currently selected scene button 
 func set_scene_preview(value) -> void:
 	if scene_preview_3d_active:
-		remove_existing_scene_preview()
-		create_scene_preview()
+		refresh_scene_preview()
+		#remove_existing_scene_preview()
+		#create_scene_preview()
 
 
 
@@ -9737,7 +12993,7 @@ var hovered_node: TreeItem
 var last_node_hovered: TreeItem
 
 var button_info: Array = []
-var current_buttons: Dictionary = {}
+var current_buttons: Dictionary = { }
 
 
 # FIXME OBJECTS WITH NO BODY OR COLLISION DO NOT PLACE UNDER PINNED NODE NOTE: FIXED
@@ -10114,6 +13370,7 @@ var object_tris: Dictionary
 #var rust_script = MyEditorPlugin.new()
 
 var filtered_object_ids: Array
+var filtered_object_ids2: Array
 var clear_object_id: int = 0
 #var packed_array = PackedInt64Array(reduced_object_ids)
 # Used to update object_tris if object is moved
@@ -10688,6 +13945,221 @@ var closest_object: Object = null
 			#var ray_idle: Vector3 = ray_origin + ray_direction * 10
 			#process_snap_flow_manager_connections(ray_idle, Vector3.ZERO)
 
+var print_data: bool = true
+
+
+
+
+
+var mesh_signature_cache: Dictionary = { }  
+
+func get_mesh_signature(mesh: Mesh) -> int:
+	if mesh_signature_cache.has(mesh):
+		return mesh_signature_cache[mesh]  
+	#var sig: int = compute_signature(mesh)  
+	var sig: int = compute_mesh_uid(mesh)
+	mesh_signature_cache[mesh] = sig  
+	return sig
+
+
+
+#const Q: float = 0.0001 # quantization step  
+#const FNV_OFFSET: int = 1469598103934665603  
+#const FNV_PRIME: int = 1099511628211
+#
+### Generate repeatable unique mesh hash ID from mesh parameters.
+#func compute_mesh_uid(mesh: Mesh) -> int:  
+	#var h := FNV_OFFSET
+	#h = fnv1a_u64(h, mesh.get_surface_count())
+#
+	#for s in range(mesh.get_surface_count()):
+		#var arrays: Array = mesh.surface_get_arrays(s)
+#
+		## Vertices
+		#var verts = arrays[Mesh.ARRAY_VERTEX]
+		#for v in verts:
+			#var q := quantize_vec3(v)
+			#h = fnv1a_u64(h, q.x)
+			#h = fnv1a_u64(h, q.y)
+			#h = fnv1a_u64(h, q.z)
+#
+		## Indices
+		#var indices = arrays[Mesh.ARRAY_INDEX]
+		#for i in indices:
+			#h = fnv1a_u64(h, i)
+#
+	#return h
+#
+#
+#func quantize_vec3(v: Vector3) -> Vector3i:  
+	#return Vector3i(  
+	#round(v.x / Q),  
+	#round(v.y / Q),  
+	#round(v.z / Q)  
+	#)
+#
+#
+#func fnv1a_u64(h: int, v: int) -> int:  
+	#h ^= v  
+	#h *= FNV_PRIME  
+	#return h & 0xFFFFFFFFFFFFFFFF
+
+
+## 64Bit Version
+#const Q: float = 0.0001 # quantization step  
+#const FNV_OFFSET: int = 1469598103934665603  
+#const FNV_PRIME: int = 1099511628211
+#
+##func mesh_uid_hex(mesh: Mesh) -> String:
+	##return "%016x" % compute_mesh_uid(mesh)
+#
+##func u64_hex(v: int) -> String:
+	##return "%016x" % v
+#
+#func u64_hex(v: int) -> String:
+	#var lo: int = v & 0xFFFFFFFF
+	#var hi: int = (v >> 32) & 0xFFFFFFFF
+	#return "%08x%08x" % [hi, lo]
+#
+#
+##region Setting hex in mesh metadata
+##var uid_int: int = compute_mesh_uid(mesh)
+##var uid_hex: String = u64_hex(uid_int)
+##
+##mesh.set_meta("mesh_uid", uid_hex)
+##endregion
+#
+##region Get hex from mesh metadata
+#
+#func get_mesh_uid_hex(mesh: Mesh) -> String:
+	#return mesh.get_meta("mesh_uid")
+#
+#func get_mesh_uid_int(mesh: Mesh) -> int:
+	#return int("0x" + get_mesh_uid_hex(mesh))
+##endregion
+#
+#
+#func compute_mesh_uid(mesh: Mesh) -> int:
+	#var h := FNV_OFFSET
+	#h = fnv1a_u64(h, mesh.get_surface_count())
+#
+	#for surface in range(mesh.get_surface_count()):
+		#h = fnv1a_u64(h, mesh.surface_get_primitive_type(surface))
+		#var arrays: Array = mesh.surface_get_arrays(surface)
+		#h = hash_surface_geometry(h, arrays)
+#
+	#return h
+#
+#func hash_surface_geometry(h: int, arrays: Array) -> int:
+	#var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	#var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+#
+	#for i in range(0, indices.size(), 3):
+		#var tri := [
+			#quantize_vec3(verts[indices[i]]),
+			#quantize_vec3(verts[indices[i + 1]]),
+			#quantize_vec3(verts[indices[i + 2]])
+		#]
+		#tri.sort()
+#
+		#for v in tri:
+			#h = fnv1a_u64(h, v.x)
+			#h = fnv1a_u64(h, v.y)
+			#h = fnv1a_u64(h, v.z)
+#
+	#return h
+#
+#func quantize_vec3(v: Vector3) -> Vector3i:
+	#return Vector3i(
+		#round(v.x / Q),
+		#round(v.y / Q),
+		#round(v.z / Q)
+	#)
+#
+#func fnv1a_u64(h: int, v: int) -> int:
+	#h ^= v
+	#h *= FNV_PRIME
+	#return h
+
+
+#32 Bit Version
+const Q: float = 0.0001 # quantization step  
+const FNV32_OFFSET: int = 2166136261
+const FNV32_PRIME: int = 16777619
+
+
+func u32_hex(v: int) -> String:
+	return "%08x" % (v & 0xFFFFFFFF)
+
+
+#region Setting hex in mesh metadata
+#var uid_int: int = compute_mesh_uid(mesh)
+#var uid_hex: String = u64_hex(uid_int)
+#
+#mesh.set_meta("mesh_uid", uid_hex)
+#endregion
+
+#region Get hex from mesh metadata
+
+func get_mesh_uid_hex(mesh: Mesh) -> String:
+	return mesh.get_meta("mesh_uid")
+
+func get_mesh_uid_int(mesh: Mesh) -> int:
+	return int("0x" + get_mesh_uid_hex(mesh))
+#endregion
+
+
+func compute_mesh_uid(mesh: Mesh) -> int:
+	var h := FNV32_OFFSET
+	h = fnv1a_u32(h, mesh.get_surface_count())
+
+	for surface in range(mesh.get_surface_count()):
+		h = fnv1a_u32(h, mesh.surface_get_primitive_type(surface))
+		var arrays: Array = mesh.surface_get_arrays(surface)
+		h = hash_surface_geometry(h, arrays)
+
+	return h
+
+func hash_surface_geometry(h: int, arrays: Array) -> int:
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+
+	for i in range(0, indices.size(), 3):
+		var tri := [
+			quantize_vec3(verts[indices[i]]),
+			quantize_vec3(verts[indices[i + 1]]),
+			quantize_vec3(verts[indices[i + 2]])
+		]
+		tri.sort()
+
+		for v in tri:
+			h = fnv1a_u32(h, v.x)
+			h = fnv1a_u32(h, v.y)
+			h = fnv1a_u32(h, v.z)
+
+	return h
+
+func quantize_vec3(v: Vector3) -> Vector3i:
+	return Vector3i(
+		round(v.x / Q),
+		round(v.y / Q),
+		round(v.z / Q)
+	)
+
+func fnv1a_u32(h: int, v: int) -> int:
+	h ^= v
+	h *= FNV32_PRIME
+	return h & 0xFFFFFFFF  # ensure 32-bit overflow
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -10696,138 +14168,201 @@ var closest_object: Object = null
 # TODO Extend range so can snap in Top Side Front views etc
 # FIXME If object rotated after placed collision is not correct. 
 func non_collision_object_snapping() -> void:
+
+
+	#var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+#
+	##print("virtual_plane_enabled: ", virtual_plane_enabled)
+	##print("virtual_plane_3d_instance: ", virtual_plane_3d_instance)
+#
+	#
+#
+	#if virtual_plane_enabled and virtual_plane_3d_instance:
+		#virtual_plane_3d_instance.global_position = ray_idle
+
+
+
+	# NOTE: Required for when in TOP BOTTOM LEFT RIGHT FRONT REAR VIEWS.
+	if editor_camera3d.projection == Camera3D.PROJECTION_PERSPECTIVE:
+		ray_origin = editor_camera3d.project_ray_origin(mouse_pos)
+		ray_direction = editor_camera3d.project_ray_normal(mouse_pos)
+	elif editor_camera3d.projection == Camera3D.PROJECTION_ORTHOGONAL:
+		ray_origin = editor_camera3d.project_position(mouse_pos, 0)
+		ray_direction = -editor_camera3d.global_transform.basis.z.normalized()
+
+
+
 	#while true:
 		#if debug: print("hello")
 		#if scene_preview_3d_active:
 	#if is_instance_valid(dragging_node) and dragging_node.is_inside_tree():
 		#if debug: print(dragging_node)
-	if (is_instance_valid(scene_preview) and scene_preview.is_inside_tree()) \
-	or (is_instance_valid(dragging_node) and dragging_node.is_inside_tree()):
-	#if scene_preview_3d_active or dragging_node:
-		filtered_object_ids.clear()
-		var min_t: float = FLOAT64_MAX
-		var min_p: Vector3 = Vector3.ZERO
-		var min_n: Vector3 = Vector3.ZERO
-		var closest_object_id: int = -1
 
-		#var ray_end: Vector3 = ray_origin + ray_direction * 1000
-		if not scenario_rid:
-			await get_tree().process_frame
-			#scenario_rid = EditorInterface.get_edited_scene_root().get_world_3d().get_scenario()
+	#if virtual_plane_enabled or (is_instance_valid(scene_preview) and scene_preview.is_inside_tree()) \
+	#or (is_instance_valid(dragging_node) and dragging_node.is_inside_tree()):
 
-		#object_ids = RenderingServer.instances_cull_ray(ray_origin, ray_end, scenario_rid)
-		#if debug: print("total object size: ", object_tris.size())
+#if scene_preview_3d_active or dragging_node:
+	filtered_object_ids.clear()
+	var min_t: float = FLOAT64_MAX
+	min_p = Vector3.ZERO # Expose min_p for Terrain3D support
+	min_n = Vector3.ZERO # Expose Min_n for Terrain3D Support
+	var closest_object_id: int = -1
 
-		for object_id: int in object_ids:
-			# Filter out duplicate ids
-			if not filtered_object_ids.has(object_id):
-				filtered_object_ids.append(object_id)
+	#var ray_end: Vector3 = ray_origin + ray_direction * 1000
+	if not scenario_rid:
+		await get_tree().process_frame
+		#scenario_rid = EditorInterface.get_edited_scene_root().get_world_3d().get_scenario()
 
+	#object_ids = RenderingServer.instances_cull_ray(ray_origin, ray_end, scenario_rid)
 
-			# FIXME if subtract find way to only snap to inside of overlapping area?
-			# Example Box with anoher subtract box inside and snapping to inside wall of "Room"
-			# NOTE: Above will work easily with collision shape and raycast since collision shape is auto generated that has cutout
-			# Exclude CSGShape3D that have operation subtract
-			if instance_from_id(object_id) is CSGShape3D and instance_from_id(object_id).get_operation() == 2: #instance_from_id(object_id).OPERATION_SUBTRACTION:
-				filtered_object_ids.erase(object_id)
+	for object_id: int in object_ids:
+		# Filter out duplicate ids
+		if not filtered_object_ids.has(object_id):
+			filtered_object_ids.append(object_id)
 
 
-			# Exclude all objects that are not either MeshInstance3D or CSGShape3D
-			filtered_object_ids = filtered_object_ids.filter(func (object_id) -> bool: 
-					return instance_from_id(object_id) is CSGShape3D or instance_from_id(object_id) is MeshInstance3D)
+		# FIXME if subtract find way to only snap to inside of overlapping area?
+		# Example Box with anoher subtract box inside and snapping to inside wall of "Room"
+		# NOTE: Above will work easily with collision shape and raycast since collision shape is auto generated that has cutout
+		# Exclude CSGShape3D that have operation subtract
+		if instance_from_id(object_id) is CSGShape3D and instance_from_id(object_id).get_operation() == 2: #instance_from_id(object_id).OPERATION_SUBTRACTION:
+			filtered_object_ids.erase(object_id)
+
+
+		# Exclude all objects that are not either MeshInstance3D or CSGShape3D
+		filtered_object_ids = filtered_object_ids.filter(func (object_id) -> bool: 
+				return instance_from_id(object_id) is CSGShape3D or instance_from_id(object_id) is MeshInstance3D)
+
+
+	# FIXME TODO CSGTerrain Support: CSGTerrain Node when selected and child line or scg edited then CSGTerrain node needs to be filtered out to recalculate collisions.
+	# Also add support for when Terrain changed that objects follow edit. so we need height y at object position within area of edit like Terrain3D support adds.
+	# FIXME not excluding csg shape3d
+	# Exclude the scene_preview or selected node to reposition
+	if terra_brush: # TerraBrush includes a collision at 0.0 that needs to be excluded.
+		filter_out_object_ids(terra_brush)
+	if dragging_node:
+		filter_out_object_ids(dragging_node)
+	else:
+		filter_out_object_ids(scene_preview)
 
 
 
-		# FIXME not excluding csg shape3d
-		# Exclude the scene_preview or selected node to reposition
-		if dragging_node:
-			filter_out_object_ids(dragging_node)
-		else:
-			filter_out_object_ids(scene_preview)
 
+	#var idle: bool = false
+	idle = false
 
+	# FIXME TERRABRUSH creates a plane at 0.0 that registers as a filtered object and prevents snapping below that plane when above it.
+	# Find way to exclude it. 
+	if filtered_object_ids:
+		for object_id: int in filtered_object_ids:
+			
+			if object_tris.keys().has(object_id):
 
+				var tris: PackedVector3Array = object_tris[object_id]
+				#push_error("tris.size(): ", tris.size())
+				for i: int in range(0, tris.size(), 3):
+					var v0: Vector3 = tris[i + 0]
+					var v1: Vector3 = tris[i + 1]
+					var v2: Vector3 = tris[i + 2]
 
-		var idle: bool = false
+					#mutex = Mutex.new()
+					#thread = Thread.new()
+					#var res = thread.start(_thread_function.bind(ray_origin, ray_direction, v0, v1, v2))
+					# NOTE: The speed bottleneck is here running ray_intersects_triangle in rust within same script is much faster
+					#if debug: print("v0: ", v0)
+					#if debug: print("v1: ", v1)
+					#if debug: print("v2: ", v2)
+					var res: Variant = Geometry3D.ray_intersects_triangle(ray_origin, ray_direction, v0, v1, v2)
+					if res is Vector3:
 
-		if filtered_object_ids:
-			for object_id: int in filtered_object_ids:
-				if object_tris.keys().has(object_id):
+						#var res = ray_intersects_triangle(ray_origin, ray_direction, v0, v1, v2)
+						#var res = thread.start(ray_intersects_triangle.bind(ray_origin, ray_direction, v0, v1, v2))
 
-					var tris: PackedVector3Array = object_tris[object_id]
-					for i: int in range(0, tris.size(), 3):
-						var v0: Vector3 = tris[i + 0]
-						var v1: Vector3 = tris[i + 1]
-						var v2: Vector3 = tris[i + 2]
+						#mutex.lock()
+						#counter += 1
+						#mutex.unlock()
 
-						#mutex = Mutex.new()
-						#thread = Thread.new()
-						#var res = thread.start(_thread_function.bind(ray_origin, ray_direction, v0, v1, v2))
-						# NOTE: The speed bottleneck is here running ray_intersects_triangle in rust within same script is much faster
-						var res: Variant = Geometry3D.ray_intersects_triangle(ray_origin, ray_direction, v0, v1, v2)
-						if res is Vector3:
+						#thread.wait_to_finish()
+						#if res != Vector3.ZERO:
+						
+						var len: float = ray_origin.distance_squared_to(res)
 
-							#var res = ray_intersects_triangle(ray_origin, ray_direction, v0, v1, v2)
-							#var res = thread.start(ray_intersects_triangle.bind(ray_origin, ray_direction, v0, v1, v2))
+						if len < min_t:
+							min_t = len
+							min_p = res
+							var v0v1: Vector3 = v1 - v0
+							var v0v2: Vector3 = v2 - v0
+							min_n = v0v2.cross(v0v1).normalized()
+							closest_object_id = object_id
 
-							#mutex.lock()
-							#counter += 1
-							#mutex.unlock()
-
-							#thread.wait_to_finish()
-							#if res != Vector3.ZERO:
-							
-							var len: float = ray_origin.distance_squared_to(res)
-
-							if len < min_t:
-								min_t = len
-								min_p = res
-								var v0v1: Vector3 = v1 - v0
-								var v0v2: Vector3 = v2 - v0
-								min_n = v0v2.cross(v0v1).normalized()
-								closest_object_id = object_id
-
-				else:
-					var object = instance_from_id(object_id)
-					var tris: PackedVector3Array = []
-					if object is MeshInstance3D:
-						var verts: PackedVector3Array = object.mesh.get_faces()
-						for vert: Vector3 in verts:
-							tris.append(object.global_transform * vert)
-
-					else: # it is a CSGShape3D:
-						var meshes: Array = object.get_meshes()
-						var verts: PackedVector3Array = (meshes[1] as ArrayMesh).get_faces()
-						for vert: Vector3 in verts:
-							tris.append(object.global_transform * vert)
-					object_tris[object_id] = tris
-
-
-			if min_t < FLOAT64_MAX:
-				closest_object = instance_from_id(closest_object_id)
-				#if debug: print("object name: ", closest_object.name)
-				#if debug: print("Snapping to object: ", closest_object.get_parent().name)
-				closest_object_scale = closest_object.get_scale()
-					
-				#if debug: print("closest_object scale: ", closest_object.get_scale())
-				#if debug: print("object property list: ", closest_object.get_property_list())
-				if closest_object.has_meta("extras"):
-					var metadata: Dictionary = closest_object.get_meta("extras")
-
-					#if metadata.has("tags"):
-						#if debug: print("closest_object tags: ", metadata["tags"])
-
-				#scene_preview_snap_to_normal(min_p, min_n)
-
-				process_snap_flow_manager_connections(min_p, min_n)
 			else:
-				idle = true
-				closest_object = null
+				var object = instance_from_id(object_id)
+				var tris: PackedVector3Array = []
+				if object is MeshInstance3D:
+					#push_error("original signed int: ", compute_mesh_uid(object.mesh))
+					#push_error("mesh UID: ", u32_hex(compute_mesh_uid(object.mesh)))
+					#push_error("mesh UID back to int: ", u32_hex(compute_mesh_uid(object.mesh)).hex_to_int())
+					
+					#push_error("mesh UID back to int: ", int("0x" + u64_hex(compute_mesh_uid(object.mesh))))
+					#push_error("mesh UID back to int: ", int(u32_hex(compute_mesh_uid(object.mesh))))
+					#push_error("mesh UID: ", compute_mesh_uid(object.mesh))
+					var verts: PackedVector3Array = object.mesh.get_faces()
+					for vert: Vector3 in verts:
+						tris.append(object.global_transform * vert)
 
-		if not filtered_object_ids or idle:
-			var ray_idle: Vector3 = ray_origin + ray_direction * 10
-			#scene_preview_snap_to_normal(ray_idle, Vector3.ZERO)
-			process_snap_flow_manager_connections(ray_idle, Vector3.ZERO)
+				else: # it is a CSGShape3D:
+					var meshes: Array = object.get_meshes()
+					var verts: PackedVector3Array = (meshes[1] as ArrayMesh).get_faces()
+					for vert: Vector3 in verts:
+						tris.append(object.global_transform * vert)
+				object_tris[object_id] = tris
+
+		if min_t < FLOAT64_MAX:
+			closest_object = instance_from_id(closest_object_id)
+			#if debug: print("object name: ", closest_object.name)
+			#if debug: print("Snapping to object: ", closest_object.get_parent().name)
+			closest_object_scale = closest_object.get_scale()
+				
+			#if debug: print("closest_object scale: ", closest_object.get_scale())
+			#if debug: print("object property list: ", closest_object.get_property_list())
+
+# ALERT Was this used, removed if comment out and still functioning.
+			#if closest_object.has_meta("extras"):
+				#var metadata: Dictionary = closest_object.get_meta("extras")
+
+
+
+			# NOTE: Excluded here because handled in _forward_3d_gui_input
+			# Support for Terrain3D and TerraBrush
+			if continue_to_process:
+			#if not terrain_3d_plugin_active or terrain == null:
+				collision_point = min_p
+				if virtual_plane_enabled and virtual_plane_3d_instance:
+					set_scene_preview_position(min_p)
+				else:
+					process_snap_flow_manager_connections(min_p, min_n)
+			
+		else:
+			idle = true
+			closest_object = null
+
+	if not filtered_object_ids or idle:
+		# NOTE: Excluded here because handled in _forward_3d_gui_input
+		# Support for Terrain3D and TerraBrush
+		if continue_to_process:
+		#if not terrain_3d_plugin_active or terrain == null:
+			var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+			if virtual_plane_enabled and virtual_plane_3d_instance:
+				virtual_plane_3d_instance.global_position = ray_idle
+			else:
+				# Use ray_direction.normalized() to avoid ERROR: The target vector can't be zero.
+				process_snap_flow_manager_connections(ray_idle, ray_direction.normalized())
+
+
+
+
+
+
 
 	else:
 		#scene_preview = null
@@ -12805,6 +16340,8 @@ var print_all: bool = true
 
 
 var run_test_flag: bool = true
+var scene_preview_aabb: AABB
+var last_collision_point: Vector3
 
 # TODO Reset to new script and reload only when selected button changes
 # FIXME above good for one time offets but not for constantly updating position HOW TO FIX??? OFFSET FLAG??
@@ -12813,14 +16350,61 @@ var run_test_flag: bool = true
 # TODO I want to have the offset scrollable so this would need to run each tick of the scroll wheel Pass in scroll wheel tick?
 var script_instance # Reload the script only when new scene button
 var process_user_code: bool = true
-func evaluate_user_code(code: String, scene_preview: Node, vector_normal: Vector3) -> void:
+func evaluate_user_code(code: String, scene_preview: Node, snap_vector_normal: Vector3, collision_point: Vector3) -> void:
 	#if run_test_flag:
 		#run_test_flag = false
 	# Create a new GDScript resource
+	# TEST WITH CODE HERE 
+	var obj_mesh: Mesh
+	var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
+	for mesh_node: MeshInstance3D in mesh_node_instances:
+		obj_mesh = mesh_node.mesh
+		break
+	#scene_preview_aabb = snap_flow_manager_graph.get_global_aabb(obj_mesh, scene_preview.global_transform)
+	# FIXME Save resources by only updating this when scale changes
+	scene_preview_aabb = snap_flow_manager_graph.get_scene_aabb(scene_preview)
+	if debug: print("scene_preview_aabb backend: ", scene_preview_aabb)
 	
-	if scene_preview != last_scene_preview:
+	
+	#var local_center: Vector3 = scene_preview_aabb.get_center()
+	##var center_global: Vector3 = scene_preview.to_global(local_center)
+	#collision_point -= local_center
+	#var new_origin: Vector3 = collision_point - local_center
+	#collision_point = new_origin
+	#if last_collision_point != collision_point:
+		#last_collision_point = collision_point
+		## Calculate the center of the AABB in local space
+		#var local_center: Vector3 = scene_preview_aabb.get_center()
+		## Convert that center to world space using the current transform
+		#var center_global: Vector3 = scene_preview.to_global(local_center)
+		## Extract the original global transform (position, rotation, scale)
+		#var original_global_transform: Transform3D = scene_preview.global_transform
+		## Set new origin: collision point minus the offset from center to origin
+		#var new_origin: Vector3 = collision_point - center_global
+		#collision_point = new_origin
+
+
+	# Create new script containing code once when changing scenes.
+	if scene_preview != last_scene_preview or update_script:
 		last_scene_preview = scene_preview
+		# Combine Scene MeshInstance3D AABB
+		# FIXME Needs to be updated when scale changes
+		#scene_preview_aabb = snap_flow_manager_graph.get_scene_aabb(scene_preview)
+		#var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)
+		## Reset scene_aabb AABB
+		#scene_preview_aabb = AABB(Vector3.ZERO, Vector3.ZERO)
+		## Merge scene AABB 
+		#var count: int = 0
+		#for mesh_instance_3d: MeshInstance3D in mesh_node_instances:
+			#count += 1
+			#var aabb: AABB = mesh_instance_3d.mesh.get_aabb()
+			#if count == 1:
+				#scene_preview_aabb = aabb
+			#else:
+				#scene_preview_aabb.merge(aabb)
+
 		
+		update_script = false
 		# Reset back to process every frame
 		process_user_code = true
 		
@@ -12836,10 +16420,19 @@ func evaluate_user_code(code: String, scene_preview: Node, vector_normal: Vector
 		script_instance = script.new()
 
 	if process_user_code:
+		#if debug: print("running backend aabb: ", scene_preview.get_child(0).mesh.get_aabb())
+		#if debug: print("running backend aabb: ", scene_preview_aabb)
+		var snap_aabb: AABB = AABB(Vector3.ZERO, Vector3.ZERO)# FIXME FILL WITH PROPER VALUE
 		var process = true
-		if script_instance.has_method("transform"):
+		if script_instance.has_method("transform") and scene_preview_mesh:
+			
 			# If transform() returns false will set process_user_code to false and stop process
-			process_user_code = script_instance.transform(scene_preview, vector_normal, process)
+			#process_user_code = script_instance.transform(scene_preview, scene_preview_aabb, snap_vector_normal, snap_aabb, process)
+			# TODO Change scene_preview_mesh to multi-selection Array[Node3D] or possibly multimesh?
+			# TEST 
+			process_user_code = script_instance.transform(scene_preview_mesh, scene_preview_aabb, snap_vector_normal, snap_aabb, collision_point, process)
+			#process_user_code = script_instance.transform(scene_preview, scene_preview_aabb, snap_vector_normal, snap_aabb, collision_point, process)
+
 
 	#return mesh_transform
 	#return
@@ -12883,9 +16476,78 @@ func update_last_scene_pos_scale_rot() -> void:
 
 #var mouse_motion_event = InputEventMouseMotion.new()
 #func _physics_process(delta: float) -> void:
-	#pass
+#func _process(delta: float) -> void:
+	#if not create_as_line and drag_line:
+		#push_error("running ")
+		#drag_line.multimesh_to_path()
 # FIXME Optimize for when not in use not running  
 func _physics_process(delta: float) -> void:
+	#if not create_as_line and drag_line:
+		#push_error("running ")
+		#drag_line.multimesh_to_path()
+	#print("terrain: ", terrain)
+	#print("snap_panel_menu.current_3d_path_state: ", snap_panel_menu.current_3d_path_state)
+	#if new_scene_snap:
+		#new_scene_snap.will_this_run_at_runtime()
+
+
+
+	#print(GDExtensionManager.get_loaded_extensions())
+	#print("hello: ", GDExtensionManager.is_extension_loaded("res://addons/terrabrush/terrabrush.gdextension"))
+	#print("drag_line.curve.get_point_count(): ", drag_line.curve.get_point_count())
+	#selected_nodes = EditorInterface.get_selection().get_selected_nodes()
+	#var node_ref_pos: Vector3
+	#var node_place_pos: Vector3
+	#for node in selected_nodes:
+		#if node == selected_nodes[0]:
+			#node_ref_pos = node.get_global_position()
+		#if node == selected_nodes[1]:
+			#node_place_pos = node.get_global_position()
+	#print("node_ref_pos - node_place_pos: OFFSET: ", node_ref_pos - node_place_pos)
+	#print("slider_value: ", slider_value)
+	#print("collision_point: ", collision_point)
+	#if not terrain:
+		#terrain = Terrain3D.new()
+	#else:
+		#
+	#var intersection_point: Vector3 = terrain.get_intersection(camera_pos, camera_dir, true)
+	#print(my_instance.my_custom_function())
+	#var existing_terrain = get_tree().get_edited_scene_root().find_children("*", "Terrain3D", true, false)
+	#if existing_terrain:
+		#print("yes")
+		#print("terrain: ", terrain)
+
+
+	
+	# FIXME Issue with clicking outside the 3dviewport that places virtual plane, so need something between _physics_process() and _forward_3d_gui_input()
+	#non_collision_object_snapping()
+
+	#print("filtered_object_ids: ", filtered_object_ids)
+
+
+
+	#var ray_idle: Vector3 = ray_origin + ray_direction * idle_distance
+	#if virtual_plane_enabled and virtual_plane_3d_instance:
+		#non_collision_object_snapping()
+		#print("processing")
+		#virtual_plane_3d_instance.global_position = ray_idle
+
+
+
+	#print("body_quick_scroll: ", body_quick_scroll)
+	
+	#print("scene_preview.get_child(0).global_transform: ", scene_preview.get_child(0).global_transform)
+
+	#if scene_preview:
+		#var first_mesh_node: MeshInstance3D = scene_viewer_panel_instance.get_scenes_first_mesh_node(scene_preview)
+		#if first_mesh_node:
+			#if first_mesh_node.has_meta("extras"):
+				#if debug: print("first_mesh_node metadata: ",first_mesh_node.get_meta("extras"))
+
+
+
+
+
 	#var connections: Array[Dictionary] = snap_flow_manager_graph.get_connection_list()
 	#if debug: print("connections: ", connections)
 	#if debug: print("current_visible_buttons: ", current_visible_buttons.size())
@@ -12947,12 +16609,27 @@ func _physics_process(delta: float) -> void:
 
 
 
-	if scene_preview_3d_active or dragging_node:
+	if scene_preview_3d_active or dragging_node or virtual_plane_enabled:
 		if not scenario_rid:
-			scenario_rid = EditorInterface.get_edited_scene_root().get_world_3d().get_scenario()
+			if EditorInterface.get_edited_scene_root():
+				scenario_rid = EditorInterface.get_edited_scene_root().get_viewport().find_world_3d().get_scenario()
+				#if drag_line:
+					#drag_line.scenario_rid = scenario_rid
+			else:
+				push_warning("A scene root node is required to place objects.")
+				scene_preview_3d_active = false
+				return
+				#scenario_rid = EditorInterface.get_edited_scene_root().get_world_3d().get_scenario()
+
+			#else: # Support for Terrain3D
+				
+				
+		#var intersection_point: Vector3 = terrain.get_intersection(camera_pos, camera_dir, true)
+
 
 		mouse_pos = editor_viewport_3d.get_mouse_position()
 
+		# NOTE: Required for when in TOP BOTTOM LEFT RIGHT FRONT REAR VIEWS.
 		if editor_camera3d.projection == Camera3D.PROJECTION_PERSPECTIVE:
 			ray_origin = editor_camera3d.project_ray_origin(mouse_pos)
 			ray_direction = editor_camera3d.project_ray_normal(mouse_pos)
@@ -12963,6 +16640,7 @@ func _physics_process(delta: float) -> void:
 
 		var ray_end: Vector3 = ray_origin + ray_direction * 10000
 		object_ids = RenderingServer.instances_cull_ray(ray_origin, ray_end, scenario_rid)
+
 		#for object_id in object_ids:
 			#if debug: print("object_ids: ", instance_from_id(object_id))
 
@@ -13016,28 +16694,48 @@ func _physics_process(delta: float) -> void:
 		#if debug: print("child name: ", child.name)
 
 
-
-	var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
-	for node: Node in selected_nodes:
-		if node is Node3D or node is MeshInstance3D:
-			pass
-			#if debug: print("get position")
+####################################
+	#var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
+	#for node: Node in selected_nodes:
+		#if node is Node3D or node is MeshInstance3D:
+			#pass
+			##if debug: print("get position")
 
 	# Keep track of objects positions so that when moved can update tris new position for mesh col calculation
 	for id: int in filtered_object_ids:
+		
 		#if instance_from_id(id) and get_node(instance_from_id(id).get_path()).is_inside_tree() and get_node(instance_from_id(id).get_path()) != null:
-		if instance_from_id(id) and get_node(instance_from_id(id).get_path()) != null:
-		#if get_node(instance_from_id(id).get_path()) != null:
+		#if instance_from_id(id) and instance_from_id(id).is_inside_tree() and get_node(instance_from_id(id).get_path()) != null:
+			#print("id: ", id)
+		if instance_from_id(id) and instance_from_id(id).is_inside_tree() and get_node(instance_from_id(id).get_path()) != null:
+			var object_instance: Node = get_node(instance_from_id(id).get_path())
 			if object_position.has(id):
-				if get_node(instance_from_id(id).get_path()).get_global_position() != object_position[id]:
+				if object_instance.get_global_position() != object_position[id]:
 					#dragging_node = null
 					#if debug: print("the obect was moved, clear from cache")
 					object_tris.erase(id)
 					if debug: print("rust_script.update_object_tris(id)")
 					# Update table to objects new position
-					object_position[id] = get_node(instance_from_id(id).get_path()).get_global_position()
+					object_position[id] = object_instance.get_global_position()
 			else:
-				object_position[id] = get_node(instance_from_id(id).get_path()).get_global_position()
+				object_position[id] = object_instance.get_global_position()
+#################################
+
+
+
+		#if instance_from_id(id) and get_node(instance_from_id(id).get_path()) != null:
+			#print("id: ", id)
+		###if get_node(instance_from_id(id).get_path()) != null:
+			#if object_position.has(id):
+				#if get_node(instance_from_id(id).get_path()).get_global_position() != object_position[id]:
+					##dragging_node = null
+					##if debug: print("the obect was moved, clear from cache")
+					#object_tris.erase(id)
+					#if debug: print("rust_script.update_object_tris(id)")
+					## Update table to objects new position
+					#object_position[id] = get_node(instance_from_id(id).get_path()).get_global_position()
+			#else:
+				#object_position[id] = get_node(instance_from_id(id).get_path()).get_global_position()
 
 
 
@@ -13236,59 +16934,87 @@ func _physics_process(delta: float) -> void:
 		
 	
 
-	# Keep scene_preview as the selected node in the scene tree
+	## FIXME ALERT BREAKS WORKFLOW MUST EXIT TERRABRUSH TO PLACE OBJECT AND THEN RESELECT TERRABRUSH NODE TO RESUME.
+	## FIXME do not switch away from TerraBrush when plugin active and TerraBrush node selected
+	## NOTE: FIXME DOES NOT WORK BECAUSE scene_preview_mesh NEEDS TO BE SELECTED TO MOVE IT. TODO FIND WORKAROUND MOVE scene_preview_mesh WITHOUT IT SELECTED.
+	# NOTE: Keep scene_preview as the selected node in the scene tree
+	# FIXME Still have issues sometimes where getting ERROR is not in tree? delayed removal? need to cleanup/clarify scene_preview_mesh vs scene_preview maybe issue?
 	if scene_preview != null and not quick_scroll_enabled and scene_preview_mesh != null:
-		if scene_preview_mesh.is_visible_in_tree():
-			update_last_scene_pos_scale_rot()
-			# TODO check if this can not be made better
-			#var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
+		if scene_preview_mesh.is_visible_in_tree():# and scene_preview.is_visible_in_tree():
+			var selected_nodes: Array[Node] = EditorInterface.get_selection().get_selected_nodes()
 			existing_preview = get_tree().get_edited_scene_root().find_child("ScenePreview", true, false)
-			#if not existing_preview:
-				#existing_preview = get_tree().get_edited_scene_root().find_child("ScenePreview2", true, false)
 			if existing_preview and scene_preview_3d_active:
+				update_last_scene_pos_scale_rot()
 				if not selected_nodes.has(scene_preview_mesh):
-					#if debug: print("changing to scenepreview")
-					#EditorInterface.edit_node(existing_preview)
 					change_selection_to(scene_preview_mesh)
+			#else:
+				#clean_up_scene_preview()
+
+
+
+
+			##if not existing_preview:
+				##existing_preview = get_tree().get_edited_scene_root().find_child("ScenePreview2", true, false)
+			##if existing_preview and scene_preview_3d_active:
+## FIXME ALERT BREAKS WORKFLOW MUST EXIT TERRABRUSH TO PLACE OBJECT AND THEN RESELECT TERRABRUSH NODE TO RESUME.
+## FIXME do not switch away from TerraBrush when plugin active and TerraBrush node selected
+## NOTE: FIXME DOES NOT WORK BECAUSE scene_preview_mesh NEEDS TO BE SELECTED TO MOVE IT. TODO FIND WORKAROUND MOVE scene_preview_mesh WITHOUT IT SELECTED.
+				##if terra_brush_plugin_active and selected_nodes.has(terra_brush):
+					##change_selection_to(terra_brush)
+					##push_error("do not change to scene_preview test")
+				##elif not selected_nodes.has(scene_preview_mesh):
+				#if not selected_nodes.has(scene_preview_mesh):
+					##push_warning("Selection is locked to active ScenePreview. Press Escape Key or Q Left click to exit ScenePreview.")
+					##if debug: print("changing to scenepreview")
+					##EditorInterface.edit_node(existing_preview)
+					#change_selection_to(scene_preview_mesh)
+#
+			##else:
+				##push_error("could not find scene preview in tree so removing")
+				##remove_existing_scene_preview()
+
+
 
 	# Keep dragging_node as the selected node in the scene tree
 	elif dragging_node != null:
 		if not selected_nodes.has(dragging_node):
 			change_selection_to(dragging_node)
+	
+	#else:
+		#remove_existing_scene_preview()
 
 
-
-	if process_ray:
-
-		# Assuming `center_ray` is the node you want to move
-		# and `move_amount` is the distance you want to move up along the local Y-axis
-		#if center_ray != null:
-		# 1. Get the current global position of the node
-		var current_global_position = center_ray.global_transform.origin
-
-		# 2. Convert the current global position to local space relative to the node's parent
-		var local_position = center_ray.to_local(current_global_position)
-
-		# 3. Move the position up along the local Y-axis
-		local_position.y += 0.001  # Move up by 0.001 units
-
-		# 4. Convert the updated local position back to global space
-		var updated_global_position = center_ray.to_global(local_position)
-
-		# 5. Apply the updated global position to the node
-		center_ray.global_transform.origin = updated_global_position
-		
-		center_ray.get_child(0).force_raycast_update()
-		
-		if center_ray.get_child(0).is_colliding():
-			pipe_center_snap_last_position = center_ray.global_transform.origin
-			#if debug: print("center_ray position: ", center_ray.global_transform.origin)
-		else:
-			process_ray = false
-			initialize_center_ray = true
-
-	if editor_viewport_3d_active:
-		rotation_snapping()
+	#if process_ray:
+#
+		## Assuming `center_ray` is the node you want to move
+		## and `move_amount` is the distance you want to move up along the local Y-axis
+		##if center_ray != null:
+		## 1. Get the current global position of the node
+		#var current_global_position = center_ray.global_transform.origin
+#
+		## 2. Convert the current global position to local space relative to the node's parent
+		#var local_position = center_ray.to_local(current_global_position)
+#
+		## 3. Move the position up along the local Y-axis
+		#local_position.y += 0.001  # Move up by 0.001 units
+#
+		## 4. Convert the updated local position back to global space
+		#var updated_global_position = center_ray.to_global(local_position)
+#
+		## 5. Apply the updated global position to the node
+		#center_ray.global_transform.origin = updated_global_position
+		#
+		#center_ray.get_child(0).force_raycast_update()
+		#
+		#if center_ray.get_child(0).is_colliding():
+			#pipe_center_snap_last_position = center_ray.global_transform.origin
+			##if debug: print("center_ray position: ", center_ray.global_transform.origin)
+		#else:
+			#process_ray = false
+			#initialize_center_ray = true
+#
+	#if editor_viewport_3d_active:
+		#rotation_snapping()
 
 
 
@@ -13364,51 +17090,51 @@ func align_z_axis_with_normal(object: Node3D, normal: Vector3) -> void:
 
 
 
-func snap_snap_ray_cast_3d() -> void:
-	var selected_nodes = EditorInterface.get_selection().get_selected_nodes()
+#func snap_snap_ray_cast_3d() -> void:
+	#var selected_nodes = EditorInterface.get_selection().get_selected_nodes()
+#
+	#for ray_cast_3d: RayCast3D in get_tree().get_nodes_in_group("snap_ray_cast_3d"):
+		#if ray_cast_3d:
+			#ray_cast_3d.force_raycast_update()
+			#
+			#if selected_nodes.size() > 0:
+				#for node in selected_nodes:
+					#if node is StaticBody3D or node is MeshInstance3D:
+						#var mesh_child = node.get_child(0)
+						#var aabb
+						#
+						#if mesh_child is MeshInstance3D:
+							#aabb = mesh_child.get_aabb()
+#
+						#if ray_cast_3d.is_colliding():
+							#
+							#if ray_cast_3d.get_collider() == node:
+								#pass
+							#else:
+								#var ray_collision_point = ray_cast_3d.get_collision_point()
+								#var local_collision_point = node.to_local(ray_collision_point)
+								#var local_offset = Vector3.ZERO  # Start with default offset
+								#var snap_flush_offset: int = 0
+#
+								#if ray_cast_3d.name == "SnapFrontFlush_" + node.name:
+#
+#
+									#if ray_cast_3d.get_collision_normal().round() == Vector3(0, 0, 1):
+										#var flush_point = ray_cast_3d.get_collision_point().z
+#
+										#scene_preview.position.z = flush_point - (aabb.size.z / 2 - snap_flush_offset)
 
-	for ray_cast_3d: RayCast3D in get_tree().get_nodes_in_group("snap_ray_cast_3d"):
-		if ray_cast_3d:
-			ray_cast_3d.force_raycast_update()
-			
-			if selected_nodes.size() > 0:
-				for node in selected_nodes:
-					if node is StaticBody3D or node is MeshInstance3D:
-						var mesh_child = node.get_child(0)
-						var aabb
-						
-						if mesh_child is MeshInstance3D:
-							aabb = mesh_child.get_aabb()
-
-						if ray_cast_3d.is_colliding():
-							
-							if ray_cast_3d.get_collider() == node:
-								pass
-							else:
-								var ray_collision_point = ray_cast_3d.get_collision_point()
-								var local_collision_point = node.to_local(ray_collision_point)
-								var local_offset = Vector3.ZERO  # Start with default offset
-								var snap_flush_offset: int = 0
-
-								if ray_cast_3d.name == "SnapFrontFlush_" + node.name:
 
 
-									if ray_cast_3d.get_collision_normal().round() == Vector3(0, 0, 1):
-										var flush_point = ray_cast_3d.get_collision_point().z
-
-										scene_preview.position.z = flush_point - (aabb.size.z / 2 - snap_flush_offset)
-
-
-
-func clear_ray_cast_3d_nodes() -> void:
-	var selected_nodes = EditorInterface.get_selection().get_selected_nodes()
-	
-	for ray_cast_3d: RayCast3D in get_tree().get_nodes_in_group("snap_ray_cast_3d"):
-		if ray_cast_3d:
-			if selected_nodes.has(ray_cast_3d.get_parent_node_3d()):
-				pass
-			else:
-				ray_cast_3d.queue_free()
+#func clear_ray_cast_3d_nodes() -> void:
+	#var selected_nodes = EditorInterface.get_selection().get_selected_nodes()
+	#
+	#for ray_cast_3d: RayCast3D in get_tree().get_nodes_in_group("snap_ray_cast_3d"):
+		#if ray_cast_3d:
+			#if selected_nodes.has(ray_cast_3d.get_parent_node_3d()):
+				#pass
+			#else:
+				#ray_cast_3d.queue_free()
 
 
 
@@ -13452,79 +17178,79 @@ var snap_ray_cast_3d_names: Array[String] = ["SnapXLeft_", "SnapXRight_", "SnapZ
 
 
 
-func create_snap_ray_cast_3d() -> void:
-	var ray_cast_3d_length: float = 0.2
-	
-	var editor_interface = EditorInterface
-	if not editor_interface:
-		return
-	var selected_nodes: Array[Node] = editor_interface.get_selection().get_selected_nodes()
-
-
-	for node in selected_nodes:
-		if node is StaticBody3D:
-			for snap_name: String in snap_ray_cast_3d_names:
-
-				var mesh_child = node.get_child(0)
-				# NOTE adjust for none child(0) meshinstance3d children or multiple mesh
-				if mesh_child is MeshInstance3D:
-					var aabb = mesh_child.get_aabb()
-
-					var ray_cast_3d = RayCast3D.new()
-					node.add_child(ray_cast_3d)
-					ray_cast_3d.add_to_group("snap_ray_cast_3d", false)
-					ray_cast_3d.owner = node
-
-					if not snap_on_rotate: # NOTE WILL ONLY WORK IF SOMEHOW LOCK RAYCAST AFTER IT SNAPS TO WALL, BUT THEN IT ALSO WOULDN'T WORK IF LOCKED
-						match snap_name:
-							"SnapFrontFlush_":
-								ray_cast_3d.name = snap_name + node.name
-								var ray_cast_3d_x_offset = aabb.get_center().x - (aabb.size.x / 1.9)
-								var ray_cast_3d_y_offset = aabb.get_center().y
-								var ray_cast_3d_z_offset = aabb.get_center().z + 2
-								ray_cast_3d.position =  Vector3(ray_cast_3d_x_offset, ray_cast_3d_y_offset, ray_cast_3d_z_offset)
-								ray_cast_3d.target_position = Vector3(0, 0, -ray_cast_3d_length)
-							
-							"SnapXLeft_": # X LEFT # FIXME find if ray_cast_3d_x_offset needs to be global and run in process()
-								ray_cast_3d.name = snap_name + node.name
-								ray_cast_3d_x_offset = aabb.get_center().x - (aabb.size.x / 2)
-								ray_cast_3d_y_offset = aabb.get_center().y
-								ray_cast_3d.position =  Vector3(ray_cast_3d_x_offset, ray_cast_3d_y_offset, aabb.get_center().z)
-								ray_cast_3d.target_position = Vector3(-ray_cast_3d_length, 0, 0)
-
-							"SnapXRight_": # X RIGHT
-								ray_cast_3d.name = snap_name + node.name
-								var ray_cast_3d_x_offset = aabb.get_center().x + (aabb.size.x / 2)
-								var ray_cast_3d_y_offset = aabb.get_center().y
-								ray_cast_3d.position =  Vector3(ray_cast_3d_x_offset, ray_cast_3d_y_offset, aabb.get_center().z)
-								ray_cast_3d.target_position = Vector3(+ray_cast_3d_length, 0, 0)
-								
-							"SnapZForward_": # CENTER UP
-								ray_cast_3d.name = snap_name + node.name
-								var ray_cast_3d_y_offset = aabb.get_center().y + (aabb.size.y / 2)
-								ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, aabb.get_center().z)
-								ray_cast_3d.target_position = Vector3(0, ray_cast_3d_length, 0)
-								
-							"SnapZBackward_": # CENTER DOWN
-								ray_cast_3d.name = snap_name + node.name
-								var ray_cast_3d_y_offset = aabb.get_center().y - (aabb.size.y / 2)
-								ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, aabb.get_center().z)
-								ray_cast_3d.target_position = Vector3(0, -ray_cast_3d_length, 0)
-								
-							"SnapCenterUp_": # Z FORWARD
-								ray_cast_3d.name = snap_name + node.name
-								var ray_cast_3d_z_offset = aabb.get_center().z + (aabb.size.z / 2)
-								var ray_cast_3d_y_offset = aabb.get_center().y
-								ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, ray_cast_3d_z_offset)
-								ray_cast_3d.target_position = Vector3(0, 0, +ray_cast_3d_length)
-								
-							"SnapCenterDown_": # Z BACKWARD
-								ray_cast_3d.name = snap_name + node.name
-								var ray_cast_3d_z_offset = aabb.get_center().z - (aabb.size.z / 2)
-								var ray_cast_3d_y_offset = aabb.get_center().y
-								ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, ray_cast_3d_z_offset)
-								ray_cast_3d.target_position = Vector3(0, 0, -ray_cast_3d_length)
-								
+#func create_snap_ray_cast_3d() -> void:
+	#var ray_cast_3d_length: float = 0.2
+	#
+	#var editor_interface = EditorInterface
+	#if not editor_interface:
+		#return
+	#var selected_nodes: Array[Node] = editor_interface.get_selection().get_selected_nodes()
+#
+#
+	#for node in selected_nodes:
+		#if node is StaticBody3D:
+			#for snap_name: String in snap_ray_cast_3d_names:
+#
+				#var mesh_child = node.get_child(0)
+				## NOTE adjust for none child(0) meshinstance3d children or multiple mesh
+				#if mesh_child is MeshInstance3D:
+					#var aabb = mesh_child.get_aabb()
+#
+					#var ray_cast_3d = RayCast3D.new()
+					#node.add_child(ray_cast_3d)
+					#ray_cast_3d.add_to_group("snap_ray_cast_3d", false)
+					#ray_cast_3d.owner = node
+#
+					#if not snap_on_rotate: # NOTE WILL ONLY WORK IF SOMEHOW LOCK RAYCAST AFTER IT SNAPS TO WALL, BUT THEN IT ALSO WOULDN'T WORK IF LOCKED
+						#match snap_name:
+							#"SnapFrontFlush_":
+								#ray_cast_3d.name = snap_name + node.name
+								#var ray_cast_3d_x_offset = aabb.get_center().x - (aabb.size.x / 1.9)
+								#var ray_cast_3d_y_offset = aabb.get_center().y
+								#var ray_cast_3d_z_offset = aabb.get_center().z + 2
+								#ray_cast_3d.position =  Vector3(ray_cast_3d_x_offset, ray_cast_3d_y_offset, ray_cast_3d_z_offset)
+								#ray_cast_3d.target_position = Vector3(0, 0, -ray_cast_3d_length)
+							#
+							#"SnapXLeft_": # X LEFT # FIXME find if ray_cast_3d_x_offset needs to be global and run in process()
+								#ray_cast_3d.name = snap_name + node.name
+								#ray_cast_3d_x_offset = aabb.get_center().x - (aabb.size.x / 2)
+								#ray_cast_3d_y_offset = aabb.get_center().y
+								#ray_cast_3d.position =  Vector3(ray_cast_3d_x_offset, ray_cast_3d_y_offset, aabb.get_center().z)
+								#ray_cast_3d.target_position = Vector3(-ray_cast_3d_length, 0, 0)
+#
+							#"SnapXRight_": # X RIGHT
+								#ray_cast_3d.name = snap_name + node.name
+								#var ray_cast_3d_x_offset = aabb.get_center().x + (aabb.size.x / 2)
+								#var ray_cast_3d_y_offset = aabb.get_center().y
+								#ray_cast_3d.position =  Vector3(ray_cast_3d_x_offset, ray_cast_3d_y_offset, aabb.get_center().z)
+								#ray_cast_3d.target_position = Vector3(+ray_cast_3d_length, 0, 0)
+								#
+							#"SnapZForward_": # CENTER UP
+								#ray_cast_3d.name = snap_name + node.name
+								#var ray_cast_3d_y_offset = aabb.get_center().y + (aabb.size.y / 2)
+								#ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, aabb.get_center().z)
+								#ray_cast_3d.target_position = Vector3(0, ray_cast_3d_length, 0)
+								#
+							#"SnapZBackward_": # CENTER DOWN
+								#ray_cast_3d.name = snap_name + node.name
+								#var ray_cast_3d_y_offset = aabb.get_center().y - (aabb.size.y / 2)
+								#ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, aabb.get_center().z)
+								#ray_cast_3d.target_position = Vector3(0, -ray_cast_3d_length, 0)
+								#
+							#"SnapCenterUp_": # Z FORWARD
+								#ray_cast_3d.name = snap_name + node.name
+								#var ray_cast_3d_z_offset = aabb.get_center().z + (aabb.size.z / 2)
+								#var ray_cast_3d_y_offset = aabb.get_center().y
+								#ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, ray_cast_3d_z_offset)
+								#ray_cast_3d.target_position = Vector3(0, 0, +ray_cast_3d_length)
+								#
+							#"SnapCenterDown_": # Z BACKWARD
+								#ray_cast_3d.name = snap_name + node.name
+								#var ray_cast_3d_z_offset = aabb.get_center().z - (aabb.size.z / 2)
+								#var ray_cast_3d_y_offset = aabb.get_center().y
+								#ray_cast_3d.position =  Vector3(aabb.get_center().x, ray_cast_3d_y_offset, ray_cast_3d_z_offset)
+								#ray_cast_3d.target_position = Vector3(0, 0, -ray_cast_3d_length)
+								#
 
 
 
@@ -13553,9 +17279,20 @@ func create_snap_ray_cast_3d() -> void:
 
 
 func _exit_tree() -> void:
+	#remove_custom_type("SnapLogicRuntime")
+	#if scene_viewer_panel_instance:
+		#for main_collection_tab: Control in scene_viewer_panel_instance.main_collection_tabs:
+			#if main_collection_tab.name == "Global Collections" or main_collection_tab.name == "Shared Collections":
+				## Hide LineEdit and reset
+				#main_collection_tab.modify_and_hide_line_edit(true)
+
+
 	#thread.wait_to_finish()
 	remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, snap_panel_menu)
 	snap_panel_menu.queue_free()
+	
+
+
 
 
 	# FIXME TODO Decide if needed and gives ERROR: scene/main/node.cpp:1687 - Condition "p_child->data.parent != this" is true.
