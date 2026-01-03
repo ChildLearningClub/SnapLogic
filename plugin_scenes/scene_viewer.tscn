@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://npn806iebijr"]
+[gd_scene format=3 uid="uid://npn806iebijr"]
 
 [ext_resource type="Script" uid="uid://cxs628px7g6sn" path="res://addons/scene_snap/scripts/scene_viewer.gd" id="1_e7uom"]
 [ext_resource type="Texture2D" uid="uid://brm3mnr57sucv" path="res://addons/scene_snap/icons/ToolScaleRotate.svg" id="2_8d2ld"]
@@ -9,18 +9,6 @@
 
 [sub_resource type="Image" id="Image_8d2ld"]
 data = {
-"data": PackedByteArray(255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 42, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 92, 92, 0, 255, 92, 92, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 93, 93, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0),
-"format": "RGBA8",
-"height": 16,
-"mipmaps": false,
-"width": 16
-}
-
-[sub_resource type="ImageTexture" id="ImageTexture_83wqf"]
-image = SubResource("Image_8d2ld")
-
-[sub_resource type="Image" id="Image_ncxu8"]
-data = {
 "data": PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 93, 93, 255, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 42, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 45, 255, 93, 93, 44, 0, 0, 0, 0, 255, 91, 91, 42, 255, 91, 91, 42, 0, 0, 0, 0, 255, 91, 91, 45, 255, 93, 93, 44, 0, 0, 0, 0, 255, 91, 91, 42, 255, 91, 91, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 "format": "RGBA8",
 "height": 16,
@@ -29,6 +17,22 @@ data = {
 }
 
 [sub_resource type="ImageTexture" id="ImageTexture_q814q"]
+image = SubResource("Image_8d2ld")
+
+[sub_resource type="DPITexture" id="DPITexture_83wqf"]
+_source = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\"><path fill=\"#ff5d5d\" d=\"M2 1v8.586l1.293-1.293a1 1 0 0 1 1.414 0L7 10.587l2.293-2.293a1 1 0 0 1 1.414 0L13 10.586l1-1V6H9V1H2zm8 0v4h4zm-6 9.414-2 2V15h12v-2.586l-.293.293a1 1 0 0 1-1.414 0L10 10.414l-2.293 2.293a1 1 0 0 1-1.414 0L4 10.414z\"/></svg>
+"
+
+[sub_resource type="Image" id="Image_ncxu8"]
+data = {
+"data": PackedByteArray(255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 93, 93, 255, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 42, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 255, 255, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 255, 255, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 255, 255, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0),
+"format": "RGBA8",
+"height": 16,
+"mipmaps": false,
+"width": 16
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_8d2ld"]
 image = SubResource("Image_ncxu8")
 
 [sub_resource type="Image" id="Image_4307i"]
@@ -40,24 +44,12 @@ data = {
 "width": 16
 }
 
-[sub_resource type="ImageTexture" id="ImageTexture_8d2ld"]
-image = SubResource("Image_4307i")
-
-[sub_resource type="Image" id="Image_tlddc"]
-data = {
-"data": PackedByteArray(255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 93, 93, 255, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 42, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 255, 255, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 255, 255, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 255, 255, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 255, 255, 0, 255, 255, 255, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0),
-"format": "RGBA8",
-"height": 16,
-"mipmaps": false,
-"width": 16
-}
-
 [sub_resource type="ImageTexture" id="ImageTexture_1hcaf"]
-image = SubResource("Image_tlddc")
+image = SubResource("Image_4307i")
 
 [sub_resource type="SphereMesh" id="SphereMesh_px65m"]
 
-[node name="SceneViewer" type="Control"]
+[node name="SceneViewer" type="Control" unique_id=1173507786]
 custom_minimum_size = Vector2(0, 456)
 layout_mode = 3
 anchors_preset = 15
@@ -69,16 +61,16 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_e7uom")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="ColorRect" type="ColorRect" parent="." unique_id=848219945]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.211765, 0.239216, 0.290196, 1)
+color = Color(0.153, 0.153, 0.153, 1)
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=2020004234]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -86,62 +78,93 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HSplitContainer" type="HSplitContainer" parent="HBoxContainer"]
+[node name="HSplitContainer" type="HSplitContainer" parent="HBoxContainer" unique_id=81525999]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MainTabContainer" type="TabContainer" parent="HBoxContainer/HSplitContainer"]
+[node name="MainTabContainer" type="TabContainer" parent="HBoxContainer/HSplitContainer" unique_id=814941428]
 unique_name_in_owner = true
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
 drag_to_rearrange_enabled = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer" unique_id=252289329]
 custom_minimum_size = Vector2(30, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.0
 
-[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="HBoxContainer/VBoxContainer" unique_id=569044740]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/VBoxContainer/HBoxContainer2" unique_id=201609448]
 layout_mode = 2
 theme_override_constants/margin_top = 3
 
-[node name="MakeFloating" type="TextureButton" parent="HBoxContainer/VBoxContainer/MarginContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-texture_normal = SubResource("ImageTexture_83wqf")
-stretch_mode = 5
-
-[node name="PinPanel" type="TextureButton" parent="HBoxContainer/VBoxContainer/MarginContainer"]
+[node name="PinPanel" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer" unique_id=1912308501]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(18, 18)
 layout_mode = 2
 toggle_mode = true
 texture_normal = SubResource("ImageTexture_q814q")
 stretch_mode = 5
 
-[node name="HSeparator2" type="HSeparator" parent="HBoxContainer/VBoxContainer"]
+[node name="RefreshThumbnails" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer" unique_id=1343799955]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+tooltip_text = "Refresh selected collection or visible thumbnails."
+texture_normal = SubResource("DPITexture_83wqf")
+stretch_mode = 5
+
+[node name="MarginContainer2" type="MarginContainer" parent="HBoxContainer/VBoxContainer/HBoxContainer2" unique_id=973000937]
+layout_mode = 2
+theme_override_constants/margin_top = 3
+
+[node name="SplitVertical" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer2" unique_id=825241020]
+unique_name_in_owner = true
+self_modulate = Color(0.569, 0.569, 0.569, 1)
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+tooltip_text = "NOT ACTIVE: Split main viewport panel vertical."
+toggle_mode = true
+texture_normal = SubResource("DPITexture_83wqf")
+stretch_mode = 5
+
+[node name="MarginContainer3" type="MarginContainer" parent="HBoxContainer/VBoxContainer/HBoxContainer2" unique_id=742628988]
+layout_mode = 2
+theme_override_constants/margin_top = 3
+
+[node name="MakeFloating" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer3" unique_id=1168942924]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Make Scene Viewer panel floating."
+texture_normal = SubResource("DPITexture_83wqf")
+stretch_mode = 5
+
+[node name="HSeparator2" type="HSeparator" parent="HBoxContainer/VBoxContainer" unique_id=1158658430]
 visible = false
 modulate = Color(0.298039, 0.298039, 0.298039, 1)
 layout_mode = 2
 
-[node name="SplitPanel" type="TextureButton" parent="HBoxContainer/VBoxContainer"]
+[node name="SplitPanel" type="TextureButton" parent="HBoxContainer/VBoxContainer" unique_id=404713508]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 toggle_mode = true
-texture_normal = SubResource("ImageTexture_83wqf")
+texture_normal = SubResource("DPITexture_83wqf")
 stretch_mode = 5
 
-[node name="HSeparator3" type="HSeparator" parent="HBoxContainer/VBoxContainer"]
+[node name="HSeparator3" type="HSeparator" parent="HBoxContainer/VBoxContainer" unique_id=143435092]
 modulate = Color(0.211765, 0.239216, 0.290196, 1)
 layout_mode = 2
 
-[node name="ZoomVSlider" type="VSlider" parent="HBoxContainer/VBoxContainer"]
+[node name="ZoomVSlider" type="VSlider" parent="HBoxContainer/VBoxContainer" unique_id=278840066]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 1
@@ -150,24 +173,24 @@ min_value = 40.0
 max_value = 512.0
 value = 128.0
 
-[node name="HSeparator" type="HSeparator" parent="HBoxContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="HBoxContainer/VBoxContainer" unique_id=1548449963]
 modulate = Color(0.211765, 0.239216, 0.290196, 1)
 layout_mode = 2
 
-[node name="SceneCreationToggleButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="SceneCreationToggleButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=909007380]
 custom_minimum_size = Vector2(60, 38)
 layout_mode = 2
 tooltip_text = "ACTIVE: Instantiate as scene. 		
 • NOTE: Collision shapes will be shared between all root nodes 'Instantiated as scene' or 'Make local' unless 		
 'Make Sub-Resources Unique' or 'Make Unique' under the collision shape is selected within the inspector panel."
-theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_pressed_color = Color(1, 1, 1, 1)
-theme_override_colors/icon_focus_color = Color(1, 1, 1, 1)
 theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
-icon = SubResource("ImageTexture_83wqf")
+theme_override_colors/icon_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
+icon = SubResource("DPITexture_83wqf")
 icon_alignment = 1
 
-[node name="SceneStateNumber" type="Label" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton"]
+[node name="SceneStateNumber" type="Label" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton" unique_id=566730763]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -182,8 +205,8 @@ text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EnablePinningToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton"]
-self_modulate = Color(0.41, 0.61, 0.91, 1)
+[node name="EnablePinningToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton" unique_id=25029739]
+self_modulate = Color(0.337, 0.62, 1, 1)
 custom_minimum_size = Vector2(14, 14)
 layout_mode = 0
 offset_left = 3.0
@@ -193,11 +216,11 @@ offset_bottom = 18.0
 tooltip_text = "ACTIVE: Instantiate as child of pinned scene tree node."
 toggle_mode = true
 button_pressed = true
-texture_normal = SubResource("ImageTexture_83wqf")
+texture_normal = SubResource("DPITexture_83wqf")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="UniqueSubResourcesToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton"]
+[node name="UniqueSubResourcesToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton" unique_id=104502278]
 custom_minimum_size = Vector2(14, 14)
 layout_mode = 1
 anchors_preset = 2
@@ -212,11 +235,11 @@ tooltip_text = "NOT ACTIVE: Make mesh material sub-resources unique.
 • NOTE: Each instance will have an additional mesh material resource loaded into memory. 		
 • NOTE: Collision shapes and other resources will not be duplicated and will remain shared."
 toggle_mode = true
-texture_normal = SubResource("ImageTexture_83wqf")
+texture_normal = SubResource("DPITexture_83wqf")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="HoldState3DButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton"]
+[node name="HoldState3DButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton" unique_id=791039914]
 custom_minimum_size = Vector2(14, 14)
 layout_mode = 1
 anchors_preset = 3
@@ -234,45 +257,45 @@ tooltip_text = "ACTIVE: Match scale & rotation."
 texture_normal = ExtResource("2_8d2ld")
 ignore_texture_size = true
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer" unique_id=626277135]
 visible = false
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/VBoxContainer/HBoxContainer" unique_id=1375513787]
 layout_mode = 2
 
-[node name="EnablePinningToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="EnablePinningToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=907090825]
 self_modulate = Color(0.44, 0.73, 0.98, 1)
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2
 tooltip_text = "ACTIVE: Instantiate as child of pinned scene tree node."
 toggle_mode = true
 button_pressed = true
-texture_normal = SubResource("ImageTexture_83wqf")
+texture_normal = SubResource("DPITexture_83wqf")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="UniqueSubResourcesToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="UniqueSubResourcesToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=73105803]
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2
 tooltip_text = "NOT ACTIVE: Make Sub-Resources Unique. 	
 • NOTE: Generation of the scene preview will be slower when active, especially for Multiple Convex collisions generation. 	
 • NOTE: CollisionShape3D must also be set to visible under 3DViewport top toolbar View -> Gizmos -> CollisionShape3D."
 toggle_mode = true
-texture_normal = SubResource("ImageTexture_83wqf")
+texture_normal = SubResource("DPITexture_83wqf")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="SceneCreationToggleButton" type="Button" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="SceneCreationToggleButton" type="Button" parent="HBoxContainer/VBoxContainer/HBoxContainer" unique_id=1276989457]
 custom_minimum_size = Vector2(50, 28)
 layout_mode = 2
 tooltip_text = "ACTIVE: Make local. 		
 • NOTE: Collision shapes will be shared between all root nodes 'Instantiated as scene' or 'Make local' unless 		
 'Make Sub-Resources Unique' or 'Make Unique' under the collision shape is selected within the inspector panel."
-icon = SubResource("ImageTexture_83wqf")
+icon = SubResource("DPITexture_83wqf")
 icon_alignment = 1
 
-[node name="SceneStateNumber" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer/SceneCreationToggleButton"]
+[node name="SceneStateNumber" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer/SceneCreationToggleButton" unique_id=828702903]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -287,7 +310,7 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SceneCreationToggleButton2" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="SceneCreationToggleButton2" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=250387637]
 visible = false
 custom_minimum_size = Vector2(75, 36.15)
 layout_mode = 2
@@ -297,7 +320,7 @@ tooltip_text = "ACTIVE: Make local.
 icon = SubResource("ImageTexture_8d2ld")
 icon_alignment = 1
 
-[node name="SceneStateNumber" type="Label" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton2"]
+[node name="SceneStateNumber" type="Label" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton2" unique_id=823798801]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -312,7 +335,7 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EnablePinningToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton2"]
+[node name="EnablePinningToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton2" unique_id=1810120827]
 self_modulate = Color(0.44, 0.73, 0.98, 1)
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 0
@@ -327,7 +350,7 @@ texture_normal = SubResource("ImageTexture_8d2ld")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="UniqueSubResourcesToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton2"]
+[node name="UniqueSubResourcesToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/SceneCreationToggleButton2" unique_id=1785635125]
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 1
 anchors_preset = 2
@@ -346,7 +369,7 @@ texture_normal = SubResource("ImageTexture_8d2ld")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="ChangeBodyType2DButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="ChangeBodyType2DButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=1811734847]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(50, 28)
@@ -355,7 +378,7 @@ tooltip_text = "StaticBody2D"
 icon = SubResource("ImageTexture_1hcaf")
 icon_alignment = 1
 
-[node name="ChangeBodyType3DButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="ChangeBodyType3DButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=2129675061]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(60, 38)
 layout_mode = 2
@@ -363,7 +386,7 @@ tooltip_text = "No PhysicsBody3D"
 icon = ExtResource("3_5g5gr")
 icon_alignment = 1
 
-[node name="Body3DNumber" type="Label" parent="HBoxContainer/VBoxContainer/ChangeBodyType3DButton"]
+[node name="Body3DNumber" type="Label" parent="HBoxContainer/VBoxContainer/ChangeBodyType3DButton" unique_id=1441790193]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -378,7 +401,7 @@ text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Body3DWarning" type="TextureRect" parent="HBoxContainer/VBoxContainer/ChangeBodyType3DButton"]
+[node name="Body3DWarning" type="TextureRect" parent="HBoxContainer/VBoxContainer/ChangeBodyType3DButton" unique_id=1066974659]
 visible = false
 layout_mode = 1
 anchors_preset = 2
@@ -389,11 +412,11 @@ offset_top = -12.0
 offset_right = 14.0
 offset_bottom = -2.0
 grow_vertical = 0
-texture = SubResource("ImageTexture_83wqf")
+texture = SubResource("DPITexture_83wqf")
 expand_mode = 1
 stretch_mode = 4
 
-[node name="ChangeCollisionShape2DButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="ChangeCollisionShape2DButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=424941152]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(50, 28)
@@ -402,16 +425,16 @@ tooltip_text = "CircleShape2D The fastest shape to check collisions against"
 icon = SubResource("ImageTexture_1hcaf")
 icon_alignment = 1
 
-[node name="ChangeCollisionShape3DButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="ChangeCollisionShape3DButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=421925699]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(60, 38)
 layout_mode = 2
 tooltip_text = "SphereShape3D"
 disabled = true
-icon = SubResource("ImageTexture_83wqf")
+icon = SubResource("DPITexture_83wqf")
 icon_alignment = 1
 
-[node name="Collision3DNumber" type="Label" parent="HBoxContainer/VBoxContainer/ChangeCollisionShape3DButton"]
+[node name="Collision3DNumber" type="Label" parent="HBoxContainer/VBoxContainer/ChangeCollisionShape3DButton" unique_id=1120549979]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -427,7 +450,7 @@ text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Collision3DWarning" type="TextureRect" parent="HBoxContainer/VBoxContainer/ChangeCollisionShape3DButton"]
+[node name="Collision3DWarning" type="TextureRect" parent="HBoxContainer/VBoxContainer/ChangeCollisionShape3DButton" unique_id=1759190418]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -439,11 +462,11 @@ offset_bottom = -3.0
 grow_vertical = 0
 tooltip_text = "WARNING: CollisionShape3D only serves to provide a collision shape to a CollisionObject3D derived node. 		
 Please only use it as a child of Area3D, StaticBody3D, RigidBody3D, CharacterBody3D, etc. to give them a shape."
-texture = SubResource("ImageTexture_83wqf")
+texture = SubResource("DPITexture_83wqf")
 expand_mode = 1
 stretch_mode = 4
 
-[node name="CollisionVisibilityToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/ChangeCollisionShape3DButton"]
+[node name="CollisionVisibilityToggleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/ChangeCollisionShape3DButton" unique_id=1289033993]
 custom_minimum_size = Vector2(14, 14)
 layout_mode = 1
 offset_left = 3.0
@@ -456,18 +479,19 @@ tooltip_text = "ACTIVE: Show collisions with scene preview.
 disabled = true
 toggle_mode = true
 button_pressed = true
-texture_normal = SubResource("ImageTexture_83wqf")
+texture_normal = SubResource("DPITexture_83wqf")
 texture_disabled = ExtResource("3_q814q")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="ChangeMaterialButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="ChangeMaterialButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=1053774919]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(60, 38)
 layout_mode = 2
 icon_alignment = 1
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton" unique_id=9572123]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 1
 anchors_preset = 8
@@ -483,7 +507,7 @@ grow_horizontal = 2
 grow_vertical = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer" unique_id=983191961]
 own_world_3d = true
 transparent_bg = true
 handle_input_locally = false
@@ -491,17 +515,17 @@ msaa_3d = 2
 size = Vector2i(44, 30)
 render_target_update_mode = 4
 
-[node name="MaterialButtonMeshInstance3D" type="MeshInstance3D" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport"]
+[node name="MaterialButtonMeshInstance3D" type="MeshInstance3D" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport" unique_id=187539321]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.08, 0, 0)
 mesh = SubResource("SphereMesh_px65m")
 
-[node name="Camera3D" type="Camera3D" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport"]
+[node name="Camera3D" type="Camera3D" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport" unique_id=343434844]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.896438)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton/SubViewportContainer/SubViewport" unique_id=2009254253]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.442477)
 
-[node name="MaterialButtonSurfaceSelection" type="Button" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton"]
+[node name="MaterialButtonSurfaceSelection" type="Button" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton" unique_id=1100382043]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -517,7 +541,7 @@ disabled = true
 text = "0"
 flat = true
 
-[node name="FavoriteMaterialButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton"]
+[node name="FavoriteMaterialButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton" unique_id=1047904678]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(14, 14)
 layout_mode = 0
@@ -529,7 +553,7 @@ texture_normal = ExtResource("4_px65m")
 ignore_texture_size = true
 stretch_mode = 3
 
-[node name="Material3DNumber" type="Label" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton"]
+[node name="Material3DNumber" type="Label" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton" unique_id=1495932681]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -546,7 +570,7 @@ text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EnableFavoritesCycleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton"]
+[node name="EnableFavoritesCycleButton" type="TextureButton" parent="HBoxContainer/VBoxContainer/ChangeMaterialButton" unique_id=468477319]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -562,7 +586,7 @@ texture_normal = ExtResource("5_px65m")
 ignore_texture_size = true
 stretch_mode = 3
 
-[node name="GenLODButton" type="Button" parent="HBoxContainer/VBoxContainer"]
+[node name="GenLODButton" type="Button" parent="HBoxContainer/VBoxContainer" unique_id=653508797]
 visible = false
 custom_minimum_size = Vector2(50, 25)
 layout_mode = 2
@@ -572,14 +596,17 @@ toggle_mode = true
 text = "LOD"
 expand_icon = true
 
-[node name="Control" type="Control" parent="HBoxContainer/VBoxContainer"]
+[node name="Control" type="Control" parent="HBoxContainer/VBoxContainer" unique_id=300962309]
 layout_mode = 2
 size_flags_vertical = 3
 
+[connection signal="resized" from="." to="." method="_on_resized"]
 [connection signal="dragged" from="HBoxContainer/HSplitContainer" to="." method="_on_h_split_container_dragged"]
 [connection signal="tab_changed" from="HBoxContainer/HSplitContainer/MainTabContainer" to="." method="_on_main_tab_container_tab_changed"]
-[connection signal="pressed" from="HBoxContainer/VBoxContainer/MarginContainer/MakeFloating" to="." method="_on_make_floating_pressed"]
-[connection signal="toggled" from="HBoxContainer/VBoxContainer/MarginContainer/PinPanel" to="." method="_on_pin_panel_toggled"]
+[connection signal="toggled" from="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer/PinPanel" to="." method="_on_pin_panel_toggled"]
+[connection signal="pressed" from="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer/RefreshThumbnails" to="." method="_on_refresh_thumbnails_pressed"]
+[connection signal="toggled" from="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer2/SplitVertical" to="." method="_on_split_vertical_toggled"]
+[connection signal="pressed" from="HBoxContainer/VBoxContainer/HBoxContainer2/MarginContainer3/MakeFloating" to="." method="_on_make_floating_pressed"]
 [connection signal="toggled" from="HBoxContainer/VBoxContainer/SplitPanel" to="." method="_on_texture_button_toggled"]
 [connection signal="value_changed" from="HBoxContainer/VBoxContainer/ZoomVSlider" to="." method="_on_v_slider_value_changed"]
 [connection signal="pressed" from="HBoxContainer/VBoxContainer/SceneCreationToggleButton" to="." method="_on_scene_creation_toggle_button_pressed"]

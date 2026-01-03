@@ -4,6 +4,7 @@ extends Resource
 
 @export var scene_favorites: Array[String] = []
 @export var scene_data: Dictionary[String, Dictionary] = {}
+#@export var scene_materials: Dictionary[String, Array] = {}
 
 ## On import store a cache of information about the scene
 ## Used to avoid reloading each scene every restart to get data from scene file

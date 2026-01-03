@@ -9,7 +9,5 @@ NOTES on Editing Plugin Scenes:
 	3. Nodes referenced in main_base_tab.gd script must match node hierarchy for inherited scenes:
 	main_collection_tab.tscn, main_favorites_tab.tscn, and main_project_scenes_tab.tscn
 	
-	
-	RE-WRITE LATER WHEN FRESH IN MIND HOW THIS IS EFFECTED
 	4. When editing snap_flow_manager_graph and the panel is open in within the 3D viewport, any changes within the 3D viewport will overwrite the master version. 
 	This is because it saves over itself

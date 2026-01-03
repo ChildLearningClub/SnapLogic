@@ -38,6 +38,7 @@ var data_path: String = "res://addons/scene_snap/resources/snap_manager_data.tre
 
 const SceneSnapPlugin = preload("res://addons/scene_snap/scene_snap_plugin.gd")
 const GRAPH_NODE_CODE_TAB = preload("res://addons/scene_snap/plugin_scenes/graph_node_code_tab.tscn")
+const FOLDABLE_CONTAINER_CODE = preload("uid://bj8aldjxrqrxx")
 
 
 
@@ -123,18 +124,24 @@ var selected_scene_view_button_tags:  Array[String] = []
 
 
 func _ready() -> void:
+	#output_snap.set_slot_enabled_left(add_code_snippet_button.get_index(), false)
+	#output_snap.set_slot_enabled_left(output_snap.get_child_count() -1, false)
 	# Connect up the save_manager_state signal for each GraphNodeCodeTab to save when changing user code snippets.
 	for child in output_snap.get_children():
-		if child is Label and child.name.begins_with("GraphNodeCodeTab"):
-			child.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
-			# HACK To trigger redraw of connections when code-edit openned or closed.
-			child.redraw_connections.connect(func() -> void:
-					#print("moving output snap")
-					# NOTE: Does not appear to move node, but does appear to force connection to redraw.
-					output_snap.position.x -= 10)
-					#await get_tree().process_frame
-					#output_snap.position.x += 10)
-			#print("child name: ", child.name)
+		#if child is Label and child.name.begins_with("GraphNodeCodeTab"):
+		if child is FoldableContainer and child.name.begins_with("FoldableContainerCode"):
+			set_foldable_connections(child)
+			#child.remove_connection.connect(do_connection_removal)
+			#child.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
+			## HACK To trigger redraw of connections when code-edit openned or closed.
+			#child.redraw_connections.connect(func() -> void:
+					##print("moving output snap")
+					## NOTE: Does not appear to move node, but does appear to force connection to redraw.
+					#output_snap.position.x -= 10
+					#output_snap.size.y = 0)
+					##await get_tree().process_frame
+					##output_snap.position.x += 10)
+			##print("child name: ", child.name)
 
 	#code_edit.text_changed.connect(_on_code_changed)
 	#if debug: print("self.get_path(): ", self.get_path())
@@ -143,7 +150,11 @@ func _ready() -> void:
 		
 	for snap_to_node: StringName in snap_to_objects_frame_nodes:
 		attach_graph_element_to_frame(snap_to_node, "SnapToObjectsFrame")
-		
+
+	
+
+
+
 	#plugin_ref = SceneSnapPlugin.new()
 	#var tag_node: Control = find_child("Tag")
 	#tag_node.name = "BLOBY"
@@ -151,7 +162,7 @@ func _ready() -> void:
 
 	#save_connections(data_path)
 	#var snap_manager_data = SnapManagerData.new()
-	pass
+
 	#if scene_path == "":
 		#scene_path = "res://addons/scene_snap/plugin_scenes/snap_manager_graph_original.tscn"
 		#emit_signal("scene_path_original", true)
@@ -173,6 +184,20 @@ var scene_name: String = ""
 #func _physics_process(delta: float) -> void:
 	#if debug: print("connections: ", get_connection_list())
 	##if debug: print("tags: ", selected_scene_view_button.tags)
+
+	
+
+
+
+func set_foldable_connections(code_tab: FoldableContainer) -> void:
+	code_tab.remove_connection.connect(do_connection_removal)
+	code_tab.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
+	# HACK To trigger redraw of connections when code-edit openned or closed.
+	code_tab.redraw_connections.connect(func() -> void:
+			# NOTE: Does not appear to move node, but does appear to force connection to redraw.
+			output_snap.position.x -= 10
+			output_snap.size.y = 0)
+
 
 
 
@@ -592,41 +617,69 @@ func _on_frame_rect_changed(frame: GraphFrame, new_rect: Rect2) -> void:
 
 
 func _on_button_pressed() -> void:
-	var code_tab: Label = GRAPH_NODE_CODE_TAB.instantiate()
+	#var output_snap_child_size: int = output_snap.get_children().size()
+	#output_snap.move_child(add_code_snippet_button, output_snap_child_size - 1)
+	#await get_tree().process_frame
+	var code_tab: FoldableContainer = FOLDABLE_CONTAINER_CODE.instantiate()
+	#var code_tab: Label = GRAPH_NODE_CODE_TAB.instantiate()
 	output_snap.add_child(code_tab)
+	
 	# Enable the left size input slot.
+	#await get_tree().process_frame
 	var output_snap_child_size: int = output_snap.get_children().size()
-	output_snap.set_slot_enabled_left(output_snap_child_size -2, true) # NOTE: -1 To account for the button in slot_index 0
-	output_snap.set_slot_enabled_left(output_snap_child_size -1, false)
-	code_tab.owner = self
-	code_tab.name = "GraphNodeCodeTab"
-	code_tab.text = "       New Code Snippet"
-	code_tab.remove_connection.connect(do_connection_removal)
 	output_snap.move_child(add_code_snippet_button, output_snap_child_size)
+	#await get_tree().process_frame
+	#output_snap.set_slot_enabled_left(output_snap_child_size -2, true) # NOTE: -1 To account for the button in slot_index 0
+	#output_snap.set_slot_enabled_left(output_snap_child_size -1, false)
+	#output_snap.set_slot_enabled_left(output_snap.get_child_count(), false)
+	#output_snap.clear_slot(add_code_snippet_button.get_index())
+	#output_snap.set_slot_enabled_left(add_code_snippet_button.get_index(), false)
+	#output_snap.set_slot_enabled_left(0, false)
+	
+	#output_snap.set_slot_enabled_left(output_snap_child_size -1, true) # NOTE: -1 To account for the button in slot_index 0
+	#output_snap.set_slot_enabled_left(output_snap_child_size, false)
+	code_tab.owner = self
+	#code_tab.name = "GraphNodeCodeTab"
+	code_tab.name = "FoldableContainerCode"
+	#code_tab.text = "       New Code Snippet"
+	code_tab.title = "New Code Snippet"
+	# FIXME connection only made for new code snippets created during session.
+	#code_tab.remove_connection.connect(do_connection_removal)
+	set_foldable_connections(code_tab)
+	#output_snap.move_child(add_code_snippet_button, output_snap_child_size)
 	emit_signal("save_manager_state")
 
-func do_connection_removal(code_snippet: Label, slot_index: int) -> void:
 
-	print("removing connection to: ", code_snippet.name)
+#func set_foldable_connections(code_tab: FoldableContainer) -> void:
+	#code_tab.remove_connection.connect(do_connection_removal)
+	#code_tab.remove_connection.connect(do_connection_removal)
+	#code_tab.save_manager_state.connect(func() -> void: emit_signal("save_manager_state"))
+	## HACK To trigger redraw of connections when code-edit openned or closed.
+	#code_tab.redraw_connections.connect(func() -> void:
+			## NOTE: Does not appear to move node, but does appear to force connection to redraw.
+			#output_snap.position.x -= 10
+			#output_snap.size.y = 0)
 
-		# Get the to_node and to_port from the matching connection
+
+func do_connection_removal(code_snippet: FoldableContainer, slot_index: int) -> void:
+	# Get the to_node and to_port from the matching connection
 	var connections: Array[Dictionary] = self.get_connection_list()
 
-	# Remove connections to and from the deleted tag
-	for connection: Dictionary in connections:
-		var to_node: String = connection.to_node
-		var to_port: int = connection.to_port
-		var from_node: String = connection.from_node
-		var from_port: int = connection.from_port
+	# Remove connections to and from the deleted code snippet
+	for c: Dictionary in connections:
+		if c.to_node == code_snippet.get_parent().name and c.to_port == slot_index:
+			disconnect_node(c.from_node, c.from_port, code_snippet.get_parent().name, slot_index)
+		if c.from_node == code_snippet.get_parent().name and c.from_port == slot_index:
+			disconnect_node(code_snippet.get_parent().name, slot_index, c.to_node, c.to_port)
 
-		#print("to_node: ", to_node)
-		#print("code_snippet.get_parent().name: ", code_snippet.get_parent().name)
-		print("to_port: ", to_port)
-		print("slot_index: ", slot_index)
-		#print("snippet_index: ", snippet_index)
-		if to_node == code_snippet.get_parent().name and to_port == slot_index:
-			disconnect_node(from_node, from_port, code_snippet.get_parent().name, slot_index)
-		if from_node == code_snippet.get_parent().name and from_port == slot_index:
-			disconnect_node(code_snippet.get_parent().name, slot_index, to_node, to_port)
-	
+	# Get current updated connections
+	connections = get_connection_list()
+
+	for c: Dictionary in connections:
+		if c.to_port > slot_index:
+			c.to_port -= 1  # Directly mutate the dictionary
+
+	# Update the connections
+	set_connections(connections)
+
 	emit_signal("save_manager_state")

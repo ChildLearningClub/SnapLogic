@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://dhwvjukoeumax"]
+
+[ext_resource type="Script" uid="uid://bb6g0vd3ecni8" path="res://addons/scene_snap/scripts/path_3d.gd" id="1_uno1q"]
+
+[sub_resource type="Curve3D" id="Curve3D_uno1q"]
+closed = true
+
+[node name="LineDragPlace" type="Path3D"]
+top_level = true
+curve = SubResource("Curve3D_uno1q")
+script = ExtResource("1_uno1q")
+distance_between_mesh = 20.0
+
+[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]

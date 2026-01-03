@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://bfp00mwevyxyc"]
+
+[ext_resource type="Script" uid="uid://ccitnprijuayk" path="res://addons/scene_snap/resources/runtime_logic/snap_logic_runtime.gd" id="1_j13fp"]
+
+[node name="SnapLogic" type="Node" unique_id=1779270374]
+script = ExtResource("1_j13fp")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="." unique_id=833893927]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer" unique_id=692965812]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1024, 512)
+render_target_update_mode = 4
+
+[node name="Control" type="Control" parent="SubViewportContainer/SubViewport" unique_id=551930431]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="SubViewportContainer/SubViewport/Control" unique_id=256434954]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -512.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SubViewportContainer/SubViewport/Control/AspectRatioContainer" unique_id=1276269607]
+layout_mode = 2
+alignment = 1
+
+[node name="TextureButton" type="TextureButton" parent="SubViewportContainer/SubViewport/Control/AspectRatioContainer/HBoxContainer" unique_id=951206977]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TextureButton2" type="TextureButton" parent="SubViewportContainer/SubViewport/Control/AspectRatioContainer/HBoxContainer" unique_id=310976362]
+layout_mode = 2
+size_flags_horizontal = 3

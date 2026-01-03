@@ -1,12 +1,14 @@
 @tool
 extends Node3D
 
+## Remove object origin offsets and place them at center bottom of object.
 func center_scene_preview(scene_preview: Node3D) -> void:
 	var aabb_center: Vector3 = get_scene_aabb(scene_preview).get_center()
 	aabb_center = Vector3(aabb_center.x, 0.0, aabb_center.z) # Set origin to center bottom
 	#print("aabb center: ", aabb_center)
 	scene_preview.position -= aabb_center
 
+## Get the scene_aabb to assist in centering object origin.
 func get_scene_aabb(scene_preview: Object) -> AABB:
 	var scene_aabb: AABB
 	var mesh_node_instances: Array[Node] = scene_preview.find_children("*", "MeshInstance3D", true, false)

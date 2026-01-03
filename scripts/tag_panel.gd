@@ -65,6 +65,8 @@ var sharing_disabled: bool = false
 var settings = EditorInterface.get_editor_settings()
 
 func _ready() -> void:
+	button_shared_tags.set_button_icon(get_theme_icon(&"Add", &"EditorIcons"))
+	button_global_tags.set_button_icon(get_theme_icon(&"Add", &"EditorIcons"))
 	##Create duplicate scene_data_cache so that original resource file can be written to
 	#scene_data_cache = ResourceLoader.load("uid://3as6dllcbl36")
 
@@ -90,9 +92,9 @@ func _ready() -> void:
 
 
 
-func _input(event: InputEvent) -> void:
-	if Input.is_key_pressed(KEY_ENTER):
-		print("enter key pressed")
+#func _input(event: InputEvent) -> void:
+	#if Input.is_key_pressed(KEY_ENTER):
+		#print("enter key pressed")
 
 
 ## Add a new tag to the Tag Panel under Shared Tags

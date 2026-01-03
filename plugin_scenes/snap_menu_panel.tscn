@@ -1,24 +1,29 @@
-[gd_scene load_steps=4 format=3 uid="uid://dbba2wscanxap"]
+[gd_scene format=3 uid="uid://dbba2wscanxap"]
 
 [ext_resource type="Script" uid="uid://bff5ktsnjfeou" path="res://addons/scene_snap/scripts/snap_menu_panel.gd" id="1_rdqmu"]
 [ext_resource type="Texture2D" uid="uid://dhl5i018o8ek5" path="res://addons/scene_snap/icons/grey_dot.svg" id="2_hyi74"]
 [ext_resource type="Script" uid="uid://dt7deomtytti8" path="res://addons/scene_snap/scripts/snap_menu_panel_button.gd" id="2_rdqmu"]
+[ext_resource type="Texture2D" uid="uid://18c44jf81q36" path="res://addons/scene_snap/icons/Path3DLine.svg" id="4_lpcur"]
 
-[node name="SnapMenuPanel" type="HBoxContainer"]
+[sub_resource type="DPITexture" id="DPITexture_rdqmu"]
+_source = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\"><path fill=\"#ff5d5d\" d=\"M2 1v8.586l1.293-1.293a1 1 0 0 1 1.414 0L7 10.587l2.293-2.293a1 1 0 0 1 1.414 0L13 10.586l1-1V6H9V1H2zm8 0v4h4zm-6 9.414-2 2V15h12v-2.586l-.293.293a1 1 0 0 1-1.414 0L10 10.414l-2.293 2.293a1 1 0 0 1-1.414 0L4 10.414z\"/></svg>
+"
+
+[node name="SnapMenuPanel" type="HBoxContainer" unique_id=1362146691]
 offset_right = 80.0
 offset_bottom = 30.0
 theme_override_constants/separation = 4
 script = ExtResource("1_rdqmu")
 
-[node name="GrapEditButton" type="Button" parent="."]
+[node name="GrapEditButton" type="Button" parent="." unique_id=24506680]
 layout_mode = 2
 toggle_mode = true
-icon = ExtResource("2_hyi74")
+icon = SubResource("DPITexture_rdqmu")
 flat = true
 icon_alignment = 1
 script = ExtResource("2_rdqmu")
 
-[node name="Button2" type="Button" parent="."]
+[node name="CreateSnapPlane" type="Button" parent="." unique_id=1092226136]
 visible = false
 layout_mode = 2
 toggle_mode = true
@@ -27,13 +32,13 @@ flat = true
 icon_alignment = 1
 script = ExtResource("2_rdqmu")
 
-[node name="Button3" type="Button" parent="."]
-visible = false
+[node name="PathShape3DButton" type="Button" parent="." unique_id=870896586]
 layout_mode = 2
-toggle_mode = true
-icon = ExtResource("2_hyi74")
+icon = ExtResource("4_lpcur")
 flat = true
 icon_alignment = 1
-script = ExtResource("2_rdqmu")
 
 [connection signal="toggled" from="GrapEditButton" to="." method="_on_grap_edit_button_toggled"]
+[connection signal="pressed" from="CreateSnapPlane" to="." method="_on_create_snap_plane_pressed"]
+[connection signal="toggled" from="CreateSnapPlane" to="." method="_on_create_snap_plane_toggled"]
+[connection signal="pressed" from="PathShape3DButton" to="." method="_on_change_path_shape_3d_button_pressed"]

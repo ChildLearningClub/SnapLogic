@@ -258,6 +258,7 @@ func _on_erase_texture_button_pressed() -> void:
 
 
 func _on_scene_search_line_edit_text_changed(new_text: String) -> void:
+	if debug: print("text changed signal received: ", new_text)
 	# Important for initializing scene_buttons if tab has not been changed after startup
 	#if scene_buttons.size() <= 1: # 1 for Node2D MultiSelectBox
 	if scene_buttons.is_empty():
@@ -266,7 +267,7 @@ func _on_scene_search_line_edit_text_changed(new_text: String) -> void:
 		reset_text = true # Reset flag
 		apply_accent_color()
 		get_scene_buttons()
-		filter_buttons()
+		#filter_buttons() # This is called from get_scene_buttons() so removed here
 
 	elif reset_text:
 		reset_text = false
@@ -421,6 +422,13 @@ func apply_accent_color() -> void:
 	#if debug: print("THESE SHOULD BE THE BUTTONS THAT ARE VISIBLE ON THE SCREEN: ", filtered_buttons_to_show.size())
 
 ## TEST
+#func _process(delta: float) -> void:
+	#_on_scene_search_line_edit_text_changed("shield")
+	##reset_text = true
+	##filter_buttons()
+
+
+
 
 var filters_dict: Dictionary[String, Array] = {}
 var filtered_buttons_to_show: Array[Node] = []
@@ -457,7 +465,7 @@ func filter_buttons() -> void:
 		filters_dict["heart"] = heart_filter(scene_buttons)
 	if scene_search_line_edit.text != "":
 		filters_dict["text"] = text_filter(scene_buttons, scene_search_line_edit.text)
-		if debug: print(filters_dict["text"])
+		if debug: print("current text filters", filters_dict["text"])
 
 	#if debug: print("this is being processed")
 	#if debug: print("filters_dict keys: ", filters_dict.keys())
@@ -695,13 +703,13 @@ func connect_sub_tab_changed_signal() -> void:
 
 # NOTE: Called from scene_viewer.gd when Main Tab changed on sub_tab_changed_signal and when scene_buttons empty when filtering
 func get_scene_buttons() -> void:
-	#if debug: print("getting scene buttons")
+	if debug: print("getting scene buttons")
 	scene_buttons = []
 
 	if self.name == "Project Scenes" or self.name == "Favorites":
 		scene_buttons = h_flow_container.get_children()
 
-	# FIXME Does not get sub_tab are intial editor loading
+	# FIXME Does not get sub_tab on initial editor loading
 	else: # NOTE: Updates to current sub tab on connect_sub_tab_changed_signal() above
 		var sub_tab: Control = sub_tab_container.get_current_tab_control()
 		if sub_tab:

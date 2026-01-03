@@ -1,23 +1,15 @@
-[gd_scene load_steps=10 format=3 uid="uid://dbbpvablgf07e"]
+[gd_scene load_steps=9 format=3 uid="uid://dbbpvablgf07e"]
 
 [ext_resource type="Script" uid="uid://kyxdxecf5yi4" path="res://addons/scene_snap/scripts/main_collection_tab.gd" id="1_h0n44"]
 [ext_resource type="Texture2D" uid="uid://bj0cx5mupc8u6" path="res://addons/scene_snap/icons/grey_heart.svg" id="2_wq7sx"]
 [ext_resource type="Texture2D" uid="uid://cdb6qlyi7irq8" path="res://addons/scene_snap/icons/red_heart.svg" id="3_e2wsb"]
 [ext_resource type="Texture2D" uid="uid://3hu3otbux2fl" path="res://addons/scene_snap/icons/StatusWarningRed.svg" id="4_o8bcx"]
 
-[sub_resource type="Image" id="Image_o8bcx"]
-data = {
-"data": PackedByteArray(255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 42, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 255, 90, 90, 0, 255, 94, 94, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 92, 92, 0, 255, 92, 92, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 93, 93, 0, 255, 91, 91, 45, 255, 93, 93, 44, 255, 91, 91, 0, 255, 91, 91, 42, 255, 91, 91, 42, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 91, 91, 0, 255, 92, 92, 0, 255, 92, 92, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 0, 255, 92, 92, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0, 255, 93, 93, 0),
-"format": "RGBA8",
-"height": 16,
-"mipmaps": false,
-"width": 16
-}
+[sub_resource type="DPITexture" id="DPITexture_o8bcx"]
+_source = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\"><path fill=\"#ff5d5d\" d=\"M2 1v8.586l1.293-1.293a1 1 0 0 1 1.414 0L7 10.587l2.293-2.293a1 1 0 0 1 1.414 0L13 10.586l1-1V6H9V1H2zm8 0v4h4zm-6 9.414-2 2V15h12v-2.586l-.293.293a1 1 0 0 1-1.414 0L10 10.414l-2.293 2.293a1 1 0 0 1-1.414 0L4 10.414z\"/></svg>
+"
 
-[sub_resource type="ImageTexture" id="ImageTexture_yosdf"]
-image = SubResource("Image_o8bcx")
-
-[sub_resource type="Image" id="Image_68fib"]
+[sub_resource type="Image" id="Image_3fto6"]
 data = {
 "data": PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 93, 93, 255, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 92, 92, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 231, 255, 90, 90, 54, 255, 94, 94, 57, 255, 93, 93, 233, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 42, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 255, 93, 93, 41, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 42, 255, 93, 93, 233, 255, 92, 92, 232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 45, 255, 93, 93, 44, 0, 0, 0, 0, 255, 91, 91, 42, 255, 91, 91, 42, 0, 0, 0, 0, 255, 91, 91, 45, 255, 93, 93, 44, 0, 0, 0, 0, 255, 91, 91, 42, 255, 91, 91, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 0, 0, 0, 0, 0, 0, 0, 0, 255, 91, 91, 45, 255, 92, 92, 235, 255, 92, 92, 234, 255, 89, 89, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 255, 92, 92, 235, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 233, 255, 91, 91, 59, 255, 92, 92, 61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 255, 93, 93, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 "format": "RGBA8",
@@ -27,11 +19,11 @@ data = {
 }
 
 [sub_resource type="ImageTexture" id="ImageTexture_3fto6"]
-image = SubResource("Image_68fib")
+image = SubResource("Image_3fto6")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ro0mc"]
 
-[node name="MainTab" type="Control"]
+[node name="MainTab" type="Control" unique_id=526905160]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -41,7 +33,7 @@ grow_vertical = 2
 script = ExtResource("1_h0n44")
 metadata/_tab_index = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=400429756]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -49,10 +41,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=868041537]
 layout_mode = 2
 
-[node name="HeartTextureButton" type="TextureButton" parent="VBoxContainer/HBoxContainer"]
+[node name="HeartTextureButton" type="TextureButton" parent="VBoxContainer/HBoxContainer" unique_id=716169065]
 custom_minimum_size = Vector2(16, 25)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -62,13 +54,13 @@ texture_pressed = ExtResource("3_e2wsb")
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer" unique_id=1710870902]
 visible = false
 layout_mode = 2
 theme_override_constants/margin_left = -3
 theme_override_constants/margin_right = -4
 
-[node name="Filter2D3DButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer"]
+[node name="Filter2D3DButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer" unique_id=501763348]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(20, 25)
 layout_mode = 2
@@ -76,20 +68,20 @@ size_flags_horizontal = 4
 theme_override_constants/h_separation = -30
 flat = true
 
-[node name="EraseTextureButton" type="TextureButton" parent="VBoxContainer/HBoxContainer"]
-self_modulate = Color(0.41, 0.61, 0.91, 1)
+[node name="EraseTextureButton" type="TextureButton" parent="VBoxContainer/HBoxContainer" unique_id=1775865747]
+self_modulate = Color(0.337, 0.62, 1, 1)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-texture_normal = SubResource("ImageTexture_yosdf")
+texture_normal = SubResource("DPITexture_o8bcx")
 
-[node name="SceneSearchLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer"]
+[node name="SceneSearchLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer" unique_id=1051112132]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Filter Scenes"
-right_icon = SubResource("ImageTexture_yosdf")
+right_icon = SubResource("DPITexture_o8bcx")
 
-[node name="GlobalSearchButton" type="TextureButton" parent="VBoxContainer/HBoxContainer"]
+[node name="GlobalSearchButton" type="TextureButton" parent="VBoxContainer/HBoxContainer" unique_id=865691655]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 4
@@ -97,7 +89,7 @@ size_flags_vertical = 4
 toggle_mode = true
 texture_normal = SubResource("ImageTexture_3fto6")
 
-[node name="FilterAppliedWarning" type="TextureRect" parent="VBoxContainer/HBoxContainer"]
+[node name="FilterAppliedWarning" type="TextureRect" parent="VBoxContainer/HBoxContainer" unique_id=735559291]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 4
@@ -105,101 +97,100 @@ size_flags_vertical = 4
 tooltip_text = "ACTIVE: Filters are applied to this tab's scenes."
 texture = ExtResource("4_o8bcx")
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer" unique_id=1151945869]
 z_index = 1
 layout_mode = 2
 theme_override_constants/margin_bottom = -31
 
-[node name="SubCollectionHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
+[node name="SubCollectionHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer" unique_id=1316983191]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="ItemList" type="ItemList" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer"]
+[node name="ItemList" type="ItemList" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer" unique_id=1774988624]
 visible = false
 custom_minimum_size = Vector2(300, 90)
 layout_mode = 2
 select_mode = 1
 
-[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer"]
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer" unique_id=1048839967]
 layout_mode = 2
 theme_override_constants/margin_top = 5
 
-[node name="VSepMarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2"]
+[node name="VSepMarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2" unique_id=1350933626]
 layout_mode = 2
 theme_override_constants/margin_right = -30
 
-[node name="VSeparator" type="VSeparator" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2/VSepMarginContainer"]
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2/VSepMarginContainer" unique_id=3571933]
 layout_mode = 2
 
-[node name="OpenItemListButton" type="Button" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2"]
+[node name="OpenItemListButton" type="Button" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2" unique_id=769935751]
 layout_mode = 2
-icon = SubResource("ImageTexture_yosdf")
+icon = SubResource("DPITexture_o8bcx")
 
-[node name="MarginContainer3" type="MarginContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer"]
+[node name="MarginContainer3" type="MarginContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer" unique_id=1164222429]
 layout_mode = 2
 theme_override_constants/margin_left = -5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3"]
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3" unique_id=1544517536]
 layout_mode = 2
 
-[node name="DummyButton" type="Button" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3/VBoxContainer"]
+[node name="DummyButton" type="Button" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3/VBoxContainer" unique_id=1666549322]
 layout_mode = 2
 focus_mode = 0
 disabled = true
 flat = true
 
-[node name="AddItemListTabsButton" type="Button" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3/VBoxContainer"]
+[node name="AddItemListTabsButton" type="Button" parent="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3/VBoxContainer" unique_id=64638190]
 visible = false
 layout_mode = 2
 tooltip_text = "Open selected collections."
-icon = SubResource("ImageTexture_yosdf")
+icon = SubResource("DPITexture_o8bcx")
 flat = true
 vertical_icon_alignment = 2
 
-[node name="SubTabContainer" type="TabContainer" parent="VBoxContainer"]
+[node name="SubTabContainer" type="TabContainer" parent="VBoxContainer" unique_id=191784467]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
-theme_override_constants/side_margin = 29
 drag_to_rearrange_enabled = true
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer" unique_id=950991689]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 follow_focus = true
 
-[node name="HFlowContainer" type="HFlowContainer" parent="VBoxContainer/ScrollContainer"]
+[node name="HFlowContainer" type="HFlowContainer" parent="VBoxContainer/ScrollContainer" unique_id=503600204]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Label" type="Label" parent="."]
+[node name="Label" type="Label" parent="." unique_id=637584343]
 visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
 text = "You have no collections. Create one"
 
-[node name="TabRenameCenterContainer" type="CenterContainer" parent="."]
+[node name="TabRenameCenterContainer" type="CenterContainer" parent="." unique_id=892234508]
 layout_mode = 0
 offset_left = 500.0
 offset_right = 509.0
 offset_bottom = 31.0
 
-[node name="TabNameLineEdit" type="LineEdit" parent="TabRenameCenterContainer"]
+[node name="TabNameLineEdit" type="LineEdit" parent="TabRenameCenterContainer" unique_id=2074541091]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_colors/clear_button_color_pressed = Color(0, 0, 0, 0)
-theme_override_colors/clear_button_color = Color(0, 0, 0, 0)
-theme_override_colors/font_placeholder_color = Color(0, 0, 0, 0)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
-theme_override_colors/font_selected_color = Color(0, 0, 0, 0)
-theme_override_colors/font_uneditable_color = Color(0, 0, 0, 0)
 theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_uneditable_color = Color(0, 0, 0, 0)
+theme_override_colors/font_selected_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
+theme_override_colors/font_placeholder_color = Color(0, 0, 0, 0)
+theme_override_colors/clear_button_color = Color(0, 0, 0, 0)
+theme_override_colors/clear_button_color_pressed = Color(0, 0, 0, 0)
 theme_override_constants/minimum_character_width = 0
 theme_override_styles/focus = SubResource("StyleBoxEmpty_ro0mc")
 expand_to_text_length = true
@@ -208,7 +199,7 @@ drag_and_drop_selection_enabled = false
 flat = true
 select_all_on_focus = true
 
-[node name="CreateNewCollectionFolderTimer" type="Timer" parent="."]
+[node name="CreateNewCollectionFolderTimer" type="Timer" parent="." unique_id=1830024636]
 wait_time = 10.0
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
@@ -222,7 +213,6 @@ wait_time = 10.0
 [connection signal="item_clicked" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/ItemList" to="." method="_on_item_list_item_clicked"]
 [connection signal="mouse_entered" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/ItemList" to="." method="_on_item_list_mouse_entered"]
 [connection signal="mouse_exited" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/ItemList" to="." method="_on_item_list_mouse_exited"]
-[connection signal="hidden" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2/OpenItemListButton" to="." method="_on_open_item_list_button_hidden"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer2/OpenItemListButton" to="." method="_on_open_item_list_button_pressed"]
 [connection signal="mouse_entered" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3/VBoxContainer/AddItemListTabsButton" to="." method="_on_add_item_list_tabs_button_mouse_entered"]
 [connection signal="mouse_exited" from="VBoxContainer/MarginContainer/SubCollectionHBoxContainer/MarginContainer3/VBoxContainer/AddItemListTabsButton" to="." method="_on_add_item_list_tabs_button_mouse_exited"]
